@@ -235,14 +235,14 @@ export function ProjectSwitcher() {
                   className={styles["t4-switcher-card"]}
                 >
                   <span className={styles["t4-switcher-check"]} aria-hidden="true">
-                    <CheckIcon size={12} strokeWidth={3} />
+                    <CheckIcon size={10} strokeWidth={3} />
                   </span>
                   <span className={styles["t4-switcher-icon"]}>
                     {option.project ? (
-                      <ProjectFavicon project={option.project} className="size-14" />
+                      <ProjectFavicon project={option.project} className="size-10.5" />
                     ) : (
                       <span className={styles["t4-switcher-all-icon"]}>
-                        <LayoutGridIcon size={28} strokeWidth={1.5} />
+                        <LayoutGridIcon size={21} strokeWidth={1.5} />
                       </span>
                     )}
                   </span>
