@@ -35,6 +35,7 @@ import * as ElectronApp from "../electron/ElectronApp.ts";
 import * as DesktopRendererHistory from "../telemetry/DesktopRendererHistory.ts";
 import { makeQuitShortcutHandler } from "./QuitHold.ts";
 import { copyContextMenuImage } from "./ContextMenuImage.ts";
+import { installProjectSwitcherShortcuts } from "./ProjectSwitcherShortcuts.ts";
 
 const TITLEBAR_HEIGHT = 40;
 // Matches --workspace-topbar-height in apps/web/src/index.css. Native macOS
@@ -662,6 +663,7 @@ export const make = Effect.gen(function* () {
         void runPromise(electronApp.quit);
       },
     });
+    if (environment.platform === "darwin") installProjectSwitcherShortcuts(window);
     window.webContents.on("before-input-event", (event, input) => {
       quitShortcutHandler(event, input);
       if (input.type !== "keyDown" || !input.isAutoRepeat) return;

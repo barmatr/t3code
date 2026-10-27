@@ -13,13 +13,14 @@ import {
   resolveProjectExpanded,
   setProjectExpanded,
   type UiState,
+  useUiStateStore,
 } from "./uiStateStore";
 
 function makeUiState(overrides: Partial<UiState> = {}): UiState {
   return {
     projectExpandedById: {},
     projectOrder: [],
-    sidebarProjectScopeKey: null,
+    sidebarProjectScopeKeys: [],
     threadLastVisitedAtById: {},
     threadChangedFilesExpandedById: {},
     defaultAdvertisedEndpointKey: null,
@@ -125,7 +126,7 @@ describe("parsePersistedState", () => {
         "environment:thread-1": "2026-02-25T12:35:00.000Z",
       },
       defaultAdvertisedEndpointKey: "desktop-core:lan:http",
-      sidebarProjectScopeKey: null,
+      sidebarProjectScopeKeys: [],
       pullRequestMergeMethod: "merge",
       threadChangedFilesExpandedById: {
         "environment:thread-1": {
@@ -198,6 +199,29 @@ describe("uiStateStore persistence", () => {
     vi.unstubAllGlobals();
   });
 
+  it("focus preserves saved checkboxes, can be cleared, and resets when the filter is edited", () => {
+    const previous = useUiStateStore.getState();
+    try {
+      previous.setSidebarProjectScopeKeys(["renolib", "athena"]);
+      previous.setSidebarFocusedProjectKey("athena");
+      expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual(["renolib", "athena"]);
+      persistState(useUiStateStore.getState());
+      const saved = JSON.parse(localStorageStub.getItem(PERSISTED_STATE_KEY) ?? "{}");
+      expect(saved.sidebarProjectScopeKeys).toEqual(["renolib", "athena"]);
+      expect(saved).not.toHaveProperty("sidebarFocusedProjectKey");
+      previous.setSidebarFocusedProjectKey(null);
+      expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual(["renolib", "athena"]);
+      previous.setSidebarFocusedProjectKey("athena");
+      previous.setSidebarProjectScopeKeys(["renolib", "athena"]);
+      expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
+      previous.setSidebarFocusedProjectKey("renolib");
+      previous.setSidebarProjectScopeKeys(["miga"]);
+      expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
+    } finally {
+      useUiStateStore.setState(previous);
+    }
+  });
+
   it("persists raw UI preferences including thread visit markers", () => {
     const state = makeUiState({
       projectExpandedById: {
@@ -230,7 +254,7 @@ describe("uiStateStore persistence", () => {
         "environment:thread-1": "2026-02-25T12:35:00.000Z",
       },
       defaultAdvertisedEndpointKey: "desktop-core:lan:http",
-      sidebarProjectScopeKey: null,
+      sidebarProjectScopeKeys: [],
       threadChangedFilesExpansionVersion: 2,
       threadChangedFilesExpandedById: {
         "environment:thread-1": {
@@ -246,14 +270,26 @@ describe("uiStateStore persistence", () => {
   });
 
   it("restores the sidebar project scope across reloads", () => {
-    persistState(makeUiState({ sidebarProjectScopeKey: "github.com/pingdotgg/t3code" }));
+    persistState(
+      makeUiState({
+        sidebarProjectScopeKeys: ["github.com/pingdotgg/t3code", "github.com/barmatr/t3code"],
+      }),
+    );
 
     const persisted = JSON.parse(
       localStorageStub.getItem(PERSISTED_STATE_KEY) ?? "{}",
     ) as PersistedUiState;
 
-    expect(parsePersistedState(persisted).sidebarProjectScopeKey).toBe(
+    expect(parsePersistedState(persisted).sidebarProjectScopeKeys).toEqual([
       "github.com/pingdotgg/t3code",
-    );
+      "github.com/barmatr/t3code",
+    ]);
+  });
+
+  it("migrates a single persisted sidebar project scope", () => {
+    expect(
+      parsePersistedState({ sidebarProjectScopeKey: "github.com/pingdotgg/t3code" })
+        .sidebarProjectScopeKeys,
+    ).toEqual(["github.com/pingdotgg/t3code"]);
   });
 });
