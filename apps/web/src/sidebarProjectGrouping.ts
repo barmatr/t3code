@@ -84,6 +84,21 @@ export function resolveSidebarProjectScopeKey(input: {
   return group?.projectKey ?? (input.canClearMissingScope ? null : input.key);
 }
 
+// T4 Code: resolves each key of a multi-project scope, dropping the ones that no longer exist.
+export function resolveSidebarProjectScopeKeys(input: {
+  readonly groups: ReadonlyArray<SidebarProjectSnapshot>;
+  readonly keys: ReadonlyArray<string>;
+  readonly settings?: ProjectGroupingSettings;
+  readonly canClearMissingScope?: boolean;
+}): string[] {
+  const resolved = new Set<string>();
+  for (const key of input.keys) {
+    const next = resolveSidebarProjectScopeKey({ ...input, key });
+    if (next !== null) resolved.add(next);
+  }
+  return [...resolved];
+}
+
 export function buildPhysicalToLogicalProjectKeyMap(input: {
   projects: ReadonlyArray<Project>;
   settings: ProjectGroupingSettings;

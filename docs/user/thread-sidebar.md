@@ -5,6 +5,35 @@ need a separate branch and working directory.
 
 ## Start a thread
 
+### T4 on macOS: switch projects
+
+While the T4 window is focused, hold `Option` and press `Tab` to cycle through the
+projects selected in the sidebar filter, or all projects when no filter is set.
+`Shift+Tab` cycles backwards; release `Option` to focus the sidebar on the selected
+project, or press `Escape` to cancel. The checkboxes define the navigation pool;
+focus only narrows the visible conversations. The most recently updated non-archived conversation in that project opens in the
+main view (subagent threads are excluded). If the project has no conversation,
+its draft opens instead. A quick `Option+Tab` switches back to the previous project;
+hold `Option` and press `Tab` repeatedly to visit the other projects in recent-use
+order. The order stays fixed until you release `Option`. Choosing the whole selected
+pool clears focus without changing the conversation.
+
+Choose **Tous les projets sélectionnés** in the switcher or above the conversations to leave focus and
+show the whole selected pool again (**Tous les projets** when no filter is set).
+Changing the project checkboxes also clears focus. Focus lasts for the current
+app session; the checkboxes remain saved across restarts. Opening a conversation
+that focus hides, from history, the command palette or a link, leaves focus; the
+checkboxes are cleared only when they hide that conversation too.
+
+In T4's sidebar project filter, click a project to select it alone and close the
+menu. Hold `Shift` while clicking to add or remove individual projects while
+keeping the menu open. **All projects** clears the filter and closes the menu.
+
+Turn off **Settings → Keybindings → Projets T4 → ⌥ Tab : changer
+de projet** to disable this shortcut. `Cmd+Tab` keeps its normal macOS behavior.
+
+### Create a conversation
+
 On web and desktop, a new thread keeps the current project and carries your model
 and mode selections, unless the destination project has its own model default.
 Its branch and workspace mode come from your configured defaults. To continue in

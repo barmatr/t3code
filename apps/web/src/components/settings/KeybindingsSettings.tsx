@@ -1,4 +1,5 @@
 import { useEnvironmentScope } from "../../state/session";
+import { ProjectSwitcherSetting } from "../projectSwitcher/ProjectSwitcherSetting";
 import { useEnvironmentsWithScope, readEnvironmentScope } from "../../state/session";
 import {
   ChevronDownIcon,
@@ -1442,6 +1443,7 @@ export function KeybindingsSettingsPanel() {
 
   return (
     <SettingsPageContainer>
+      <ProjectSwitcherSetting />
       <SettingsSection
         {...searchableSetting("keybindings")}
         headerAction={!isElectron ? <BrowserKeybindingNotice /> : null}

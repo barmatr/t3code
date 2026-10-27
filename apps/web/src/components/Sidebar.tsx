@@ -59,7 +59,14 @@ import {
 } from "@t3tools/contracts";
 import type { OlderSettledScope } from "@t3tools/client-runtime/state/threads";
 
-import { ChevronDownIcon, FolderIcon, ListFilterIcon, PlusIcon, SettingsIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  FolderIcon,
+  ListFilterIcon,
+  PlusIcon,
+  SettingsIcon,
+} from "lucide-react";
 import {
   useEffect,
   useLayoutEffect,
@@ -98,11 +105,12 @@ import { useSidebarPendingFileDropStore } from "../sidebarPendingFileDropStore";
 import { selectProjectGroupingSettings } from "../logicalProject";
 import {
   projectGroupsSpanEnvironments,
-  resolveSidebarProjectScopeKey,
+  resolveSidebarProjectScopeKeys,
   getSidebarProjectSettingsKey,
   type SidebarProjectSnapshot,
 } from "../sidebarProjectGrouping";
 import { useUiStateStore } from "../uiStateStore";
+import { resolveFocusedProject } from "./projectSwitcher/projectSwitcher.logic";
 import {
   getThreadKeysToDeselectAfterDelete,
   useThreadSelectionStore,
@@ -702,6 +710,8 @@ function isOptimisticDropReleased(input: {
   return membershipChanged || foreignKeyLanded || allAssignmentsLanded;
 }
 
+const projectScopeNameCollator = new Intl.Collator("fr", { numeric: true, sensitivity: "base" });
+
 // Build maps in a hook so the compiler can prove they are frozen and cache them.
 function useSidebarLookups() {
   const projects = useProjects();
@@ -727,7 +737,13 @@ function useSidebarLookups() {
   );
   const projectScopeItems = [
     { value: "all", label: "All projects" },
-    ...projectGroups.map((project) => ({ value: project.projectKey, label: project.displayName })),
+    ...projectGroups
+      .map((project) => ({ value: project.projectKey, label: project.displayName }))
+      .sort(
+        (left, right) =>
+          projectScopeNameCollator.compare(left.label, right.label) ||
+          left.value.localeCompare(right.value),
+      ),
   ];
   return {
     projects,
@@ -886,8 +902,10 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   );
   const environmentMachineById = useEnvironmentMachines();
   const projectGroupsRef = useRef(projectGroups);
-  const persistedProjectScopeKey = useUiStateStore((store) => store.sidebarProjectScopeKey);
-  const setPersistedProjectScopeKey = useUiStateStore((store) => store.setSidebarProjectScopeKey);
+  const persistedProjectScopeKeys = useUiStateStore((store) => store.sidebarProjectScopeKeys);
+  const focusedProjectKey = useUiStateStore((store) => store.sidebarFocusedProjectKey);
+  const setFocusedProjectKey = useUiStateStore((store) => store.setSidebarFocusedProjectKey);
+  const setPersistedProjectScopeKeys = useUiStateStore((store) => store.setSidebarProjectScopeKeys);
   const [projectScopeMenuState, dispatchProjectScopeMenu] = useReducer(
     reduceSidebarProjectScopeMenuState,
     { open: false, query: "" },
@@ -947,30 +965,40 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const routeThreadKey = routeThreadRef ? scopedThreadKey(routeThreadRef) : null;
 
   // A selection made under one scope can hold threads the next scope hides.
-  const setProjectScopeKey = (key: string | null) => {
+  const setProjectScopeKeys = (keys: ReadonlyArray<string>) => {
     clearSelection();
-    setPersistedProjectScopeKey(key);
+    setPersistedProjectScopeKeys(keys);
   };
   // A scope whose project is gone reads as all projects once every snapshot has
-  // loaded. The stored key is left alone, so the scope returns with its project.
-  const chosenProjectScopeKey = resolveSidebarProjectScopeKey({
+  // loaded. The stored keys are left alone, so the scope returns with its project.
+  const chosenProjectScopeKeys = resolveSidebarProjectScopeKeys({
     groups: projectGroups,
-    key: persistedProjectScopeKey,
+    keys: persistedProjectScopeKeys,
     settings: projectGroupingSettings,
     canClearMissingScope: allProjectSnapshotsReady && allProjectConfigsReady,
   });
-  const chosenProjectGroup =
-    chosenProjectScopeKey === null
-      ? null
-      : (projectGroups.find((project) => project.projectKey === chosenProjectScopeKey) ?? null);
-  const chosenScopeProjectKeys =
-    chosenProjectGroup === null
+  const chosenProjectGroups = projectGroups.filter((project) =>
+    chosenProjectScopeKeys.includes(project.projectKey),
+  );
+  const chosenFocusedProjectGroup = resolveFocusedProject(
+    projectGroups,
+    chosenProjectScopeKeys,
+    focusedProjectKey,
+  );
+  const memberProjectKeys = (groups: ReadonlyArray<(typeof projectGroups)[number]>) =>
+    groups.length === 0
       ? null
       : new Set(
-          chosenProjectGroup.memberProjectRefs.map(
-            (projectRef) => `${projectRef.environmentId}:${projectRef.projectId}`,
+          groups.flatMap((project) =>
+            project.memberProjectRefs.map(
+              (projectRef) => `${projectRef.environmentId}:${projectRef.projectId}`,
+            ),
           ),
         );
+  const chosenCheckedProjectKeys = memberProjectKeys(chosenProjectGroups);
+  const chosenScopeProjectKeys = chosenFocusedProjectGroup
+    ? memberProjectKeys([chosenFocusedProjectGroup])
+    : chosenCheckedProjectKeys;
   const threads = useQuietThreadShells();
   const routeRowThreadKey =
     routeThreadRef === null
@@ -991,14 +1019,30 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   // scrolled away; a remount starts at the top, so each mount scrolls to the open
   // thread once. Render decides the widening, so the first frame of the new route
   // already lists the row; the active row's ref callback scrolls to it.
-  const { widensScope: revealWidensScope } = resolveSidebarRouteReveal({
+  const routeRevealInput = {
     reveal: routeReveal,
     routeKey: routeRowThreadKey,
     isSearching: isSearchingThreads,
+    findThread: (key: string) => threads.find((candidate) => threadShellKey(candidate) === key),
+  };
+  const { widensScope: revealWidensScope } = resolveSidebarRouteReveal({
+    ...routeRevealInput,
     scopedProjectKeys: chosenScopeProjectKeys,
-    findThread: (key) => threads.find((candidate) => threadShellKey(candidate) === key),
   });
-  const projectScopeKey = revealWidensScope ? null : chosenProjectScopeKey;
+  // Widening drops the focus first; the checked projects go only when they hide the thread too.
+  const revealClearsChecks =
+    revealWidensScope &&
+    resolveSidebarRouteReveal({ ...routeRevealInput, scopedProjectKeys: chosenCheckedProjectKeys })
+      .widensScope;
+  const projectScopeKeys = revealClearsChecks ? [] : chosenProjectScopeKeys;
+  const scopedProjectGroups = revealClearsChecks ? [] : chosenProjectGroups;
+  const focusedProjectGroup = revealWidensScope ? null : chosenFocusedProjectGroup;
+  // Pagination follows the visible scope; checkboxes still describe the full navigation pool.
+  const visibleProjectScopeKeys = focusedProjectGroup
+    ? [focusedProjectGroup.projectKey]
+    : projectScopeKeys;
+  const projectScopeKey =
+    visibleProjectScopeKeys.length === 0 ? null : visibleProjectScopeKeys.join("\n");
   // The widened scope outlives the reveal, so it is written back to the persisted
   // scope. Route changes arrive from history, links and the palette, and only this
   // component holds the project groups that decide a widening, so no single
@@ -1006,8 +1050,15 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   useEffect(() => {
     if (!revealWidensScope) return;
     clearSelection();
-    setPersistedProjectScopeKey(null);
-  }, [clearSelection, revealWidensScope, setPersistedProjectScopeKey]);
+    if (revealClearsChecks) setPersistedProjectScopeKeys([]);
+    else setFocusedProjectKey(null);
+  }, [
+    clearSelection,
+    revealClearsChecks,
+    revealWidensScope,
+    setFocusedProjectKey,
+    setPersistedProjectScopeKeys,
+  ]);
   const revealActiveRow = useActiveRowReveal(routeReveal, routeRowThreadKey);
   const showProjectEnvironments = projectGroupsSpanEnvironments(projectGroups);
   const scratchMachineLabelFor = (
@@ -1023,25 +1074,26 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     }
     return environmentLabelById.get(thread.environmentId) ?? null;
   };
-  const selectedProjectScopeItem =
-    projectScopeItems.find((item) => item.value === (projectScopeKey ?? "all")) ??
-    projectScopeItems[0]!;
+  const selectedProjectScopeItems = projectScopeItems.filter((item) =>
+    projectScopeKeys.includes(item.value),
+  );
   const filteredProjectScopeItems = filterSidebarProjectScopeItems({
     items: projectScopeItems,
     query: projectScopeMenuState.query,
     matches: (item, query) =>
       projectScopeFilter.contains(item, query, (candidate) => candidate.label),
   });
-  const scopedProjectGroup = revealWidensScope ? null : chosenProjectGroup;
-  const scopedProjectKeys = revealWidensScope ? null : chosenScopeProjectKeys;
+  const scopedProjectGroup = scopedProjectGroups.length === 1 ? scopedProjectGroups[0]! : null;
+  const visibleProjectGroups = focusedProjectGroup ? [focusedProjectGroup] : scopedProjectGroups;
+  const scopedProjectKeys = memberProjectKeys(visibleProjectGroups);
   const threadSearch = useThreadSearch(
     searchEnvironmentIds,
     threadSearchQuery,
-    scopedProjectGroup === null
+    visibleProjectGroups.length === 0
       ? {}
       : {
-          projectIds: scopedProjectGroup.memberProjectRefs.map(
-            (projectRef) => projectRef.projectId,
+          projectIds: visibleProjectGroups.flatMap((project) =>
+            project.memberProjectRefs.map((projectRef) => projectRef.projectId),
           ),
         },
   );
@@ -2385,7 +2437,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               projectFilter: threadProjectGroup
                 ? {
                     label: threadProjectGroup.displayName,
-                    isActive: projectScopeKey === threadProjectGroup.projectKey,
+                    isActive:
+                      projectScopeKeys.length === 1 &&
+                      projectScopeKeys[0] === threadProjectGroup.projectKey,
                   }
                 : null,
               isPinned,
@@ -2423,10 +2477,11 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
         switch (clicked.value) {
           case "filter-by-project":
             if (threadProjectGroup) {
-              setProjectScopeKey(
-                projectScopeKey === threadProjectGroup.projectKey
-                  ? null
-                  : threadProjectGroup.projectKey,
+              setProjectScopeKeys(
+                projectScopeKeys.length === 1 &&
+                  projectScopeKeys[0] === threadProjectGroup.projectKey
+                  ? []
+                  : [threadProjectGroup.projectKey],
               );
             }
             return;
@@ -2704,6 +2759,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               hasProjects={projectGroups.length > 0}
               projectScope={
                 <Combobox
+                  multiple
                   items={projectScopeItems}
                   filteredItems={filteredProjectScopeItems}
                   autoHighlight
@@ -2717,22 +2773,41 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                   onItemHighlighted={(item) => {
                     highlightedProjectScopeKeyRef.current = item?.value ?? null;
                   }}
-                  value={selectedProjectScopeItem}
-                  onValueChange={(item) => {
+                  value={selectedProjectScopeItems}
+                  onValueChange={(items, details) => {
                     if (suppressNextScopeChangeRef.current) {
                       suppressNextScopeChangeRef.current = false;
                       return;
                     }
-                    if (!item) return;
-                    setProjectScopeKey(item.value === "all" ? null : item.value);
+                    if (items.some((item) => item.value === "all")) {
+                      setProjectScopeKeys([]);
+                      dispatchProjectScopeMenu({ type: "open-changed", open: false });
+                      return;
+                    }
+                    if ("shiftKey" in details.event && details.event.shiftKey === true) {
+                      setProjectScopeKeys(items.map((item) => item.value));
+                      return;
+                    }
+                    // The combobox toggles even a selected item; a plain click must keep it alone.
+                    const pressedItem =
+                      items.find((item) => !projectScopeKeys.includes(item.value)) ??
+                      selectedProjectScopeItems.find(
+                        (selected) => !items.some((item) => item.value === selected.value),
+                      );
+                    if (pressedItem) {
+                      setProjectScopeKeys([pressedItem.value]);
+                      dispatchProjectScopeMenu({ type: "open-changed", open: false });
+                    }
                   }}
                 >
                   <ComboboxTrigger
                     render={
                       <SidebarHeaderIconButton
                         label={
-                          scopedProjectGroup
-                            ? `Filter threads by project: ${scopedProjectGroup.displayName}`
+                          scopedProjectGroups.length > 0
+                            ? `Filter threads by project: ${scopedProjectGroups
+                                .map((project) => project.displayName)
+                                .join(", ")}`
                             : "Filter threads by project"
                         }
                       />
@@ -2741,6 +2816,13 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                     {scopedProjectGroup ? (
                       <span className="flex shrink-0">
                         <ProjectFavicon project={scopedProjectGroup} className="size-4" />
+                      </span>
+                    ) : scopedProjectGroups.length > 1 ? (
+                      <span className="relative flex shrink-0">
+                        <ListFilterIcon className="size-4 text-foreground" />
+                        <span className="absolute -top-1.5 -right-2 min-w-3.5 rounded-full bg-primary px-0.5 text-center text-3xs leading-3.5 font-semibold text-primary-foreground tabular-nums">
+                          {scopedProjectGroups.length}
+                        </span>
                       </span>
                     ) : (
                       <ListFilterIcon className="size-4" />
@@ -2778,9 +2860,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                       }
                     />
                     <ComboboxEmpty>No matching projects.</ComboboxEmpty>
+                    <p className="px-3 pt-2 text-xs text-muted-foreground">
+                      Clic : un projet · ⇧ clic : ajouter ou retirer
+                    </p>
                     <ComboboxList>
                       {(item: (typeof projectScopeItems)[number]) => {
                         const project = projectGroupByScopeKey.get(item.value) ?? null;
+                        const isScopeSelected =
+                          item.value === "all"
+                            ? projectScopeKeys.length === 0
+                            : projectScopeKeys.includes(item.value);
                         return (
                           <ComboboxItem
                             key={item.value}
@@ -2796,6 +2885,13 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                               <FolderIcon className="size-4 shrink-0" />
                             )}
                             <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
+                            <CheckIcon
+                              aria-hidden="true"
+                              className={cn(
+                                "size-3.5 shrink-0",
+                                isScopeSelected ? "text-foreground" : "invisible",
+                              )}
+                            />
                             {project && showProjectEnvironments ? (
                               <ProjectEnvironmentBadge
                                 group={project}
@@ -2844,6 +2940,26 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               activeSearchResultIndex={activeSearchResultIndex}
               onClearSearch={clearThreadSearch}
             />
+            {focusedProjectGroup ? (
+              <div className="flex flex-col gap-1 px-2 pb-2">
+                <div className="flex min-w-0 items-center gap-2 text-sm" aria-live="polite">
+                  <ProjectFavicon project={focusedProjectGroup} className="size-4 shrink-0" />
+                  <span className="truncate">Focus : {focusedProjectGroup.displayName}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    clearSelection();
+                    setFocusedProjectKey(null);
+                  }}
+                >
+                  {projectScopeKeys.length === 0
+                    ? "Tous les projets"
+                    : "Tous les projets sélectionnés"}
+                </Button>
+              </div>
+            ) : null}
           </SidebarGroup>
         }
       >
