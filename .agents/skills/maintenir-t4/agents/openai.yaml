@@ -1,0 +1,4 @@
+interface:
+  display_name: "Maintenir T4"
+  short_description: "Personnalisations et mises à jour du client T4"
+  default_prompt: "Utilise $maintenir-t4 pour mettre à jour T4 depuis la version T3 utilisée, préserver mes personnalisations et vérifier l'installation."
