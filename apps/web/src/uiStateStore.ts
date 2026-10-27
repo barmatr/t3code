@@ -423,6 +423,9 @@ export function reorderProjects(
 }
 
 interface UiStateStore extends UiState {
+  // Focus is temporary; the persisted project checkboxes remain the navigation pool.
+  sidebarFocusedProjectKey: string | null;
+  setSidebarFocusedProjectKey: (key: string | null) => void;
   markThreadVisited: (threadId: string, visitedAt: string) => void;
   markThreadUnread: (threadId: string, latestTurnCompletedAt: string | null | undefined) => void;
   setThreadChangedFilesExpanded: (threadId: string, turnId: string, expanded: boolean) => void;
@@ -439,6 +442,8 @@ interface UiStateStore extends UiState {
 
 export const useUiStateStore = create<UiStateStore>((set) => ({
   ...readPersistedState(),
+  sidebarFocusedProjectKey: null,
+  setSidebarFocusedProjectKey: (key) => set({ sidebarFocusedProjectKey: key }),
   markThreadVisited: (threadId, visitedAt) =>
     set((state) => markThreadVisited(state, threadId, visitedAt)),
   markThreadUnread: (threadId, latestTurnCompletedAt) =>
@@ -448,7 +453,10 @@ export const useUiStateStore = create<UiStateStore>((set) => ({
   setDefaultAdvertisedEndpointKey: (key) =>
     set((state) => setDefaultAdvertisedEndpointKey(state, key)),
   setSidebarProjectScopeKeys: (projectKeys) =>
-    set((state) => setSidebarProjectScopeKeys(state, projectKeys)),
+    set((state) => ({
+      ...setSidebarProjectScopeKeys(state, projectKeys),
+      sidebarFocusedProjectKey: null,
+    })),
   setPullRequestMergeMethod: (method) => set((state) => setPullRequestMergeMethod(state, method)),
   setProjectExpanded: (projectIds, expanded) =>
     set((state) => setProjectExpanded(state, projectIds, expanded)),
