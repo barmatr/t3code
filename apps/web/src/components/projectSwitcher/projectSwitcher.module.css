@@ -3,7 +3,7 @@
   position: relative;
   grid-row-start: 2;
   width: min(800px, 100%);
-  max-height: min(540px, 90dvh);
+  max-height: min(600px, 90dvh);
   overflow: auto;
   isolation: isolate;
   border: 1px solid color-mix(in srgb, var(--switcher-accent) 38%, transparent);
@@ -81,25 +81,33 @@
 }
 
 .t4-switcher-projects {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  padding: 24px 28px;
-  scroll-padding-inline: 28px;
+  --switcher-card-height: 145px;
+  --switcher-gap: 9px;
+  --switcher-list-padding: 24px;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(111px, 1fr));
+  gap: var(--switcher-gap);
+  /* One row while it fits, then a second one; past two rows the list scrolls vertically. */
+  max-height: calc(
+    2 * var(--switcher-card-height) + var(--switcher-gap) + 2 * var(--switcher-list-padding)
+  );
+  overflow-y: auto;
+  padding: var(--switcher-list-padding) 28px;
+  scroll-padding-block: var(--switcher-list-padding);
   scrollbar-width: thin;
 }
 
 .t4-switcher-card {
   position: relative;
   display: flex;
-  flex: 1 0 148px;
-  max-width: 180px;
+  height: var(--switcher-card-height);
   min-width: 0;
   align-items: center;
   flex-direction: column;
-  padding: 24px 12px 20px;
+  padding: 18px 9px 15px;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
-  border-radius: 16px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--foreground) 3%, transparent);
   cursor: pointer;
   outline: none;
@@ -122,12 +130,12 @@
 }
 .t4-switcher-check {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  top: 8px;
+  right: 8px;
   display: grid;
   place-items: center;
-  width: 18px;
-  height: 18px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--switcher-accent);
   color: #101326;
@@ -138,18 +146,18 @@
 }
 .t4-switcher-icon {
   display: grid;
-  width: 64px;
-  height: 64px;
+  width: 48px;
+  height: 48px;
   place-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 .t4-switcher-all-icon {
   display: grid;
-  width: 56px;
-  height: 56px;
+  width: 42px;
+  height: 42px;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--switcher-accent) 25%, transparent);
-  border-radius: 16px;
+  border-radius: 12px;
   background: #818cf814;
   color: var(--switcher-accent);
 }
@@ -159,17 +167,18 @@
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  min-height: 36px;
-  font-size: 13px;
+  min-height: 32px;
+  font-size: 12px;
   font-weight: 600;
-  line-height: 18px;
+  line-height: 16px;
   text-align: center;
   overflow-wrap: anywhere;
 }
 .t4-switcher-caption {
-  margin-top: 5px;
+  margin-top: 4px;
   color: var(--muted-foreground);
   font-size: 11px;
+  line-height: 14px;
 }
 
 .t4-switcher-footer {
@@ -247,8 +256,8 @@
     display: none;
   }
   .t4-switcher-projects {
-    padding: 20px;
-    scroll-padding-inline: 20px;
+    --switcher-list-padding: 20px;
+    padding: var(--switcher-list-padding) 20px;
   }
   .t4-switcher-footer {
     padding: 16px 20px;
