@@ -39,7 +39,8 @@ Repères : [ProjectSwitcher.tsx](../../../../apps/web/src/components/projectSwit
 ## Présentation du sélecteur
 
 - Fond étoilé repris du haut de la barre latérale, bordure visible, cartes homogènes et sélection contrastée.
-- Largeur maximale de 800 px, soit 25 % de plus que les 640 px initiaux, limitée à la place disponible ; défilement horizontal pour les projets supplémentaires.
+- Largeur maximale de 800 px, soit 25 % de plus que les 640 px initiaux, limitée à la place disponible.
+- Cartes et icônes réduites d'un quart le 27 octobre 2026 : icône de 42 px, cartes de même largeur, 111 px au minimum. Une seule rangée tant qu'elle suffit, puis deux étages. Au-delà de deux rangées, la liste défile verticalement et laisse dépasser le haut de la troisième ; jamais de défilement horizontal.
 - Mention « 🚀 Powered by Raobar » en bas à droite avec le portrait fourni, déjà stylisé, affiché en rond.
 - Lisibilité en thème clair, sombre et fenêtre étroite ; respect de la réduction des animations.
 
