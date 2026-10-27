@@ -13,6 +13,7 @@ import {
   resolveProjectExpanded,
   setProjectExpanded,
   type UiState,
+  useUiStateStore,
 } from "./uiStateStore";
 
 function makeUiState(overrides: Partial<UiState> = {}): UiState {
@@ -196,6 +197,29 @@ describe("uiStateStore persistence", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
+  });
+
+  it("focus preserves saved checkboxes, can be cleared, and resets when the filter is edited", () => {
+    const previous = useUiStateStore.getState();
+    try {
+      previous.setSidebarProjectScopeKeys(["renolib", "athena"]);
+      previous.setSidebarFocusedProjectKey("athena");
+      expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual(["renolib", "athena"]);
+      persistState(useUiStateStore.getState());
+      const saved = JSON.parse(localStorageStub.getItem(PERSISTED_STATE_KEY) ?? "{}");
+      expect(saved.sidebarProjectScopeKeys).toEqual(["renolib", "athena"]);
+      expect(saved).not.toHaveProperty("sidebarFocusedProjectKey");
+      previous.setSidebarFocusedProjectKey(null);
+      expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual(["renolib", "athena"]);
+      previous.setSidebarFocusedProjectKey("athena");
+      previous.setSidebarProjectScopeKeys(["renolib", "athena"]);
+      expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
+      previous.setSidebarFocusedProjectKey("renolib");
+      previous.setSidebarProjectScopeKeys(["miga"]);
+      expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
+    } finally {
+      useUiStateStore.setState(previous);
+    }
   });
 
   it("persists raw UI preferences including thread visit markers", () => {
