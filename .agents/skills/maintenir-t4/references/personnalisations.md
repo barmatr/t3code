@@ -24,7 +24,8 @@ Repères : [DesktopEnvironment.ts](../../../../apps/desktop/src/app/DesktopEnvir
 - Ce tri concerne le menu entonnoir. Il ne modifie ni le tri de la barre latérale ni l'ordre des projets récemment utilisés par ⌥Tab.
 - La liste montre jusqu'à « All projects » et 19 projets avant de défiler (popup `size="tall"`, 40rem au plus), dans la limite de la hauteur de la fenêtre. Demande de Raoul du 29 octobre 2026 ; upstream s'arrête à environ 9 projets.
 - Les coches sont persistantes. Modifier ce filtre efface le focus secondaire éventuel.
-- Une conversation ouverte depuis l'historique, la palette ou un lien alors que le focus la masque fait sortir du focus. Les coches ne sont effacées que si elles la masquent aussi. Ce choix adapte au multi-projets la révélation upstream (`sidebar/routeReveal.ts`), qui repasse le filtre à tous les projets.
+- Créer une conversation conserve les projets cochés. Si son projet n'est pas coché, l'ajouter à la sélection dès l'ouverture du brouillon, y compris lorsqu'un brouillon existant est réutilisé. Même règle pour une conversation ouverte depuis l'historique, la palette ou un lien : ne jamais vider les coches pour la rendre visible. Une sélection vide garde son sens implicite de projets récents. Demande de Raoul du 29 octobre 2026.
+- Ouvrir une conversation fait sortir du focus temporaire s'il masque son projet ; conserver le focus s'il correspond à ce projet. Ce choix adapte au multi-projets la révélation upstream (`sidebar/routeReveal.ts`), qui repasse le filtre à tous les projets.
 
 Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) et [uiStateStore.ts](../../../../apps/web/src/uiStateStore.ts). Vérifier la migration de l'ancien état monoprojet si elle est touchée.
 

@@ -16,6 +16,7 @@ import {
 import { newDraftId, newThreadId } from "../lib/utils";
 import { orderItemsByPreferredIds } from "../components/Sidebar.logic";
 import {
+  buildProjectGroups,
   deriveLogicalProjectKeyFromSettings,
   getProjectOrderKey,
   selectProjectGroupingSettings,
@@ -73,7 +74,7 @@ export function createNewThreadHandler(router: AnyRouter) {
     return resolveThreadRouteTarget(currentRouteParams);
   };
 
-  return (
+  const openThread = (
     projectRef: ScopedProjectRef,
     options?: {
       branch?: string | null;
@@ -386,6 +387,28 @@ export function createNewThreadHandler(router: AnyRouter) {
       });
       return { draftId, threadId };
     })();
+  };
+
+  return async (...args: Parameters<typeof openThread>) => {
+    const opened = await openThread(...args);
+    if (opened === null) return null;
+    const route = getCurrentRouteTarget();
+    if (route?.kind !== "draft" || route.draftId !== opened.draftId) return opened;
+    const [projectRef] = args;
+    const group = buildProjectGroups({
+      projects: readProjects(),
+      settings: selectProjectGroupingSettings(getClientSettings()),
+      groupScratchProjects: true,
+      preferredEnvironmentId: null,
+    }).find((candidate) =>
+      candidate.memberProjectRefs.some(
+        (member) =>
+          member.environmentId === projectRef.environmentId &&
+          member.projectId === projectRef.projectId,
+      ),
+    );
+    if (group) useUiStateStore.getState().revealSidebarProject(group.key);
+    return opened;
   };
 }
 

@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-10-29 — Conservation du filtre à l'ouverture d'une conversation
+
+- **Demandeur :** Raoul Barmat, maintien des projets cochés lors de « Nouveau message ».
+- **Auteur de l'implémentation :** Codex (gpt-6-astra).
+- **Raison :** la révélation d'une conversation pouvait effacer toute la sélection de projets.
+- **Effet pratique :** conserver les coches et ajouter uniquement le projet manquant, dès l'ouverture du brouillon ; appliquer la même règle aux conversations ouvertes par l'historique, la palette ou un lien.
+
 ## 2026-10-29 — Filtre non lus visible et conversations en cours
 
 - **Demandeur :** Raoul Barmat, demande d'un bouton visiblement activé et du maintien des conversations « Working ».

@@ -2,6 +2,7 @@ import { ThreadId } from "@t3tools/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import {
+  includeSidebarProjectScopeKey,
   legacyProjectCwdPreferenceKey,
   markThreadUnread,
   markThreadVisited,
@@ -30,6 +31,13 @@ function makeUiState(overrides: Partial<UiState> = {}): UiState {
 }
 
 describe("uiStateStore pure functions", () => {
+  it("preserves a selected project scope and only adds a missing navigation target", () => {
+    const keys = ["alpha", "beta", "gamma", "delta"];
+    expect(includeSidebarProjectScopeKey(keys, "beta")).toBe(keys);
+    expect(includeSidebarProjectScopeKey(keys, "epsilon")).toEqual([...keys, "epsilon"]);
+    expect(includeSidebarProjectScopeKey(keys, null)).toBe(keys);
+    expect(includeSidebarProjectScopeKey([], "epsilon")).toEqual([]);
+  });
   it("stores server timestamps without moving visit state backwards", () => {
     const threadId = ThreadId.make("thread-1");
     const initialState = makeUiState();
@@ -220,6 +228,31 @@ describe("uiStateStore persistence", () => {
     } finally {
       useUiStateStore.setState(previous);
     }
+  });
+
+  it("persists additions from navigation without discarding the other checked projects", () => {
+    const previous = useUiStateStore.getState();
+    using cleanup = new DisposableStack();
+    cleanup.defer(() => useUiStateStore.setState(previous));
+    previous.setSidebarProjectScopeKeys(["alpha", "beta", "gamma", "delta"]);
+    previous.setSidebarFocusedProjectKey("beta");
+
+    previous.revealSidebarProject("beta");
+    expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBe("beta");
+    previous.revealSidebarProject("epsilon");
+    previous.revealSidebarProject("epsilon");
+    expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual([
+      "alpha",
+      "beta",
+      "gamma",
+      "delta",
+      "epsilon",
+    ]);
+    expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
+    persistState(useUiStateStore.getState());
+    expect(
+      JSON.parse(localStorageStub.getItem(PERSISTED_STATE_KEY) ?? "{}").sidebarProjectScopeKeys,
+    ).toEqual(["alpha", "beta", "gamma", "delta", "epsilon"]);
   });
 
   it("persists raw UI preferences including thread visit markers", () => {

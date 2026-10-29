@@ -110,7 +110,7 @@ import {
   getSidebarProjectSettingsKey,
   type SidebarProjectSnapshot,
 } from "../sidebarProjectGrouping";
-import { useUiStateStore } from "../uiStateStore";
+import { includeSidebarProjectScopeKey, useUiStateStore } from "../uiStateStore";
 import { resolveFocusedProject } from "./projectSwitcher/projectSwitcher.logic";
 import {
   getThreadKeysToDeselectAfterDelete,
@@ -929,6 +929,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const focusedProjectKey = useUiStateStore((store) => store.sidebarFocusedProjectKey);
   const setFocusedProjectKey = useUiStateStore((store) => store.setSidebarFocusedProjectKey);
   const setPersistedProjectScopeKeys = useUiStateStore((store) => store.setSidebarProjectScopeKeys);
+  const revealSidebarProject = useUiStateStore((store) => store.revealSidebarProject);
   const [projectScopeMenuState, dispatchProjectScopeMenu] = useReducer(
     reduceSidebarProjectScopeMenuState,
     { open: false, query: "" },
@@ -1075,14 +1076,20 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     ...routeRevealInput,
     scopedProjectKeys: chosenScopeProjectKeys,
   });
-  // Widening drops the focus first; the checked projects go only when they hide the thread too.
-  const revealClearsChecks =
-    revealWidensScope &&
-    resolveSidebarRouteReveal({ ...routeRevealInput, scopedProjectKeys: chosenCheckedProjectKeys })
-      .widensScope;
-  const projectScopeKeys = revealClearsChecks ? [] : chosenProjectScopeKeys;
-  const scopedProjectGroups = revealClearsChecks ? [] : chosenProjectGroups;
-  const scopeGroups = revealClearsChecks ? defaultScopeGroups : chosenScopeGroups;
+  const revealedProjectKey = revealWidensScope
+    ? projectKeyOf(
+        projectGroups,
+        threads.find((thread) => threadShellKey(thread) === routeRowThreadKey) ?? null,
+      )
+    : null;
+  const projectScopeKeys = includeSidebarProjectScopeKey(
+    chosenProjectScopeKeys,
+    revealedProjectKey,
+  );
+  const scopedProjectGroups = projectGroups.filter((project) =>
+    projectScopeKeys.includes(project.projectKey),
+  );
+  const scopeGroups = scopedProjectGroups.length > 0 ? scopedProjectGroups : defaultScopeGroups;
   const focusedProjectGroup = revealWidensScope ? null : chosenFocusedProjectGroup;
   // Pagination follows the visible scope; checkboxes still describe the full navigation pool.
   const visibleProjectScopeKeys = focusedProjectGroup
@@ -1101,14 +1108,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   useEffect(() => {
     if (!revealWidensScope) return;
     clearSelection();
-    if (revealClearsChecks) setPersistedProjectScopeKeys([]);
+    if (revealedProjectKey !== null) revealSidebarProject(revealedProjectKey);
     else setFocusedProjectKey(null);
   }, [
     clearSelection,
-    revealClearsChecks,
+    revealedProjectKey,
     revealWidensScope,
+    revealSidebarProject,
     setFocusedProjectKey,
-    setPersistedProjectScopeKeys,
   ]);
   const revealActiveRow = useActiveRowReveal(routeReveal, routeRowThreadKey);
   const showProjectEnvironments = projectGroupsSpanEnvironments(projectGroups);
