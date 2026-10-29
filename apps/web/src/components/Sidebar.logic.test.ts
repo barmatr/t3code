@@ -9,7 +9,7 @@ import {
   deleteSelectedThreadEntries,
   getFallbackThreadIdAfterDelete,
   hasUnseenCompletion,
-  threadNeedsAttention,
+  matchesUnreadThreadFilter,
   resolveSidebarRowThreadId,
   isSidebarThreadWorking,
   orderItemsByPreferredIds,
@@ -1034,7 +1034,7 @@ describe("unseen completion with background work", () => {
   });
 });
 
-describe("threadNeedsAttention", () => {
+describe("matchesUnreadThreadFilter", () => {
   const completed = (overrides: Record<string, unknown> = {}) =>
     presentThreadShell(localEnvironmentId, {
       ...makeThreadFixture().source,
@@ -1047,28 +1047,72 @@ describe("threadNeedsAttention", () => {
   it("keeps a completion until the user visits it", () => {
     const thread = completed();
     expect(
-      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T00:59:00.000Z", wokeAt: null }),
+      matchesUnreadThreadFilter(thread, {
+        lastVisitedAt: "2026-06-20T00:59:00.000Z",
+        wokeAt: null,
+      }),
     ).toBe(true);
     expect(
-      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt: null }),
+      matchesUnreadThreadFilter(thread, {
+        lastVisitedAt: "2026-06-20T01:01:00.000Z",
+        wokeAt: null,
+      }),
     ).toBe(false);
   });
 
   it("keeps a pending input whether or not it was visited", () => {
     const thread = { ...completed(), hasPendingUserInput: true };
     expect(
-      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt: null }),
+      matchesUnreadThreadFilter(thread, {
+        lastVisitedAt: "2026-06-20T01:01:00.000Z",
+        wokeAt: null,
+      }),
     ).toBe(true);
+  });
+
+  it.each(["preparing", "queued", "starting", "running", "waiting"] as const)(
+    "keeps Working threads with a %s runtime even when already visited",
+    (status) => {
+      const thread = completed({ status });
+      expect(resolveSidebarThreadStatus(thread)).toBe("working");
+      expect(
+        matchesUnreadThreadFilter(thread, {
+          lastVisitedAt: "2026-06-20T01:01:00.000Z",
+          wokeAt: null,
+        }),
+      ).toBe(true);
+    },
+  );
+
+  it("still excludes Waiting threads blocked on another task", () => {
+    const thread = completed({ status: "running", blockedOnThreadWait: true });
+    expect(resolveSidebarThreadStatus(thread)).toBe("waiting");
+    expect(
+      matchesUnreadThreadFilter(thread, {
+        lastVisitedAt: "2026-06-20T01:01:00.000Z",
+        wokeAt: null,
+      }),
+    ).toBe(false);
+  });
+
+  it("does not restore archived Working threads", () => {
+    const thread = completed({
+      status: "running",
+      archivedAt: DateTime.makeUnsafe("2026-06-20T02:00:00.000Z"),
+    });
+    expect(matchesUnreadThreadFilter(thread, { lastVisitedAt: undefined, wokeAt: null })).toBe(
+      false,
+    );
   });
 
   it("keeps a woken thread until visited after its wake", () => {
     const thread = completed();
     const wokeAt = "2026-06-21T09:00:00.000Z";
     expect(
-      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt }),
+      matchesUnreadThreadFilter(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt }),
     ).toBe(true);
     expect(
-      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-21T09:01:00.000Z", wokeAt }),
+      matchesUnreadThreadFilter(thread, { lastVisitedAt: "2026-06-21T09:01:00.000Z", wokeAt }),
     ).toBe(false);
   });
 
@@ -1077,7 +1121,9 @@ describe("threadNeedsAttention", () => {
       hasPendingUserInput: true,
       archivedAt: DateTime.makeUnsafe("2026-06-20T02:00:00.000Z"),
     });
-    expect(threadNeedsAttention(thread, { lastVisitedAt: undefined, wokeAt: null })).toBe(false);
+    expect(matchesUnreadThreadFilter(thread, { lastVisitedAt: undefined, wokeAt: null })).toBe(
+      false,
+    );
   });
 });
 

@@ -62,13 +62,14 @@ Repères : [threadSettled.ts](../../../../packages/client-runtime/src/state/thre
 
 ## Filtre « conversations non lues »
 
-- Demande de Raoul du 29 octobre 2026 : un bouton bulle avec point (`MessageSquareDot`), à gauche de l'entonnoir, ne montre que les conversations qui attendent Raoul : demande d'approbation ou d'input, requête invité, échec, limite d'usage, réveil de snooze non vu, ou fin de tour (« done ») non vue depuis la dernière visite.
-- Les conversations en cours (« Working ») ou en attente d'une tâche (« Waiting ») n'y figurent pas.
+- Demande de Raoul du 29 octobre 2026 : un bouton bulle avec point (`MessageSquareDot`), à gauche de l'entonnoir, filtre les conversations qui attendent Raoul : demande d'approbation ou d'input, requête invité, échec, limite d'usage, réveil de snooze non vu, ou fin de tour (« done ») non vue depuis la dernière visite.
+- À la demande de Raoul du 29 octobre 2026, les conversations en cours (« Working ») restent visibles dans ce filtre, même déjà lues. Les conversations « Waiting » en attente d'une tâche restent exclues.
+- Le bouton utilise l'état actif natif de la barre latérale (`isActive`) : fond sélectionné et icône éclaircie, en plus de `aria-pressed`. Son infobulle indique « Show unread and working threads » lorsqu'il est désactivé.
 - Le filtre ignore les projets cochés et le focus, sans modifier leur configuration ; il dure le temps de la session.
 - La conversation ouverte reste listée une fois lue, jusqu'à l'ouverture d'une autre.
 - Limite connue : une conversation classée peut rester dans l'étagère « Settled » repliée.
 
-Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`unreadOnly`) et [Sidebar.logic.ts](../../../../apps/web/src/components/Sidebar.logic.ts) (`threadNeedsAttention`).
+Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`unreadOnly`) et [Sidebar.logic.ts](../../../../apps/web/src/components/Sidebar.logic.ts) (`matchesUnreadThreadFilter`).
 
 ## Pièges de construction déjà rencontrés
 
