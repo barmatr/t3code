@@ -9,6 +9,7 @@ import {
   deleteSelectedThreadEntries,
   getFallbackThreadIdAfterDelete,
   hasUnseenCompletion,
+  threadNeedsAttention,
   resolveSidebarRowThreadId,
   isSidebarThreadWorking,
   orderItemsByPreferredIds,
@@ -1030,6 +1031,53 @@ describe("unseen completion with background work", () => {
     ).toBe(expected.receded);
     expect(isSidebarThreadWorking(thread)).toBe(expected.receded);
     expect(resolveThreadStatusPill({ thread })).toMatchObject({ label: expected.pill });
+  });
+});
+
+describe("threadNeedsAttention", () => {
+  const completed = (overrides: Record<string, unknown> = {}) =>
+    presentThreadShell(localEnvironmentId, {
+      ...makeThreadFixture().source,
+      latestRunId: RunId.make("run-attention"),
+      status: "completed",
+      latestRunCompletedAt: DateTime.makeUnsafe("2026-06-20T01:00:00.000Z"),
+      ...overrides,
+    });
+
+  it("keeps a completion until the user visits it", () => {
+    const thread = completed();
+    expect(
+      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T00:59:00.000Z", wokeAt: null }),
+    ).toBe(true);
+    expect(
+      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt: null }),
+    ).toBe(false);
+  });
+
+  it("keeps a pending input whether or not it was visited", () => {
+    const thread = { ...completed(), hasPendingUserInput: true };
+    expect(
+      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt: null }),
+    ).toBe(true);
+  });
+
+  it("keeps a woken thread until visited after its wake", () => {
+    const thread = completed();
+    const wokeAt = "2026-06-21T09:00:00.000Z";
+    expect(
+      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-20T01:01:00.000Z", wokeAt }),
+    ).toBe(true);
+    expect(
+      threadNeedsAttention(thread, { lastVisitedAt: "2026-06-21T09:01:00.000Z", wokeAt }),
+    ).toBe(false);
+  });
+
+  it("drops archived threads", () => {
+    const thread = completed({
+      hasPendingUserInput: true,
+      archivedAt: DateTime.makeUnsafe("2026-06-20T02:00:00.000Z"),
+    });
+    expect(threadNeedsAttention(thread, { lastVisitedAt: undefined, wokeAt: null })).toBe(false);
   });
 });
 

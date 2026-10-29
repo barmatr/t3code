@@ -934,6 +934,25 @@ export function resolveSidebarV2TopStatus(input: {
   return input.isUnread ? "done" : null;
 }
 
+/** The unread filter keeps rows whose badge waits on the user; Working and Waiting do not. */
+export function threadNeedsAttention(
+  thread: SidebarThreadSummary,
+  input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
+): boolean {
+  if (thread.archivedAt !== null) return false;
+  const isWoke =
+    input.wokeAt !== null &&
+    thread.settledOverride !== "settled" &&
+    (input.lastVisitedAt === undefined ||
+      Date.parse(input.lastVisitedAt) < Date.parse(input.wokeAt));
+  const topStatus = resolveSidebarV2TopStatus({
+    status: resolveSidebarThreadStatus(thread),
+    isUnread: hasUnseenCompletion({ ...thread, lastVisitedAt: input.lastVisitedAt }),
+    isWoke,
+  });
+  return topStatus !== null && topStatus !== "working" && topStatus !== "waiting";
+}
+
 export function firstValidTimestampMs(
   ...candidates: ReadonlyArray<string | null | undefined>
 ): number {

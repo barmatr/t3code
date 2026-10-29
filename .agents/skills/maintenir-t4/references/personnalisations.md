@@ -58,6 +58,16 @@ Repères : [styles du sélecteur](../../../../apps/web/src/components/projectSwi
 
 Repères : [threadSettled.ts](../../../../packages/client-runtime/src/state/threadSettled.ts) (`resolveSnoozePresets`), [libellés web](../../../../apps/web/src/components/Sidebar.snooze.ts) et [tests](../../../../packages/client-runtime/src/state/threadSnoozed.test.ts).
 
+## Filtre « conversations non lues »
+
+- Demande de Raoul du 29 octobre 2026 : un bouton bulle avec point (`MessageSquareDot`), à gauche de l'entonnoir, ne montre que les conversations qui attendent Raoul : demande d'approbation ou d'input, requête invité, échec, limite d'usage, réveil de snooze non vu, ou fin de tour (« done ») non vue depuis la dernière visite.
+- Les conversations en cours (« Working ») ou en attente d'une tâche (« Waiting ») n'y figurent pas.
+- Le filtre ignore les projets cochés et le focus, sans modifier leur configuration ; il dure le temps de la session.
+- La conversation ouverte reste listée une fois lue, jusqu'à l'ouverture d'une autre.
+- Limite connue : une conversation classée peut rester dans l'étagère « Settled » repliée.
+
+Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`unreadOnly`) et [Sidebar.logic.ts](../../../../apps/web/src/components/Sidebar.logic.ts) (`threadNeedsAttention`).
+
 ## Pièges de construction déjà rencontrés
 
 - **`node-pty`** : jusqu'à la base `3457`, la plage `^1.2.0-beta.15` pouvait résoudre une bêta plus récente que le patch local (`ERR_PNPM_UNUSED_PATCH`). Depuis la base `3754`, upstream fixe cette version dans les `overrides` de [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) (#23798) ; le correctif T4 a été retiré. Vérifier la cohérence du patch et des overrides si l'erreur réapparaît.
