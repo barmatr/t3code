@@ -15,7 +15,7 @@ Utiliser ce skill dans le dépôt T4, actuellement `/Users/jrbmt/Desktop/workspa
 
 ## Choisir le travail demandé
 
-- **Modifier une fonctionnalité** : lire les [personnalisations à préserver](references/personnalisations.md), changer le périmètre demandé et vérifier les comportements concernés. Lire la procédure d'installation seulement si la livraison dans l'application fait partie de la demande.
+- **Modifier une fonctionnalité** : lire les [personnalisations à préserver](references/personnalisations.md), changer le périmètre demandé et vérifier les comportements concernés. Sauf demande contraire, livrer ensuite dans l'application : T4 tourne depuis le DMG installé, jamais en mode dev, donc la modification reste invisible tant que le DMG n'est pas construit, installé et relancé (sections 3 et 4 de la procédure). Demander seulement le moment de la fermeture de T4.
 - **Mettre à jour T4 depuis T3 Nightly** : suivre la [procédure de maintenance](references/maintenance.md) depuis l'identification des versions jusqu'à la vérification du client installé.
 - **Reconstruire, installer, relancer ou restaurer T4** : utiliser les sections correspondantes de cette même procédure ; une reconstruction n'implique pas de changer la base upstream.
 - **Faire un état des lieux** : rester en lecture seule et distinguer sources locales, application installée et serveur réellement connecté.

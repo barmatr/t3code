@@ -206,3 +206,11 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 
 - Don't verify with browsers or computer use unless the user explicitly agrees or requests it.
 - Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only features.
+
+## Fork T4 (Raoul)
+
+Cette branche `t4` est T4 Code, client personnel du serveur T3 officiel. Pour toute modification de T4, suivre le skill [maintenir-t4](.agents/skills/maintenir-t4/SKILL.md).
+
+- T4 tourne depuis le DMG installé dans `/Applications/T4 Code.app`, jamais en mode dev. Une modification n'est visible qu'après commit, build du DMG, installation et relance.
+- Livrer ainsi par défaut toute modification demandée, sans redemander la méthode. Seule la fermeture de T4, qui coupe Raoul quelques secondes, attend son feu vert. T3 et les agents continuent de tourner.
+- Sauvegarder l'ancienne app dans `~/Desktop/workspace/t4-sauvegardes/<date>-<sujet>/` avant de la remplacer.

@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-10-29 — Livraison par DMG par défaut
+
+- **Demandeur :** Raoul Barmat, après une modification de l'entonnoir restée invisible faute d'installation.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** un agent s'est arrêté au commit, puis a dû retrouver dans les sauvegardes la manière habituelle de livrer.
+- **Effet pratique :** le skill et une section T4 de l'`AGENTS.md` indiquent que T4 tourne depuis le DMG installé, que toute modification se livre par build, installation avec sauvegarde et relance, et que seule la fermeture de T4 attend l'accord de Raoul.
+
 ## 2026-10-27 — Rebase sur la Nightly `3754`
 
 - **Demandeur :** Raoul Barmat, demande de récupérer les nouveautés de la Nightly dans T4.
