@@ -6,6 +6,7 @@ import {
   recentProjectKeys,
   threadActivity,
 } from "./recentProjects";
+import { projectSwitcherCandidates } from "../projectSwitcher/projectSwitcher.logic";
 
 const NOW = Date.parse("2026-10-29T12:00:00.000Z");
 const SINCE = NOW - 14 * 24 * 60 * 60 * 1000;
@@ -79,12 +80,33 @@ describe("defaultScopeProjects", () => {
   });
 });
 
-it("orders the filter menu as all, recent, then older projects", () => {
-  const items = ["all", "alpha", "beta", "gamma"].map((value) => ({ value }));
-  expect(orderProjectScopeItems(items, new Set(["gamma"])).map((item) => item.value)).toEqual([
-    "all",
-    "gamma",
-    "alpha",
-    "beta",
-  ]);
+describe("project scope menu", () => {
+  const items = ["all", "alpha", "beta", "gamma"].map((value) => ({ value, label: value }));
+  const recentKeys = new Set(["gamma"]);
+
+  it("keeps older projects collapsed by default with a selectable group row", () => {
+    expect(orderProjectScopeItems(items, recentKeys)).toEqual([
+      items[0],
+      items[3],
+      { value: "older", label: "Older projects" },
+    ]);
+  });
+
+  it("expands older projects in their existing alphabetical order", () => {
+    expect(orderProjectScopeItems(items, recentKeys, true).map((item) => item.value)).toEqual([
+      "all",
+      "gamma",
+      "older",
+      "alpha",
+      "beta",
+    ]);
+  });
+
+  it("omits the older group when every project is recent", () => {
+    expect(orderProjectScopeItems(items, new Set(["alpha", "beta", "gamma"]))).toEqual(items);
+  });
+
+  it("preserves the all-projects fallback when none is recent", () => {
+    expect(orderProjectScopeItems(items, new Set())).toEqual(items);
+  });
 });
