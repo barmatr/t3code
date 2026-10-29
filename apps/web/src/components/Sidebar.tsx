@@ -213,7 +213,7 @@ import {
   sortPinnedThreadsForSidebar,
   sortThreadsForSidebar,
   sortWorkingThreadsBySend,
-  threadNeedsAttention,
+  matchesUnreadThreadFilter,
   useSnoozeWakeClock,
   threadShortcutContext,
   useThreadJumpHintsVisible,
@@ -1449,7 +1449,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
           const key = threadShellKey(thread);
           return (
             key === routeRowThreadKey ||
-            threadNeedsAttention(thread, {
+            matchesUnreadThreadFilter(thread, {
               lastVisitedAt: resolveThreadLastVisitedAt(
                 thread.lastVisitedAt,
                 localLastVisitedAtById[key],
@@ -3087,14 +3087,15 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               projectScope={
                 <>
                   <SidebarHeaderIconButton
-                    label={unreadOnly ? "Show all threads" : "Show unread threads"}
+                    label={unreadOnly ? "Show all threads" : "Show unread and working threads"}
+                    isActive={unreadOnly}
                     aria-pressed={unreadOnly}
                     onClick={() => {
                       clearSelection();
                       setUnreadOnly(!unreadOnly);
                     }}
                   >
-                    <MessageSquareDotIcon className={cn("size-4", unreadOnly && "text-primary")} />
+                    <MessageSquareDotIcon className="size-4" />
                   </SidebarHeaderIconButton>
                   <Combobox
                     items={projectScopeItems}
