@@ -17,7 +17,9 @@ Repères : [DesktopEnvironment.ts](../../../../apps/desktop/src/app/DesktopEnvir
 - « All recent projects » efface le filtre et ferme la liste ; une sélection vide signifie les projets récents (demande de Raoul du 29 octobre 2026).
 - Un projet est récent si un humain a écrit dans l'une de ses conversations depuis moins de 14 jours. Seule la date du dernier message humain (`latestUserAuthoredMessageAt`) date une conversation : snooze, réveil, réponses d'agent, clôture ou création n'y changent rien. Conversations archivées, supprimées et sous-agents exclus. Un projet est aussi récent s'il a été ajouté depuis moins de 14 jours. Le projet de la conversation ouverte reste visible même s'il est ancien. Sans aucun projet récent, le filtre vide montre tout et le libellé redevient « All projects ».
 - Le shell ne transmet que les 25 dernières conversations terminées : `useRecentProjectKeys` lit les pages plus anciennes (`olderSettledThreads.pagesAtom`) jusqu'à sortir de la fenêtre. Une conversation se termine après son dernier message, donc rien de récent n'est manqué.
-- Menu : « All recent projects » en tête, puis les projets récents, puis l'intitulé non cliquable « Older projects » et les autres. Chaque groupe suit un tri alphanumérique naturel français, insensible à la casse, avec les nombres comparés numériquement.
+- Menu : « All recent projects » en tête, puis les projets récents, puis « Older projects », cliquable et de même présentation. Cliquer sur ce dernier sélectionne exclusivement tous les projets anciens, efface le focus et ferme le menu ; ces coches délimitent aussi la recherche de conversations et ⌥Tab.
+- Les projets anciens sont repliés par défaut. Le chevron à côté de « Older projects » déplie ou replie uniquement leur liste sans changer les coches, le focus ou le menu ouvert. Ce choix reste en mémoire pendant la session ; les flèches droite/gauche font de même lorsque la ligne est surlignée au clavier. Une recherche de projet parcourt aussi les anciens repliés, puis retrouve l'état de repli en effaçant la recherche. Sans projet récent, conserver le repli existant vers « All projects » et la liste complète.
+- Chaque groupe suit un tri alphanumérique naturel français, insensible à la casse, avec les nombres comparés numériquement.
 - Le filtre vide limite aussi la recherche de conversations et les candidats ⌥Tab aux projets récents ; la sortie du focus s'appelle alors « Tous les projets récents ».
 - Ce tri concerne le menu entonnoir. Il ne modifie ni le tri de la barre latérale ni l'ordre des projets récemment utilisés par ⌥Tab.
 - La liste montre jusqu'à « All projects » et 19 projets avant de défiler (popup `size="tall"`, 40rem au plus), dans la limite de la hauteur de la fenêtre. Demande de Raoul du 29 octobre 2026 ; upstream s'arrête à environ 9 projets.
@@ -29,12 +31,12 @@ Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) et [ui
 ## Raccourci ⌥Tab et focus
 
 - Le raccourci natif est **Option + Tab**, actif lorsque T4 est au premier plan ; Command + Tab reste au système. Son activation se règle dans Settings → Keybindings → Projets T4.
-- Les candidats sont les projets cochés dans l'entonnoir, ou tous les projets quand le filtre est vide.
+- Les candidats sont les projets cochés dans l'entonnoir ; sans coche, ce sont les projets récents et le projet de la conversation ouverte (tous les projets si aucun n'est récent). Déplier ou replier « Older projects » ne modifie pas ces candidats.
 - L'ordre suit les projets récemment utilisés : après A → B, une nouvelle pression puis un relâchement revient sur A. Les Tab supplémentaires parcourent les autres candidats ; l'ordre reste fixe pendant le maintien d'Option.
 - Relâcher Option valide ; Shift + Tab recule ; Échap annule sans changer le focus ou la conversation.
 - Choisir un projet sous-filtre la barre latérale sans modifier les coches du filtre principal. Le sélecteur ne doit pas ouvrir une table de sessions à la place du chat.
 - Le choix ouvre aussi la conversation du projet dont `updatedAt` est le plus récent, en excluant les conversations archivées, supprimées et les sous-agents. Respecter l'environnement du projet, y compris pour les projets regroupés. Sans conversation éligible, ouvrir le brouillon via le gestionnaire existant.
-- « Tous les projets sélectionnés » se trouve en fin de sélecteur et dans le bouton de sortie du focus. Sans filtre principal, le libellé devient « Tous les projets ». Cette sortie réaffiche les projets sans forcer un changement de conversation.
+- « Tous les projets sélectionnés » se trouve en fin de sélecteur et dans le bouton de sortie du focus. Sans filtre principal, le libellé devient « Tous les projets récents » (ou « Tous les projets » si aucun n'est récent). Cette sortie réaffiche les projets sans forcer un changement de conversation.
 
 Limites actuelles : l'historique récent et le focus sont des états de session ; leur persistance après redémarrage n'a pas été demandée. La mécanique de focus cible la barre latérale moderne ; ne pas annoncer une couverture du mode historique sans la vérifier.
 

@@ -71,7 +71,6 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import {
-  Fragment,
   useEffect,
   useLayoutEffect,
   useReducer,
@@ -143,6 +142,7 @@ import { useNowMinute } from "../hooks/useNowMinute";
 import { useRecentProjectKeys } from "../hooks/useRecentProjectKeys";
 import {
   defaultScopeProjects,
+  OLDER_PROJECTS_SCOPE_VALUE,
   orderProjectScopeItems,
   projectKeyOf,
 } from "./sidebar/recentProjects";
@@ -948,13 +948,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   } = useSidebarLookups();
   const delegatedUnderParent = useDelegatedUnderParent();
   const recentProjectKeys = useRecentProjectKeys(projectGroups);
-  const lookupProjectScopeItems = orderProjectScopeItems(
-    alphabeticalProjectScopeItems,
-    recentProjectKeys,
-  ).map((item) =>
+  const [olderProjectsExpanded, setOlderProjectsExpanded] = useState(false);
+  const labeledProjectScopeItems = alphabeticalProjectScopeItems.map((item) =>
     item.value === "all" && recentProjectKeys.size > 0
       ? { ...item, label: "All recent projects" }
       : item,
+  );
+  const lookupProjectScopeItems = orderProjectScopeItems(
+    labeledProjectScopeItems,
+    recentProjectKeys,
+    true,
   );
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -1282,17 +1285,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       : (projectScopeItems.find((item) => item.value === (projectScopeKeys[0] ?? "all")) ??
         projectScopeItems[0]!);
   const filteredProjectScopeItems = filterSidebarProjectScopeItems({
-    items: projectScopeItems,
+    items: projectScopeMenuState.query.trim()
+      ? projectScopeItems.filter((item) => item.value !== OLDER_PROJECTS_SCOPE_VALUE)
+      : orderProjectScopeItems(labeledProjectScopeItems, recentProjectKeys, olderProjectsExpanded),
     query: projectScopeMenuState.query,
     matches: (item, query) =>
       projectScopeFilter.contains(item, query, (candidate) => candidate.label),
   });
-  const firstOlderProjectScopeValue =
-    recentProjectKeys.size === 0
-      ? null
-      : (filteredProjectScopeItems.find(
-          (item) => item.value !== "all" && !recentProjectKeys.has(item.value),
-        )?.value ?? null);
+  const olderProjectScopeKeys = alphabeticalProjectScopeItems
+    .filter((item) => item.value !== "all" && !recentProjectKeys.has(item.value))
+    .map((item) => item.value);
   const visibleProjectGroups = focusedProjectGroup
     ? [focusedProjectGroup]
     : scopeGroups.length === pickableGroups.length
@@ -3149,6 +3151,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                       if (!item) return;
                       if (item.value === "all") {
                         setProjectScopeKeys([]);
+                      } else if (item.value === OLDER_PROJECTS_SCOPE_VALUE) {
+                        setProjectScopeKeys(olderProjectScopeKeys);
                       } else if (
                         eventDetails.event instanceof MouseEvent &&
                         eventDetails.event.shiftKey
@@ -3204,6 +3208,20 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                         value={projectScopeMenuState.query}
                         onKeyDown={(event) => {
                           if (
+                            !event.defaultPrevented &&
+                            !event.nativeEvent.isComposing &&
+                            !event.ctrlKey &&
+                            !event.altKey &&
+                            !event.metaKey &&
+                            !event.shiftKey &&
+                            highlightedProjectScopeKeyRef.current === OLDER_PROJECTS_SCOPE_VALUE &&
+                            (event.key === "ArrowRight" || event.key === "ArrowLeft")
+                          ) {
+                            event.preventDefault();
+                            setOlderProjectsExpanded(event.key === "ArrowRight");
+                            return;
+                          }
+                          if (
                             event.defaultPrevented ||
                             event.nativeEvent.isComposing ||
                             event.keyCode === 229
@@ -3254,68 +3272,95 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           const project = projectGroupByScopeKey.get(item.value) ?? null;
                           const isSelected = project
                             ? projectScopeKeys.includes(item.value)
-                            : projectScopeKeys.length === 0;
+                            : item.value === OLDER_PROJECTS_SCOPE_VALUE
+                              ? olderProjectScopeKeys.length > 0 &&
+                                olderProjectScopeKeys.length === projectScopeKeys.length &&
+                                olderProjectScopeKeys.every((key) => projectScopeKeys.includes(key))
+                              : projectScopeKeys.length === 0;
                           return (
-                            <Fragment key={item.value}>
-                              {item.value === firstOlderProjectScopeValue ? (
-                                <p
-                                  role="presentation"
-                                  className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground"
-                                >
-                                  Older projects
-                                </p>
-                              ) : null}
-                              <ComboboxItem
-                                hideIndicator
-                                value={item}
-                                aria-selected={isSelected}
-                                // The icon badge marks selection; Base UI's single value would shade one row.
-                                data-selected={undefined}
-                                onContextMenu={(event) => {
-                                  if (project) handleProjectSettings(event, project);
-                                }}
-                              >
-                                <ProjectScopeRowIcon isSelected={isSelected}>
-                                  {project ? (
-                                    <ProjectFavicon project={project} className="size-4 shrink-0" />
-                                  ) : (
-                                    <FolderIcon className="size-4 shrink-0" />
-                                  )}
-                                </ProjectScopeRowIcon>
-                                <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
-                                {project && canPinProject(project) ? (
-                                  <ProjectPinButton
-                                    name={project.displayName}
-                                    pinned={project.pinned}
-                                    shortcutLabel={shortcutLabelForCommand(keybindings, "thread.pin")}
-                                    onToggle={() => toggleProjectGroupPin(project)}
-                                  />
-                                ) : null}
-                                {project && showProjectEnvironments ? (
-                                  <ProjectEnvironmentBadge
-                                    group={project}
-                                    primaryEnvironmentId={primaryEnvironmentId}
-                                    machineByEnvironmentId={environmentMachineById}
-                                  />
-                                ) : null}
+                            <ComboboxItem
+                              key={item.value}
+                              hideIndicator
+                              value={item}
+                              aria-selected={isSelected}
+                              // The icon badge marks selection; Base UI's single value would shade one row.
+                              data-selected={undefined}
+                              onContextMenu={(event) => {
+                                if (project) handleProjectSettings(event, project);
+                              }}
+                            >
+                              <ProjectScopeRowIcon isSelected={isSelected}>
                                 {project ? (
-                                  <Button
-                                    size="icon-xs"
-                                    variant="ghost-muted"
-                                    tabIndex={-1}
-                                    aria-hidden="true"
-                                    title={`Project settings for ${project.displayName}`}
-                                    className={canPinProject(project) ? undefined : "ml-auto"}
-                                    onPointerDown={(event) => event.stopPropagation()}
-                                    onClick={(event) => {
-                                      void handleProjectSettings(event, project);
-                                    }}
-                                  >
-                                    <SettingsIcon className="size-3.5" />
-                                  </Button>
-                                ) : null}
-                              </ComboboxItem>
-                            </Fragment>
+                                  <ProjectFavicon project={project} className="size-4 shrink-0" />
+                                ) : (
+                                  <FolderIcon className="size-4 shrink-0" />
+                                )}
+                              </ProjectScopeRowIcon>
+                              <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
+                              {item.value === OLDER_PROJECTS_SCOPE_VALUE ? (
+                                <Button
+                                  size="icon-xs"
+                                  variant="ghost-muted"
+                                  aria-label={
+                                    olderProjectsExpanded
+                                      ? "Collapse older projects"
+                                      : "Expand older projects"
+                                  }
+                                  aria-expanded={olderProjectsExpanded}
+                                  onPointerDown={(event) => event.stopPropagation()}
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ")
+                                      event.stopPropagation();
+                                  }}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setOlderProjectsExpanded((expanded) => !expanded);
+                                  }}
+                                >
+                                  <ChevronDownIcon
+                                    className={cn(
+                                      "size-3.5",
+                                      !olderProjectsExpanded && "-rotate-90",
+                                    )}
+                                  />
+                                </Button>
+                              ) : null}
+                              {project && canPinProject(project) ? (
+                                <ProjectPinButton
+                                  name={project.displayName}
+                                  pinned={project.pinned}
+                                  shortcutLabel={shortcutLabelForCommand(keybindings, "thread.pin")}
+                                  onToggle={() => toggleProjectGroupPin(project)}
+                                />
+                              ) : null}
+                              {project && showProjectEnvironments ? (
+                                <ProjectEnvironmentBadge
+                                  group={project}
+                                  primaryEnvironmentId={primaryEnvironmentId}
+                                  machineByEnvironmentId={environmentMachineById}
+                                />
+                              ) : null}
+                              {project ? (
+                                <Button
+                                  size="icon-xs"
+                                  variant="ghost-muted"
+                                  tabIndex={-1}
+                                  aria-hidden="true"
+                                  title={`Project settings for ${project.displayName}`}
+                                  className={canPinProject(project) ? undefined : "ml-auto"}
+                                  onPointerDown={(event) => event.stopPropagation()}
+                                  onClick={(event) => {
+                                    void handleProjectSettings(event, project);
+                                  }}
+                                >
+                                  <SettingsIcon className="size-3.5" />
+                                </Button>
+                              ) : null}
+                            </ComboboxItem>
                           );
                         }}
                       </ComboboxList>
