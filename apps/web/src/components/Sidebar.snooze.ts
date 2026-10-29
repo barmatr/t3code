@@ -2,7 +2,7 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import type { TimestampFormat } from "@t3tools/contracts/settings";
 import {
   pickSnoozePreset as pickSharedSnoozePreset,
-  resolveSnoozePresets as resolveSharedSnoozePresets,
+  resolveT4SnoozePresets,
   snoozeWakeLabel,
   type SnoozePreset,
 } from "@t3tools/client-runtime/state/thread-settled";
@@ -14,13 +14,15 @@ import { toastManager } from "./ui/toast";
 
 export { snoozeWakeLabel, type SnoozePreset };
 
-/** The snooze menu for a thread, from its environment's presets, read when the menu opens. */
+/** T4 Code: the snooze menu is fixed; see `resolveT4SnoozePresets`. */
 export function resolveSnoozePresets(
   now: Date,
   timestampFormat: TimestampFormat,
-  environmentId: EnvironmentId,
+  _environmentId: EnvironmentId,
 ): ReadonlyArray<SnoozePreset> {
-  return resolveSharedSnoozePresets(now, snoozeOptions(timestampFormat, environmentId));
+  return resolveT4SnoozePresets(now, (date) =>
+    formatShortTimestamp(date.toISOString(), timestampFormat),
+  );
 }
 
 /** A shown menu choice as picked; see the shared `pickSnoozePreset`. */
