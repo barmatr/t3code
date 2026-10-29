@@ -10,6 +10,7 @@ import {
   hasQueuedTurnStart,
   pickSnoozePreset,
   resolveSnoozePresets,
+  resolveT4SnoozePresets,
   threadRaisedHandWhileSnoozed,
   threadWokeAt,
   isThreadWokeUnseen,
@@ -358,6 +359,47 @@ describe("resolveSnoozePresets", () => {
         { kind: "at", day: "today", time: "18:00" },
       ]),
     ).toEqual(["In 3 hours 18:00"]);
+  });
+});
+
+describe("resolveT4SnoozePresets", () => {
+  const labels = (now: Date) => resolveT4SnoozePresets(now).map((preset) => preset.label);
+
+  it("offers this evening at 19:00, tomorrow, this weekend and next week on a weekday", () => {
+    const presets = resolveT4SnoozePresets(localDate(2026, 4, 8, 10, 0));
+    expect(presets.map((preset) => preset.label)).toEqual([
+      "This evening",
+      "Tomorrow",
+      "This weekend",
+      "Next week",
+    ]);
+    expect(presets.map((preset) => new Date(preset.snoozedUntil).getTime())).toEqual([
+      localDate(2026, 4, 8, 19).getTime(),
+      localDate(2026, 4, 9, 9).getTime(),
+      localDate(2026, 4, 11, 8).getTime(),
+      localDate(2026, 4, 13, 9).getTime(),
+    ]);
+  });
+
+  it("drops the evening choice once evening is near or past", () => {
+    expect(labels(localDate(2026, 4, 8, 18, 30))).toEqual(["Tomorrow", "This weekend", "Next week"]);
+  });
+
+  it("drops this weekend once the weekend has begun", () => {
+    expect(labels(localDate(2026, 4, 11, 7, 0))).toEqual(["This evening", "Tomorrow", "Next week"]);
+  });
+
+  it("drops next week on Sundays, when it lands on the same Monday as tomorrow", () => {
+    expect(labels(localDate(2026, 8, 30, 7, 1))).toEqual(["This evening", "Tomorrow"]);
+  });
+
+  it("keeps its order on Fridays, when this weekend wakes before tomorrow", () => {
+    expect(labels(localDate(2026, 4, 10, 10, 0))).toEqual([
+      "This evening",
+      "Tomorrow",
+      "This weekend",
+      "Next week",
+    ]);
   });
 });
 

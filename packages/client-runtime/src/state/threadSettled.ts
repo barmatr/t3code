@@ -323,6 +323,54 @@ export function pickSnoozePreset(input: {
   return (setting && resolveSnoozePreset(setting, input.now, input.formatTime)) ?? ahead;
 }
 
+/**
+ * T4 Code: Raoul's fixed menu, in this order. It ignores the server's presets, which the official
+ * clients share, because "This weekend" and the one-hour evening cutoff are not expressible there.
+ */
+export function resolveT4SnoozePresets(
+  now: Date,
+  formatTime: (date: Date) => string = snoozeTimeOfDayLabel,
+): ReadonlyArray<SnoozePreset> {
+  const day = now.getDay();
+  const presets: SnoozePreset[] = [];
+  const evening = resolveSnoozePreset({ kind: "at", day: "today", time: "19:00" }, now, formatTime);
+  if (evening && Date.parse(evening.snoozedUntil) - now.getTime() >= HOUR_MS) {
+    presets.push(evening);
+  }
+  const tomorrow = resolveSnoozePreset(
+    { kind: "at", day: "tomorrow", time: "09:00" },
+    now,
+    formatTime,
+  );
+  if (tomorrow) presets.push(tomorrow);
+  // Offered on weekdays only: from Saturday on, the weekend has already begun.
+  if (day !== WEEKDAY_INDEX.saturday && day !== WEEKDAY_INDEX.sunday) {
+    const weekend = resolveSnoozePreset(
+      { kind: "at", day: "saturday", time: "08:00" },
+      now,
+      formatTime,
+    );
+    if (weekend) {
+      const wake = new Date(weekend.snoozedUntil);
+      presets.push({
+        ...weekend,
+        label: "This weekend",
+        whenLabel: `${wake.toLocaleDateString(undefined, { weekday: "short" })} ${formatTime(wake)}`,
+      });
+    }
+  }
+  // On Sundays it would land on the same Monday as "Tomorrow".
+  if (day !== WEEKDAY_INDEX.sunday) {
+    const nextWeek = resolveSnoozePreset(
+      { kind: "at", day: "monday", time: "09:00" },
+      now,
+      formatTime,
+    );
+    if (nextWeek) presets.push(nextWeek);
+  }
+  return presets;
+}
+
 export function snoozeWakeLabel(snoozedUntil: string, options: { readonly now: string }): string {
   const wakeMs = Date.parse(snoozedUntil);
   const nowMs = Date.parse(options.now);
