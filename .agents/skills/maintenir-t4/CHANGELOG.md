@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-10-29 — Filtre non lus visible et conversations en cours
+
+- **Demandeur :** Raoul Barmat, demande d'un bouton visiblement activé et du maintien des conversations « Working ».
+- **Auteur de l'implémentation :** Codex (gpt-6-astra).
+- **Raison :** l'icône seule ne rendait pas l'activation perceptible et le filtre masquait le travail en cours.
+- **Effet pratique :** les personnalisations précisent l'état actif natif du bouton et l'inclusion des conversations « Working », même déjà lues ; « Waiting » reste exclu.
+
 ## 2026-10-29 — Sélection et repli des projets anciens
 
 - **Demandeur :** Raoul Barmat, correction du menu des projets anciens et ajout d'un dépliage indépendant.

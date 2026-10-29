@@ -1021,8 +1021,8 @@ export function resolveSidebarV2TopStatus(input: {
   return input.isUnread ? "done" : null;
 }
 
-/** The unread filter keeps rows whose badge waits on the user; Working and Waiting do not. */
-export function threadNeedsAttention(
+/** Unread mode also keeps Working threads so ongoing work stays visible. */
+export function matchesUnreadThreadFilter(
   thread: SidebarThreadSummary,
   input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
 ): boolean {
@@ -1037,7 +1037,7 @@ export function threadNeedsAttention(
     isUnread: hasUnseenCompletion({ ...thread, lastVisitedAt: input.lastVisitedAt }),
     isWoke,
   });
-  return topStatus !== null && topStatus !== "working" && topStatus !== "waiting";
+  return topStatus !== null && topStatus !== "waiting";
 }
 
 export function firstValidTimestampMs(
