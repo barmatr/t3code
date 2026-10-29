@@ -995,6 +995,51 @@ export type SidebarV2TopStatusKind =
   | "woke"
   | "working";
 
+export function resolveSidebarV2TopStatus(input: {
+  readonly status: SidebarThreadStatus;
+  readonly isUnread: boolean;
+  readonly isWoke: boolean;
+}): SidebarV2TopStatusKind | null {
+  if (input.status === "working") {
+    return "working";
+  }
+  if (input.status === "waiting") {
+    return "waiting";
+  }
+  if (input.status === "approval") {
+    return "approval";
+  }
+  if (input.status === "input" || input.status === "request") {
+    return input.status;
+  }
+  if (input.status === "failed" || input.status === "limited") {
+    return input.status;
+  }
+  if (input.isWoke) {
+    return "woke";
+  }
+  return input.isUnread ? "done" : null;
+}
+
+/** The unread filter keeps rows whose badge waits on the user; Working and Waiting do not. */
+export function threadNeedsAttention(
+  thread: SidebarThreadSummary,
+  input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
+): boolean {
+  if (thread.archivedAt !== null) return false;
+  const isWoke =
+    input.wokeAt !== null &&
+    thread.settledOverride !== "settled" &&
+    (input.lastVisitedAt === undefined ||
+      Date.parse(input.lastVisitedAt) < Date.parse(input.wokeAt));
+  const topStatus = resolveSidebarV2TopStatus({
+    status: resolveSidebarThreadStatus(thread),
+    isUnread: hasUnseenCompletion({ ...thread, lastVisitedAt: input.lastVisitedAt }),
+    isWoke,
+  });
+  return topStatus !== null && topStatus !== "working" && topStatus !== "waiting";
+}
+
 export function firstValidTimestampMs(
   ...candidates: ReadonlyArray<string | null | undefined>
 ): number {
