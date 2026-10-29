@@ -141,8 +141,10 @@ function ComboboxPopup({
   align = "start",
   collisionAvoidance,
   anchor: anchorProp,
+  size = "default",
   ...props
 }: ComboboxPrimitive.Popup.Props & {
+  size?: "default" | "tall";
   align?: ComboboxPrimitive.Positioner.Props["align"];
   sideOffset?: ComboboxPrimitive.Positioner.Props["sideOffset"];
   alignOffset?: ComboboxPrimitive.Positioner.Props["alignOffset"];
@@ -172,7 +174,12 @@ function ComboboxPopup({
           )}
         >
           <ComboboxPrimitive.Popup
-            className="flex min-w-0 max-h-[min(var(--available-height),23rem)] flex-1 flex-col overflow-hidden text-foreground"
+            className={cn(
+              "flex min-w-0 flex-1 flex-col overflow-hidden text-foreground",
+              size === "tall"
+                ? "max-h-[min(var(--available-height),40rem)]"
+                : "max-h-[min(var(--available-height),23rem)]",
+            )}
             data-slot="combobox-popup"
             {...props}
           >
