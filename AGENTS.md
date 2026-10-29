@@ -214,3 +214,6 @@ Cette branche `t4` est T4 Code, client personnel du serveur T3 officiel. Pour to
 - T4 tourne depuis le DMG installé dans `/Applications/T4 Code.app`, jamais en mode dev. Une modification n'est visible qu'après commit, build du DMG, installation et relance.
 - Livrer ainsi par défaut toute modification demandée, sans redemander la méthode. Seule la fermeture de T4, qui coupe Raoul quelques secondes, attend son feu vert. T3 et les agents continuent de tourner.
 - Sauvegarder l'ancienne app dans `~/Desktop/workspace/t4-sauvegardes/<date>-<sujet>/` avant de la remplacer.
+- Commits T4 : étiqueter `feat(t4)`, `fix(t4)`, `docs(t4)` ou `chore(t4)`, jamais un scope upstream comme `(sidebar)`. Ce préfixe repère les personnalisations lors des rebases sur la Nightly.
+- Ajouter sous le titre un court corps qui donne les règles retenues et leur raison. Signaler un diff gonflé par du réindentage.
+- Un correctif d'une fonction pas encore installée se fusionne dans son commit, tant que la branche n'est pas poussée ; réserver `fix(t4)` aux défauts d'une version livrée.
