@@ -17,6 +17,7 @@ Repères : [DesktopEnvironment.ts](../../../../apps/desktop/src/app/DesktopEnvir
 - « All projects » efface le filtre et ferme la liste ; une sélection vide signifie tous les projets.
 - « All projects » reste en tête. Les noms suivants suivent un tri alphanumérique naturel français, insensible à la casse, avec les nombres comparés numériquement.
 - Ce tri concerne le menu entonnoir. Il ne modifie ni le tri de la barre latérale ni l'ordre des projets récemment utilisés par ⌥Tab.
+- La liste montre jusqu'à « All projects » et 19 projets avant de défiler (popup `size="tall"`, 40rem au plus), dans la limite de la hauteur de la fenêtre. Demande de Raoul du 29 octobre 2026 ; upstream s'arrête à environ 9 projets.
 - Les coches sont persistantes. Modifier ce filtre efface le focus secondaire éventuel.
 - Une conversation ouverte depuis l'historique, la palette ou un lien alors que le focus la masque fait sortir du focus. Les coches ne sont effacées que si elles la masquent aussi. Ce choix adapte au multi-projets la révélation upstream (`sidebar/routeReveal.ts`), qui repasse le filtre à tous les projets.
 

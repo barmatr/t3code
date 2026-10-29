@@ -2831,6 +2831,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                   <ComboboxPopup
                     align="start"
                     anchor={headerSearchRef}
+                    size="tall"
                     className="max-w-[min(18rem,var(--available-width))] overflow-hidden"
                   >
                     <ComboboxSearchInput
