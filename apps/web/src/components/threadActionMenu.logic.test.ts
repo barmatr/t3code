@@ -21,7 +21,12 @@ const baseState: ThreadActionMenuState = {
     titleRegeneration: true,
   },
   snoozePresets: [
-    { id: "hour", label: "In 1 hour", whenLabel: "3:00 PM", snoozedUntil: "2026-08-07T15:00:00Z" },
+    {
+      id: "evening",
+      label: "This evening",
+      whenLabel: "7:00 PM",
+      snoozedUntil: "2026-08-07T19:00:00Z",
+    },
   ],
 };
 

@@ -171,10 +171,12 @@ export function threadWokeAt(
 }
 
 const HOUR_MS = 60 * 60 * 1_000;
-const EVENING_HOUR = 18;
+const EVENING_HOUR = 19;
 const MORNING_HOUR = 9;
+const WEEKEND_HOUR = 8;
+const SATURDAY = 6;
 
-export type SnoozePresetId = "hour" | "three-hours" | "evening" | "tomorrow" | "next-week";
+export type SnoozePresetId = "evening" | "tomorrow" | "weekend" | "next-week";
 
 export interface SnoozePreset {
   readonly id: SnoozePresetId;
@@ -203,22 +205,7 @@ function addSnoozeDays(base: Date, days: number): Date {
 }
 
 export function resolveSnoozePresets(now: Date): ReadonlyArray<SnoozePreset> {
-  const inAnHour = DateTime.toDate(DateTime.makeUnsafe(now.getTime() + HOUR_MS));
-  const inThreeHours = DateTime.toDate(DateTime.makeUnsafe(now.getTime() + 3 * HOUR_MS));
-  const presets: SnoozePreset[] = [
-    {
-      id: "hour",
-      label: "In 1 hour",
-      whenLabel: snoozeTimeOfDayLabel(inAnHour),
-      snoozedUntil: inAnHour.toISOString(),
-    },
-    {
-      id: "three-hours",
-      label: "In 3 hours",
-      whenLabel: snoozeTimeOfDayLabel(inThreeHours),
-      snoozedUntil: inThreeHours.toISOString(),
-    },
-  ];
+  const presets: SnoozePreset[] = [];
 
   const evening = snoozeAtHour(now, EVENING_HOUR);
   if (evening.getTime() - now.getTime() > HOUR_MS) {
@@ -237,6 +224,18 @@ export function resolveSnoozePresets(now: Date): ReadonlyArray<SnoozePreset> {
     whenLabel: snoozeTimeOfDayLabel(tomorrow),
     snoozedUntil: tomorrow.toISOString(),
   });
+
+  // Offered on weekdays only: from Saturday on, the weekend has already begun.
+  const day = now.getDay();
+  if (day !== SATURDAY && day !== 0) {
+    const weekend = snoozeAtHour(addSnoozeDays(now, SATURDAY - day), WEEKEND_HOUR);
+    presets.push({
+      id: "weekend",
+      label: "This weekend",
+      whenLabel: `${weekend.toLocaleDateString(undefined, { weekday: "short" })} ${snoozeTimeOfDayLabel(weekend)}`,
+      snoozedUntil: weekend.toISOString(),
+    });
+  }
 
   const daysUntilMonday = (1 - now.getDay() + 7) % 7 || 7;
   const nextWeek = snoozeAtHour(addSnoozeDays(now, daysUntilMonday), MORNING_HOUR);

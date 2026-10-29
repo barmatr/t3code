@@ -273,10 +273,33 @@ describe("threadWokeAt", () => {
 });
 
 describe("resolveSnoozePresets", () => {
+  it("offers this evening at 19:00, tomorrow, this weekend and next week on a weekday", () => {
+    const presets = resolveSnoozePresets(localDate(2026, 4, 8, 10, 0));
+    expect(presets.map((preset) => preset.id)).toEqual([
+      "evening",
+      "tomorrow",
+      "weekend",
+      "next-week",
+    ]);
+    const wakeOf = (id: string) =>
+      new Date(presets.find((preset) => preset.id === id)!.snoozedUntil).getTime();
+    expect(wakeOf("evening")).toBe(localDate(2026, 4, 8, 19).getTime());
+    expect(wakeOf("tomorrow")).toBe(localDate(2026, 4, 9, 9).getTime());
+    expect(wakeOf("weekend")).toBe(localDate(2026, 4, 11, 8).getTime());
+    expect(wakeOf("next-week")).toBe(localDate(2026, 4, 13, 9).getTime());
+  });
+
   it("drops the evening choice once evening is near or past", () => {
-    expect(resolveSnoozePresets(localDate(2026, 4, 8, 17, 30)).map((preset) => preset.id)).toEqual([
-      "hour",
-      "three-hours",
+    expect(resolveSnoozePresets(localDate(2026, 4, 8, 18, 30)).map((preset) => preset.id)).toEqual([
+      "tomorrow",
+      "weekend",
+      "next-week",
+    ]);
+  });
+
+  it("drops this weekend once the weekend has begun", () => {
+    expect(resolveSnoozePresets(localDate(2026, 4, 11, 7, 0)).map((preset) => preset.id)).toEqual([
+      "evening",
       "tomorrow",
       "next-week",
     ]);
@@ -284,12 +307,7 @@ describe("resolveSnoozePresets", () => {
 
   it("drops next week on Sundays, when it lands on the same Monday as tomorrow", () => {
     const presets = resolveSnoozePresets(localDate(2026, 8, 30, 7, 1));
-    expect(presets.map((preset) => preset.id)).toEqual([
-      "hour",
-      "three-hours",
-      "evening",
-      "tomorrow",
-    ]);
+    expect(presets.map((preset) => preset.id)).toEqual(["evening", "tomorrow"]);
     const tomorrow = new Date(presets.find((preset) => preset.id === "tomorrow")!.snoozedUntil);
     expect(tomorrow.getDay()).toBe(1);
   });

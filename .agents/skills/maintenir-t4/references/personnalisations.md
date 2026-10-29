@@ -46,6 +46,14 @@ Repères : [ProjectSwitcher.tsx](../../../../apps/web/src/components/projectSwit
 
 Repères : [styles du sélecteur](../../../../apps/web/src/components/projectSwitcher/projectSwitcher.module.css), [portrait](../../../../apps/web/src/components/projectSwitcher/raobar-avatar.png) et [icône T4](../../../../assets/t4/t4-macos-1024.png).
 
+## Choix de mise en veille (snooze)
+
+- Demande de Raoul du 29 octobre 2026 : le menu **Snooze** propose, dans cet ordre, « This evening » à 19:00, « Tomorrow » à 9:00, « This weekend » le samedi à 8:00 et « Next week » le lundi à 9:00, puis « Custom… ». Les choix « In 1 hour » et « In 3 hours » d'upstream sont retirés.
+- « This evening » disparaît à moins d'une heure de 19:00 ; « This weekend » n'est proposé que du lundi au vendredi ; « Next week » disparaît le dimanche, où il coïnciderait avec « Tomorrow ».
+- La liste est commune au clic droit, à l'icône horloge, au menu d'actions et à l'app mobile.
+
+Repères : [threadSettled.ts](../../../../packages/client-runtime/src/state/threadSettled.ts) (`resolveSnoozePresets`), [libellés web](../../../../apps/web/src/components/Sidebar.snooze.ts) et [tests](../../../../packages/client-runtime/src/state/threadSnoozed.test.ts).
+
 ## Pièges de construction déjà rencontrés
 
 - **`node-pty`** : jusqu'à la base `3457`, la plage `^1.2.0-beta.15` pouvait résoudre une bêta plus récente que le patch local (`ERR_PNPM_UNUSED_PATCH`). Depuis la base `3754`, upstream fixe cette version dans les `overrides` de [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) (#23798) ; le correctif T4 a été retiré. Vérifier la cohérence du patch et des overrides si l'erreur réapparaît.

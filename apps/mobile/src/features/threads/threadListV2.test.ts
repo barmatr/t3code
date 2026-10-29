@@ -59,19 +59,17 @@ const NOW = "2026-06-02T00:00:00.000Z";
 
 describe("resolveThreadListV2SnoozeMenuSelection", () => {
   it("recomputes presets that remain available instead of using old timestamps", () => {
-    const displayedPresets = resolveSnoozePresets(new Date(2026, 4, 8, 10));
-    const selectedAt = new Date(2026, 4, 8, 10, 30);
+    const displayedPresets = resolveSnoozePresets(new Date(2026, 4, 8, 23));
+    const selectedAt = new Date(2026, 4, 9, 0, 30);
     const selection = resolveThreadListV2SnoozeMenuSelection({
-      event: "snooze:hour",
+      event: "snooze:tomorrow",
       displayedPresets,
       now: selectedAt,
     });
 
     expect(selection._tag).toBe("selected");
     if (selection._tag === "selected") {
-      expect(selection.preset.snoozedUntil).toBe(
-        new Date(selectedAt.getTime() + 60 * 60 * 1_000).toISOString(),
-      );
+      expect(selection.preset.snoozedUntil).toBe(new Date(2026, 4, 10, 9).toISOString());
     }
   });
 });

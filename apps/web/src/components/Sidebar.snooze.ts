@@ -24,7 +24,7 @@ export function resolveSnoozePresets(
     return {
       ...preset,
       whenLabel:
-        preset.id === "next-week"
+        preset.id === "weekend" || preset.id === "next-week"
           ? `${wake.toLocaleDateString(undefined, { weekday: "short" })} ${time}`
           : time,
     };
