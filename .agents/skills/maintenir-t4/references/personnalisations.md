@@ -14,8 +14,11 @@ Repères : [DesktopEnvironment.ts](../../../../apps/desktop/src/app/DesktopEnvir
 
 - Un clic simple sélectionne exclusivement le projet cliqué et ferme la liste, même si ce projet était déjà coché.
 - Shift-clic ajoute ou retire un projet et garde la liste ouverte.
-- « All projects » efface le filtre et ferme la liste ; une sélection vide signifie tous les projets.
-- « All projects » reste en tête. Les noms suivants suivent un tri alphanumérique naturel français, insensible à la casse, avec les nombres comparés numériquement.
+- « All recent projects » efface le filtre et ferme la liste ; une sélection vide signifie les projets récents (demande de Raoul du 29 octobre 2026).
+- Un projet est récent si un humain a écrit dans l'une de ses conversations depuis moins de 14 jours. Seule la date du dernier message humain (`latestUserAuthoredMessageAt`) date une conversation : snooze, réveil, réponses d'agent, clôture ou création n'y changent rien. Conversations archivées, supprimées et sous-agents exclus. Un projet est aussi récent s'il a été ajouté depuis moins de 14 jours. Le projet de la conversation ouverte reste visible même s'il est ancien. Sans aucun projet récent, le filtre vide montre tout et le libellé redevient « All projects ».
+- Le shell ne transmet que les 25 dernières conversations terminées : `useRecentProjectKeys` lit les pages plus anciennes (`olderSettledThreads.pagesAtom`) jusqu'à sortir de la fenêtre. Une conversation se termine après son dernier message, donc rien de récent n'est manqué.
+- Menu : « All recent projects » en tête, puis les projets récents, puis l'intitulé non cliquable « Older projects » et les autres. Chaque groupe suit un tri alphanumérique naturel français, insensible à la casse, avec les nombres comparés numériquement.
+- Le filtre vide limite aussi la recherche de conversations et les candidats ⌥Tab aux projets récents ; la sortie du focus s'appelle alors « Tous les projets récents ».
 - Ce tri concerne le menu entonnoir. Il ne modifie ni le tri de la barre latérale ni l'ordre des projets récemment utilisés par ⌥Tab.
 - La liste montre jusqu'à « All projects » et 19 projets avant de défiler (popup `size="tall"`, 40rem au plus), dans la limite de la hauteur de la fenêtre. Demande de Raoul du 29 octobre 2026 ; upstream s'arrête à environ 9 projets.
 - Les coches sont persistantes. Modifier ce filtre efface le focus secondaire éventuel.

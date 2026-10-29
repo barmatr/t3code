@@ -15,6 +15,7 @@ vi.mock("../../hooks/useSidebarProjectGroups", () => ({
       memberProjectRefs: [{ environmentId: "env", projectId: key }],
     })),
 }));
+vi.mock("../../hooks/useRecentProjectKeys", () => ({ useRecentProjectKeys: () => new Set() }));
 vi.mock("../../hooks/useThreadRouteTarget", () => ({ useThreadRouteTarget: () => null }));
 vi.mock("../../state/entities", () => ({
   useQuietThreadShell: () => null,
