@@ -69,7 +69,6 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import {
-  Fragment,
   useEffect,
   useLayoutEffect,
   useReducer,
@@ -131,8 +130,10 @@ import { useNowMinute } from "../hooks/useNowMinute";
 import { useRecentProjectKeys } from "../hooks/useRecentProjectKeys";
 import {
   defaultScopeProjects,
+  OLDER_PROJECTS_SCOPE_VALUE,
   orderProjectScopeItems,
   projectKeyOf,
+  resolveProjectScopeSelection,
 } from "./sidebar/recentProjects";
 import {
   useEnvironmentIdentities,
@@ -818,13 +819,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     projectScopeItems: alphabeticalProjectScopeItems,
   } = useSidebarLookups();
   const recentProjectKeys = useRecentProjectKeys(projectGroups);
-  const projectScopeItems = orderProjectScopeItems(
-    alphabeticalProjectScopeItems,
-    recentProjectKeys,
-  ).map((item) =>
+  const [olderProjectsExpanded, setOlderProjectsExpanded] = useState(false);
+  const labeledProjectScopeItems = alphabeticalProjectScopeItems.map((item) =>
     item.value === "all" && recentProjectKeys.size > 0
       ? { ...item, label: "All recent projects" }
       : item,
+  );
+  const projectScopeItems = orderProjectScopeItems(
+    labeledProjectScopeItems,
+    recentProjectKeys,
+    true,
   );
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -1125,17 +1129,16 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     projectScopeKeys.includes(item.value),
   );
   const filteredProjectScopeItems = filterSidebarProjectScopeItems({
-    items: projectScopeItems,
+    items: projectScopeMenuState.query.trim()
+      ? projectScopeItems.filter((item) => item.value !== OLDER_PROJECTS_SCOPE_VALUE)
+      : orderProjectScopeItems(labeledProjectScopeItems, recentProjectKeys, olderProjectsExpanded),
     query: projectScopeMenuState.query,
     matches: (item, query) =>
       projectScopeFilter.contains(item, query, (candidate) => candidate.label),
   });
-  const firstOlderProjectScopeValue =
-    recentProjectKeys.size === 0
-      ? null
-      : (filteredProjectScopeItems.find(
-          (item) => item.value !== "all" && !recentProjectKeys.has(item.value),
-        )?.value ?? null);
+  const olderProjectScopeKeys = alphabeticalProjectScopeItems
+    .filter((item) => item.value !== "all" && !recentProjectKeys.has(item.value))
+    .map((item) => item.value);
   const scopedProjectGroup = scopedProjectGroups.length === 1 ? scopedProjectGroups[0]! : null;
   const visibleProjectGroups = focusedProjectGroup
     ? [focusedProjectGroup]
@@ -2862,23 +2865,15 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                         suppressNextScopeChangeRef.current = false;
                         return;
                       }
-                      if (items.some((item) => item.value === "all")) {
-                        setProjectScopeKeys([]);
-                        dispatchProjectScopeMenu({ type: "open-changed", open: false });
-                        return;
-                      }
-                      if ("shiftKey" in details.event && details.event.shiftKey === true) {
-                        setProjectScopeKeys(items.map((item) => item.value));
-                        return;
-                      }
-                      // The combobox toggles even a selected item; a plain click must keep it alone.
-                      const pressedItem =
-                        items.find((item) => !projectScopeKeys.includes(item.value)) ??
-                        selectedProjectScopeItems.find(
-                          (selected) => !items.some((item) => item.value === selected.value),
-                        );
-                      if (pressedItem) {
-                        setProjectScopeKeys([pressedItem.value]);
+                      const selection = resolveProjectScopeSelection(
+                        projectScopeKeys,
+                        items.map((item) => item.value),
+                        olderProjectScopeKeys,
+                        "shiftKey" in details.event && details.event.shiftKey === true,
+                      );
+                      if (!selection) return;
+                      setProjectScopeKeys(selection.keys);
+                      if (selection.close) {
                         dispatchProjectScopeMenu({ type: "open-changed", open: false });
                       }
                     }}
@@ -2923,6 +2918,20 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                         value={projectScopeMenuState.query}
                         onKeyDown={(event) => {
                           if (
+                            !event.defaultPrevented &&
+                            !event.nativeEvent.isComposing &&
+                            !event.ctrlKey &&
+                            !event.altKey &&
+                            !event.metaKey &&
+                            !event.shiftKey &&
+                            highlightedProjectScopeKeyRef.current === OLDER_PROJECTS_SCOPE_VALUE &&
+                            (event.key === "ArrowRight" || event.key === "ArrowLeft")
+                          ) {
+                            event.preventDefault();
+                            setOlderProjectsExpanded(event.key === "ArrowRight");
+                            return;
+                          }
+                          if (
                             event.defaultPrevented ||
                             event.nativeEvent.isComposing ||
                             event.ctrlKey ||
@@ -2954,64 +2963,91 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                           const isScopeSelected =
                             item.value === "all"
                               ? projectScopeKeys.length === 0
-                              : projectScopeKeys.includes(item.value);
+                              : item.value === OLDER_PROJECTS_SCOPE_VALUE
+                                ? olderProjectScopeKeys.length > 0 &&
+                                  olderProjectScopeKeys.length === projectScopeKeys.length &&
+                                  olderProjectScopeKeys.every((key) =>
+                                    projectScopeKeys.includes(key),
+                                  )
+                                : projectScopeKeys.includes(item.value);
                           return (
-                            <Fragment key={item.value}>
-                              {item.value === firstOlderProjectScopeValue ? (
-                                <p
-                                  role="presentation"
-                                  className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground"
+                            <ComboboxItem
+                              key={item.value}
+                              hideIndicator
+                              value={item}
+                              onContextMenu={(event) => {
+                                if (project) handleProjectSettings(event, project);
+                              }}
+                            >
+                              {project ? (
+                                <ProjectFavicon project={project} className="size-4 shrink-0" />
+                              ) : (
+                                <FolderIcon className="size-4 shrink-0" />
+                              )}
+                              <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
+                              {item.value === OLDER_PROJECTS_SCOPE_VALUE ? (
+                                <Button
+                                  size="icon-xs"
+                                  variant="ghost-muted"
+                                  aria-label={
+                                    olderProjectsExpanded
+                                      ? "Collapse older projects"
+                                      : "Expand older projects"
+                                  }
+                                  aria-expanded={olderProjectsExpanded}
+                                  onPointerDown={(event) => event.stopPropagation()}
+                                  onMouseDown={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                  }}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter" || event.key === " ")
+                                      event.stopPropagation();
+                                  }}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setOlderProjectsExpanded((expanded) => !expanded);
+                                  }}
                                 >
-                                  Older projects
-                                </p>
-                              ) : null}
-                              <ComboboxItem
-                                hideIndicator
-                                value={item}
-                                onContextMenu={(event) => {
-                                  if (project) handleProjectSettings(event, project);
-                                }}
-                              >
-                                {project ? (
-                                  <ProjectFavicon project={project} className="size-4 shrink-0" />
-                                ) : (
-                                  <FolderIcon className="size-4 shrink-0" />
-                                )}
-                                <span className="min-w-0 flex-1 truncate text-sm">
-                                  {item.label}
-                                </span>
-                                <CheckIcon
-                                  aria-hidden="true"
-                                  className={cn(
-                                    "size-3.5 shrink-0",
-                                    isScopeSelected ? "text-foreground" : "invisible",
-                                  )}
-                                />
-                                {project && showProjectEnvironments ? (
-                                  <ProjectEnvironmentBadge
-                                    group={project}
-                                    primaryEnvironmentId={primaryEnvironmentId}
-                                    machineByEnvironmentId={environmentMachineById}
+                                  <ChevronDownIcon
+                                    className={cn(
+                                      "size-3.5",
+                                      !olderProjectsExpanded && "-rotate-90",
+                                    )}
                                   />
-                                ) : null}
-                                {project ? (
-                                  <Button
-                                    size="icon-xs"
-                                    variant="ghost-muted"
-                                    tabIndex={-1}
-                                    aria-hidden="true"
-                                    title={`Project settings for ${project.displayName}`}
-                                    className="ml-auto"
-                                    onPointerDown={(event) => event.stopPropagation()}
-                                    onClick={(event) => {
-                                      void handleProjectSettings(event, project);
-                                    }}
-                                  >
-                                    <SettingsIcon className="size-3.5" />
-                                  </Button>
-                                ) : null}
-                              </ComboboxItem>
-                            </Fragment>
+                                </Button>
+                              ) : null}
+                              <CheckIcon
+                                aria-hidden="true"
+                                className={cn(
+                                  "size-3.5 shrink-0",
+                                  isScopeSelected ? "text-foreground" : "invisible",
+                                )}
+                              />
+                              {project && showProjectEnvironments ? (
+                                <ProjectEnvironmentBadge
+                                  group={project}
+                                  primaryEnvironmentId={primaryEnvironmentId}
+                                  machineByEnvironmentId={environmentMachineById}
+                                />
+                              ) : null}
+                              {project ? (
+                                <Button
+                                  size="icon-xs"
+                                  variant="ghost-muted"
+                                  tabIndex={-1}
+                                  aria-hidden="true"
+                                  title={`Project settings for ${project.displayName}`}
+                                  className="ml-auto"
+                                  onPointerDown={(event) => event.stopPropagation()}
+                                  onClick={(event) => {
+                                    void handleProjectSettings(event, project);
+                                  }}
+                                >
+                                  <SettingsIcon className="size-3.5" />
+                                </Button>
+                              ) : null}
+                            </ComboboxItem>
                           );
                         }}
                       </ComboboxList>

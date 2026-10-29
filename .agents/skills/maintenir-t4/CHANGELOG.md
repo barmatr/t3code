@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-10-29 — Sélection et repli des projets anciens
+
+- **Demandeur :** Raoul Barmat, correction du menu des projets anciens et ajout d'un dépliage indépendant.
+- **Auteur de l'implémentation :** Codex (gpt-6-astra).
+- **Raison :** « Older projects » était un titre non cliquable, contrairement à l'attente de sélection collective.
+- **Effet pratique :** la référence des personnalisations prévoit une commande de sélection de même présentation que les projets récents, une liste ancienne repliée par défaut, un chevron indépendant et une recherche qui retrouve aussi les projets repliés. Elle rappelle le périmètre d'Option-Tab.
+
 ## 2026-10-29 — Livraison par DMG par défaut
 
 - **Demandeur :** Raoul Barmat, après une modification de l'entonnoir restée invisible faute d'installation.

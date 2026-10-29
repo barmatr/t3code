@@ -110,12 +110,42 @@ export function projectKeyOf(
   );
 }
 
-/** Filter menu order: "all" first, recent projects, then the older ones under their heading. */
-export function orderProjectScopeItems<T extends { readonly value: string }>(
-  items: ReadonlyArray<T>,
+export const OLDER_PROJECTS_SCOPE_VALUE = "older";
+
+interface ProjectScopeItem {
+  readonly value: string;
+  readonly label: string;
+}
+
+export function orderProjectScopeItems(
+  items: ReadonlyArray<ProjectScopeItem>,
   recentKeys: ReadonlySet<string>,
-): ReadonlyArray<T> {
+  olderProjectsExpanded = false,
+): ReadonlyArray<ProjectScopeItem> {
   if (recentKeys.size === 0) return items;
-  const isLeading = (item: T) => item.value === "all" || recentKeys.has(item.value);
-  return [...items.filter(isLeading), ...items.filter((item) => !isLeading(item))];
+  const isLeading = (item: ProjectScopeItem) => item.value === "all" || recentKeys.has(item.value);
+  const older = items.filter((item) => !isLeading(item));
+  return [
+    ...items.filter(isLeading),
+    ...(older.length > 0 ? [{ value: OLDER_PROJECTS_SCOPE_VALUE, label: "Older projects" }] : []),
+    ...(olderProjectsExpanded ? older : []),
+  ];
+}
+
+export function resolveProjectScopeSelection(
+  currentKeys: ReadonlyArray<string>,
+  nextValues: ReadonlyArray<string>,
+  olderProjectKeys: ReadonlyArray<string>,
+  additive: boolean,
+): { readonly keys: ReadonlyArray<string>; readonly close: boolean } | null {
+  if (nextValues.includes("all")) return { keys: [], close: true };
+  if (nextValues.includes(OLDER_PROJECTS_SCOPE_VALUE)) {
+    return { keys: olderProjectKeys, close: true };
+  }
+  if (additive) return { keys: nextValues, close: false };
+  // Base UI toggles checked items too; a plain click must instead select that project alone.
+  const pressedKey =
+    nextValues.find((key) => !currentKeys.includes(key)) ??
+    currentKeys.find((key) => !nextValues.includes(key));
+  return pressedKey === undefined ? null : { keys: [pressedKey], close: true };
 }
