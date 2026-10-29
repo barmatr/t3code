@@ -8,6 +8,8 @@ import { buildThreadRouteParams } from "../../threadRoutes";
 import { CheckIcon, LayoutGridIcon } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useSidebarProjectGroups } from "../../hooks/useSidebarProjectGroups";
+import { useRecentProjectKeys } from "../../hooks/useRecentProjectKeys";
+import { defaultScopeProjects, projectKeyOf } from "../sidebar/recentProjects";
 import { useUiStateStore } from "../../uiStateStore";
 import { useThreadSelectionStore } from "../../threadSelectionStore";
 import { ProjectFavicon } from "../ProjectFavicon";
@@ -42,12 +44,16 @@ type SwitchSession = { options: readonly SwitchOption[]; selected: string };
 export function ProjectSwitcher() {
   const projects = useSidebarProjectGroups();
   const filterKeys = useUiStateStore((state) => state.sidebarProjectScopeKeys);
-  const candidates = projectSwitcherCandidates(projects, filterKeys);
+  const recentProjectKeys = useRecentProjectKeys(projects);
   const focusedKey = useUiStateStore((state) => state.sidebarFocusedProjectKey);
   const setFocusedKey = useUiStateStore((state) => state.setSidebarFocusedProjectKey);
   const clearThreadSelection = useThreadSelectionStore((state) => state.clearSelection);
   const allProjectsLabel =
-    filterKeys.length === 0 ? "Tous les projets" : "Tous les projets sélectionnés";
+    filterKeys.length > 0
+      ? "Tous les projets sélectionnés"
+      : recentProjectKeys.size > 0
+        ? "Tous les projets récents"
+        : "Tous les projets";
   const navigate = useNavigate();
   const openDraft = useNewThreadHandler();
   const routeTarget = useThreadRouteTarget();
@@ -58,6 +64,10 @@ export function ProjectSwitcher() {
     routeTarget?.kind === "draft" ? state.getDraftSession(routeTarget.draftId) : null,
   );
   const routeProject = routeThread ?? routeDraft;
+  const candidates =
+    filterKeys.length === 0
+      ? defaultScopeProjects(projects, recentProjectKeys, projectKeyOf(projects, routeProject))
+      : projectSwitcherCandidates(projects, filterKeys);
   const routeProjectKey =
     projects.find((project) =>
       project.memberProjectRefs.some(

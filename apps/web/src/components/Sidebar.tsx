@@ -68,6 +68,7 @@ import {
   SettingsIcon,
 } from "lucide-react";
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useReducer,
@@ -126,6 +127,12 @@ import { useClientSettings } from "../hooks/useSettings";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useNowMinute } from "../hooks/useNowMinute";
+import { useRecentProjectKeys } from "../hooks/useRecentProjectKeys";
+import {
+  defaultScopeProjects,
+  orderProjectScopeItems,
+  projectKeyOf,
+} from "./sidebar/recentProjects";
 import {
   useEnvironmentIdentities,
   useConnectedEnvironmentIds,
@@ -805,8 +812,17 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     projectByKey,
     projectDisplayNameByKey,
     projectGroupByScopeKey,
-    projectScopeItems,
+    projectScopeItems: alphabeticalProjectScopeItems,
   } = useSidebarLookups();
+  const recentProjectKeys = useRecentProjectKeys(projectGroups);
+  const projectScopeItems = orderProjectScopeItems(
+    alphabeticalProjectScopeItems,
+    recentProjectKeys,
+  ).map((item) =>
+    item.value === "all" && recentProjectKeys.size > 0
+      ? { ...item, label: "All recent projects" }
+      : item,
+  );
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
   const keybindings = useAtomValue(primaryServerKeybindingsAtom);
@@ -980,6 +996,25 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const chosenProjectGroups = projectGroups.filter((project) =>
     chosenProjectScopeKeys.includes(project.projectKey),
   );
+  const threads = useQuietThreadShells();
+  const routeProjectKey = projectKeyOf(
+    projectGroups,
+    routeDraftThread ??
+      threads.find(
+        (thread) =>
+          thread.environmentId === routeThreadRef?.environmentId &&
+          thread.id === routeThreadRef.threadId,
+      ) ??
+      null,
+  );
+  // An empty filter means the recent projects, not every project.
+  const defaultScopeGroups = defaultScopeProjects(
+    projectGroups,
+    recentProjectKeys,
+    routeProjectKey,
+  );
+  const chosenScopeGroups =
+    chosenProjectGroups.length > 0 ? chosenProjectGroups : defaultScopeGroups;
   const chosenFocusedProjectGroup = resolveFocusedProject(
     projectGroups,
     chosenProjectScopeKeys,
@@ -995,11 +1030,11 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
             ),
           ),
         );
-  const chosenCheckedProjectKeys = memberProjectKeys(chosenProjectGroups);
+  const chosenCheckedProjectKeys =
+    chosenScopeGroups.length === projectGroups.length ? null : memberProjectKeys(chosenScopeGroups);
   const chosenScopeProjectKeys = chosenFocusedProjectGroup
     ? memberProjectKeys([chosenFocusedProjectGroup])
     : chosenCheckedProjectKeys;
-  const threads = useQuietThreadShells();
   const routeRowThreadKey =
     routeThreadRef === null
       ? null
@@ -1036,13 +1071,18 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       .widensScope;
   const projectScopeKeys = revealClearsChecks ? [] : chosenProjectScopeKeys;
   const scopedProjectGroups = revealClearsChecks ? [] : chosenProjectGroups;
+  const scopeGroups = revealClearsChecks ? defaultScopeGroups : chosenScopeGroups;
   const focusedProjectGroup = revealWidensScope ? null : chosenFocusedProjectGroup;
   // Pagination follows the visible scope; checkboxes still describe the full navigation pool.
   const visibleProjectScopeKeys = focusedProjectGroup
     ? [focusedProjectGroup.projectKey]
     : projectScopeKeys;
   const projectScopeKey =
-    visibleProjectScopeKeys.length === 0 ? null : visibleProjectScopeKeys.join("\n");
+    visibleProjectScopeKeys.length > 0
+      ? visibleProjectScopeKeys.join("\n")
+      : scopeGroups.length === projectGroups.length
+        ? null
+        : "recent";
   // The widened scope outlives the reveal, so it is written back to the persisted
   // scope. Route changes arrive from history, links and the palette, and only this
   // component holds the project groups that decide a widening, so no single
@@ -1083,8 +1123,18 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     matches: (item, query) =>
       projectScopeFilter.contains(item, query, (candidate) => candidate.label),
   });
+  const firstOlderProjectScopeValue =
+    recentProjectKeys.size === 0
+      ? null
+      : (filteredProjectScopeItems.find(
+          (item) => item.value !== "all" && !recentProjectKeys.has(item.value),
+        )?.value ?? null);
   const scopedProjectGroup = scopedProjectGroups.length === 1 ? scopedProjectGroups[0]! : null;
-  const visibleProjectGroups = focusedProjectGroup ? [focusedProjectGroup] : scopedProjectGroups;
+  const visibleProjectGroups = focusedProjectGroup
+    ? [focusedProjectGroup]
+    : scopeGroups.length === projectGroups.length
+      ? []
+      : scopeGroups;
   const scopedProjectKeys = memberProjectKeys(visibleProjectGroups);
   const threadSearch = useThreadSearch(
     searchEnvironmentIds,
@@ -2872,51 +2922,60 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                             ? projectScopeKeys.length === 0
                             : projectScopeKeys.includes(item.value);
                         return (
-                          <ComboboxItem
-                            key={item.value}
-                            hideIndicator
-                            value={item}
-                            onContextMenu={(event) => {
-                              if (project) handleProjectSettings(event, project);
-                            }}
-                          >
-                            {project ? (
-                              <ProjectFavicon project={project} className="size-4 shrink-0" />
-                            ) : (
-                              <FolderIcon className="size-4 shrink-0" />
-                            )}
-                            <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
-                            <CheckIcon
-                              aria-hidden="true"
-                              className={cn(
-                                "size-3.5 shrink-0",
-                                isScopeSelected ? "text-foreground" : "invisible",
-                              )}
-                            />
-                            {project && showProjectEnvironments ? (
-                              <ProjectEnvironmentBadge
-                                group={project}
-                                primaryEnvironmentId={primaryEnvironmentId}
-                                machineByEnvironmentId={environmentMachineById}
-                              />
-                            ) : null}
-                            {project ? (
-                              <Button
-                                size="icon-xs"
-                                variant="ghost-muted"
-                                tabIndex={-1}
-                                aria-hidden="true"
-                                title={`Project settings for ${project.displayName}`}
-                                className="ml-auto"
-                                onPointerDown={(event) => event.stopPropagation()}
-                                onClick={(event) => {
-                                  void handleProjectSettings(event, project);
-                                }}
+                          <Fragment key={item.value}>
+                            {item.value === firstOlderProjectScopeValue ? (
+                              <p
+                                role="presentation"
+                                className="px-2 pt-2 pb-1 text-xs font-medium text-muted-foreground"
                               >
-                                <SettingsIcon className="size-3.5" />
-                              </Button>
+                                Older projects
+                              </p>
                             ) : null}
-                          </ComboboxItem>
+                            <ComboboxItem
+                              hideIndicator
+                              value={item}
+                              onContextMenu={(event) => {
+                                if (project) handleProjectSettings(event, project);
+                              }}
+                            >
+                              {project ? (
+                                <ProjectFavicon project={project} className="size-4 shrink-0" />
+                              ) : (
+                                <FolderIcon className="size-4 shrink-0" />
+                              )}
+                              <span className="min-w-0 flex-1 truncate text-sm">{item.label}</span>
+                              <CheckIcon
+                                aria-hidden="true"
+                                className={cn(
+                                  "size-3.5 shrink-0",
+                                  isScopeSelected ? "text-foreground" : "invisible",
+                                )}
+                              />
+                              {project && showProjectEnvironments ? (
+                                <ProjectEnvironmentBadge
+                                  group={project}
+                                  primaryEnvironmentId={primaryEnvironmentId}
+                                  machineByEnvironmentId={environmentMachineById}
+                                />
+                              ) : null}
+                              {project ? (
+                                <Button
+                                  size="icon-xs"
+                                  variant="ghost-muted"
+                                  tabIndex={-1}
+                                  aria-hidden="true"
+                                  title={`Project settings for ${project.displayName}`}
+                                  className="ml-auto"
+                                  onPointerDown={(event) => event.stopPropagation()}
+                                  onClick={(event) => {
+                                    void handleProjectSettings(event, project);
+                                  }}
+                                >
+                                  <SettingsIcon className="size-3.5" />
+                                </Button>
+                              ) : null}
+                            </ComboboxItem>
+                          </Fragment>
                         );
                       }}
                     </ComboboxList>
@@ -2955,9 +3014,11 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                     setFocusedProjectKey(null);
                   }}
                 >
-                  {projectScopeKeys.length === 0
-                    ? "Tous les projets"
-                    : "Tous les projets sélectionnés"}
+                  {projectScopeKeys.length > 0
+                    ? "Tous les projets sélectionnés"
+                    : recentProjectKeys.size > 0
+                      ? "Tous les projets récents"
+                      : "Tous les projets"}
                 </Button>
               </div>
             ) : null}
