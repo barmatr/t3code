@@ -27,6 +27,7 @@ const testState = vi.hoisted(() => {
     },
     navigate: vi.fn(async (request: { readonly params: { readonly draftId: string } }) => {
       router.state.location.href = `/draft/${request.params.draftId}`;
+      router.state.matches = [{ params: { draftId: request.params.draftId } }];
     }),
   };
   const draftStore = {
@@ -103,6 +104,7 @@ const testState = vi.hoisted(() => {
         defaultRuntimeMode: "full-access",
       };
       router.state.location.href = "/";
+      router.state.matches = [{ params: {} }];
       router.navigate.mockClear();
       draftStore.setDraftThreadContext.mockClear();
       draftStore.setLogicalProjectDraftThreadId.mockClear();
@@ -179,10 +181,6 @@ vi.mock("@tanstack/react-router", () => ({
   useParams: () => null,
   useRouter: () => testState.router,
 }));
-vi.mock("react", () => ({
-  useCallback: <T>(callback: T) => callback,
-  useMemo: <T>(factory: () => T) => factory(),
-}));
 vi.mock("../components/Sidebar.logic", () => ({ orderItemsByPreferredIds: () => [] }));
 vi.mock("../composerDraftStore", () => {
   const useComposerDraftStore = Object.assign(() => null, {
@@ -209,6 +207,12 @@ vi.mock("../lib/utils", () => ({
   newThreadId: () => "thread-delayed",
 }));
 vi.mock("@t3tools/client-runtime/state/project-grouping", () => ({
+  buildProjectGroups: () => [
+    {
+      key: "remote-project",
+      memberProjectRefs: [{ environmentId: "environment-ssh", projectId: "project-remote" }],
+    },
+  ],
   deriveLogicalProjectKeyFromSettings: () => "remote-project",
   getProjectOrderKey: () => "remote-project",
   selectProjectGroupingSettings: () => ({}),
@@ -239,15 +243,14 @@ vi.mock("../state/server", () => ({
   primaryServerSettingsAtom: "primary-settings",
 }));
 vi.mock("../threadRoutes", () => ({
-  resolveThreadRouteTarget: () => testState.openDraftRoute,
-}));
-vi.mock("../uiStateStore", () => ({
-  legacyProjectCwdPreferenceKey: () => "remote-project",
-  useUiStateStore: () => [],
+  resolveThreadRouteTarget: (params: { draftId?: string }) =>
+    testState.openDraftRoute ??
+    (params.draftId ? { kind: "draft", draftId: params.draftId } : null),
 }));
 vi.mock("./useSettings", () => ({ getClientSettings: () => ({}) }));
 
 import { useNewThreadHandler } from "./useHandleNewThread";
+import { useUiStateStore } from "../uiStateStore";
 
 describe.each([
   ["new", null],
@@ -261,8 +264,43 @@ describe.each([
     },
   ],
 ])("useNewThreadHandler with a %s draft", (_, draft) => {
+  it.each([
+    {
+      name: "keeps four checked projects",
+      selected: ["alpha", "remote-project", "gamma", "delta"],
+      expected: ["alpha", "remote-project", "gamma", "delta"],
+    },
+    {
+      name: "adds the new conversation's project to four checked projects",
+      selected: ["alpha", "beta", "gamma", "delta"],
+      expected: ["alpha", "beta", "gamma", "delta", "remote-project"],
+    },
+    { name: "keeps the implicit recent-project scope", selected: [], expected: [] },
+  ])("$name", async ({ selected, expected }) => {
+    testState.reset(draft);
+    using cleanup = new DisposableStack();
+    const previous = useUiStateStore.getState();
+    cleanup.defer(() => useUiStateStore.setState(previous));
+    previous.setSidebarProjectScopeKeys(selected);
+    previous.setSidebarFocusedProjectKey("alpha");
+
+    const opened = await useNewThreadHandler()({
+      environmentId: "environment-ssh",
+      projectId: "project-remote",
+    } as never);
+
+    expect(opened).not.toBeNull();
+    expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual(expected);
+    expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
+  });
+
   it("abandons a delayed draft open when the user navigates elsewhere", async () => {
     testState.reset(draft);
+    using cleanup = new DisposableStack();
+    const previous = useUiStateStore.getState();
+    cleanup.defer(() => useUiStateStore.setState(previous));
+    previous.setSidebarProjectScopeKeys(["alpha", "beta"]);
+    previous.setSidebarFocusedProjectKey("alpha");
     const openThread = useNewThreadHandler();
     const pendingOpen = openThread(
       { environmentId: "environment-ssh", projectId: "project-remote" } as never,
@@ -276,6 +314,8 @@ describe.each([
     expect(testState.router.state.location.href).toBe("/usage");
     expect(testState.router.navigate).not.toHaveBeenCalled();
     expect(testState.draftStore.setLogicalProjectDraftThreadId).not.toHaveBeenCalled();
+    expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual(["alpha", "beta"]);
+    expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBe("alpha");
   });
 
   it("sets the prompt before the draft shows", async () => {
@@ -350,6 +390,28 @@ describe("useNewThreadHandler", () => {
       "draft-open",
       "Read the playbook. ",
     );
+  });
+
+  it("extends the latest selection after a delayed draft opens", async () => {
+    testState.reset(null, { envMode: null, startFromOrigin: false });
+    using cleanup = new DisposableStack();
+    const previous = useUiStateStore.getState();
+    cleanup.defer(() => useUiStateStore.setState(previous));
+    previous.setSidebarProjectScopeKeys(["alpha"]);
+
+    const pendingOpen = useNewThreadHandler()({
+      environmentId: "environment-ssh",
+      projectId: "project-remote",
+    } as never);
+    previous.setSidebarProjectScopeKeys(["beta", "gamma"]);
+    testState.completeProjectFileRead(null);
+
+    await expect(pendingOpen).resolves.not.toBeNull();
+    expect(useUiStateStore.getState().sidebarProjectScopeKeys).toEqual([
+      "beta",
+      "gamma",
+      "remote-project",
+    ]);
   });
 
   it("opens the draft without waiting on a project file from an offline machine", async () => {
