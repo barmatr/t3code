@@ -382,7 +382,11 @@ describe("resolveT4SnoozePresets", () => {
   });
 
   it("drops the evening choice once evening is near or past", () => {
-    expect(labels(localDate(2026, 4, 8, 18, 30))).toEqual(["Tomorrow", "This weekend", "Next week"]);
+    expect(labels(localDate(2026, 4, 8, 18, 30))).toEqual([
+      "Tomorrow",
+      "This weekend",
+      "Next week",
+    ]);
   });
 
   it("drops this weekend once the weekend has begun", () => {

@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-02 — Rebase sur la Nightly `4080`
+
+- **Demandeur :** Raoul Barmat, mise à jour proposée par T3, à appliquer au front T4 et au serveur T3.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** upstream a intégré le filtre multi-projets, l'épinglage et l'archivage des projets ainsi qu'un réglage serveur des durées de snooze ; T4 réutilise désormais ces fondations et garde ses comportements propres.
+- **Effet pratique :** les personnalisations décrivent le menu à valeur simple, l'épinglage, l'exclusion des projets archivés et le menu de snooze propre à T4.
+
 ## 2026-11-02 — Conversations « Waiting » dans le filtre non lues
 
 - **Demandeur :** Raoul Barmat, ajout du statut « Waiting » au bouton « Show unread and working threads ».
