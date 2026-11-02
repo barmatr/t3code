@@ -3409,7 +3409,7 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               <div className="flex flex-col gap-1 px-2 pb-2">
                 <div className="flex min-w-0 items-center gap-2 text-sm" aria-live="polite">
                   <ProjectFavicon project={focusedProjectGroup} className="size-4 shrink-0" />
-                  <span className="truncate">Focus : {focusedProjectGroup.displayName}</span>
+                  <span className="truncate">Focus: {focusedProjectGroup.displayName}</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -3420,10 +3420,10 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
                   }}
                 >
                   {projectScopeKeys.length > 0
-                    ? "Tous les projets sélectionnés"
+                    ? "All selected projects"
                     : recentProjectKeys.size > 0
-                      ? "Tous les projets récents"
-                      : "Tous les projets"}
+                      ? "All recent projects"
+                      : "All projects"}
                 </Button>
               </div>
             ) : null}

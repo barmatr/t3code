@@ -18,8 +18,13 @@ hold `Option` and press `Tab` repeatedly to visit the other projects in recent-u
 order. The order stays fixed until you release `Option`. Choosing the whole selected
 pool clears focus without changing the conversation.
 
-Choose **Tous les projets sélectionnés** in the switcher or above the conversations to leave focus and
-show the whole selected pool again (**Tous les projets** when no filter is set).
+Each project card counts its threads as the sidebar rows label them: **Input**
+(a question, an approval or a guest request waiting on you), **Working** (running,
+or waiting on another thread or a background task) and **Done** (finished since you
+last opened it). The last card totals the projects in the switcher.
+
+Choose **All selected projects** in the switcher or above the conversations to leave focus and
+show the whole selected pool again (**All recent projects** when no filter is set).
 Changing the project checkboxes also clears focus. Focus lasts for the current
 app session; the checkboxes remain saved across restarts. Opening a conversation
 that focus hides, from history, the command palette or a link, leaves focus; the
@@ -29,8 +34,8 @@ In T4's sidebar project filter, click a project to select it alone and close the
 menu. Hold `Shift` while clicking to add or remove individual projects while
 keeping the menu open. **All projects** clears the filter and closes the menu.
 
-Turn off **Settings → Keybindings → Projets T4 → ⌥ Tab : changer
-de projet** to disable this shortcut. `Cmd+Tab` keeps its normal macOS behavior.
+Turn off **Settings → Keybindings → T4 projects → ⌥ Tab: switch project** to
+disable this shortcut. `Cmd+Tab` keeps its normal macOS behavior.
 
 ### Create a conversation
 

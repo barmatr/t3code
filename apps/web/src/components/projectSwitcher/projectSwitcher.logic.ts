@@ -1,3 +1,5 @@
+import type { SidebarV2TopStatusKind } from "../Sidebar.logic";
+
 export function projectSwitcherCandidates<T extends { projectKey: string }>(
   projects: readonly T[],
   filterKeys: readonly string[],
@@ -58,23 +60,72 @@ type ProjectThread = {
   lineage: { relationshipToParent: string | null };
 };
 
+type ProjectRef = { environmentId: string; projectId: string };
+
+const memberKey = (ref: ProjectRef) => `${ref.environmentId}:${ref.projectId}`;
+
+const isListedThread = (thread: ProjectThread) =>
+  thread.archivedAt === null &&
+  thread.deletedAt === null &&
+  thread.lineage.relationshipToParent !== "subagent";
+
 export function latestProjectThread<T extends ProjectThread>(
   threads: readonly T[],
-  projectRefs: readonly { environmentId: string; projectId: string }[],
+  projectRefs: readonly ProjectRef[],
 ): T | null {
-  const members = new Set(projectRefs.map((ref) => `${ref.environmentId}:${ref.projectId}`));
+  const members = new Set(projectRefs.map(memberKey));
   let latest: T | null = null;
   for (const thread of threads) {
-    if (
-      thread.archivedAt !== null ||
-      thread.deletedAt !== null ||
-      thread.lineage.relationshipToParent === "subagent" ||
-      !members.has(`${thread.environmentId}:${thread.projectId}`)
-    )
-      continue;
+    if (!isListedThread(thread) || !members.has(memberKey(thread))) continue;
     if (latest === null || Date.parse(thread.updatedAt) > Date.parse(latest.updatedAt)) {
       latest = thread;
     }
   }
   return latest;
+}
+
+export type ThreadCounts = { input: number; working: number; done: number };
+
+// Grouped as the sidebar rows read: anything waiting on the user, anything still busy, and
+// finished turns not yet opened. Failed, limited and woke threads stay out of the counts.
+const COUNTED_STATUS: Partial<Record<SidebarV2TopStatusKind, keyof ThreadCounts>> = {
+  input: "input",
+  approval: "input",
+  request: "input",
+  working: "working",
+  waiting: "working",
+  done: "done",
+};
+
+export function countProjectThreads<T extends ProjectThread>(
+  threads: readonly T[],
+  projects: readonly { projectKey: string; memberProjectRefs: readonly ProjectRef[] }[],
+  topStatusOf: (thread: T) => SidebarV2TopStatusKind | null,
+): ReadonlyMap<string, ThreadCounts> {
+  const counts = new Map<string, ThreadCounts>();
+  const projectKeyByMember = new Map<string, string>();
+  for (const project of projects) {
+    counts.set(project.projectKey, { input: 0, working: 0, done: 0 });
+    for (const ref of project.memberProjectRefs) {
+      projectKeyByMember.set(memberKey(ref), project.projectKey);
+    }
+  }
+  for (const thread of threads) {
+    const projectKey = projectKeyByMember.get(memberKey(thread));
+    if (projectKey === undefined || !isListedThread(thread)) continue;
+    const status = topStatusOf(thread);
+    const counted = status === null ? undefined : COUNTED_STATUS[status];
+    if (counted !== undefined) counts.get(projectKey)![counted] += 1;
+  }
+  return counts;
+}
+
+export function sumThreadCounts(counts: Iterable<ThreadCounts>): ThreadCounts {
+  const total = { input: 0, working: 0, done: 0 };
+  for (const count of counts) {
+    total.input += count.input;
+    total.working += count.working;
+    total.done += count.done;
+  }
+  return total;
 }

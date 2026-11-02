@@ -21,14 +21,64 @@ vi.mock("../../state/entities", () => ({
   useQuietThreadShell: () => null,
   readThreadShells: () =>
     [
-      { id: "b-old", environmentId: "env", projectId: "b", updatedAt: "2026-10-26T10:00:00Z" },
-      { id: "a-latest", environmentId: "env", projectId: "a", updatedAt: "2026-10-26T11:00:00Z" },
-      { id: "b-latest", environmentId: "env", projectId: "b", updatedAt: "2026-10-26T12:00:00Z" },
+      // Waiting on another thread or a background task still counts as Working.
+      {
+        id: "b-old",
+        projectId: "b",
+        updatedAt: "2026-10-26T10:00:00Z",
+        runtime: { status: "idle" },
+      },
+      {
+        id: "a-latest",
+        projectId: "a",
+        updatedAt: "2026-10-26T11:00:00Z",
+        hasPendingUserInput: true,
+      },
+      {
+        id: "b-latest",
+        projectId: "b",
+        updatedAt: "2026-10-26T12:00:00Z",
+        runtime: { status: "running" },
+      },
+      // Done counts finished turns not opened since; an approval request counts as Input.
+      {
+        id: "c-done",
+        projectId: "c",
+        updatedAt: "2026-10-26T09:00:00Z",
+        latestRun: { status: "completed", completedAt: "2026-10-26T09:00:00Z" },
+        lastVisitedAt: "2026-10-26T08:00:00Z",
+      },
+      {
+        id: "c-approval",
+        projectId: "c",
+        updatedAt: "2026-10-26T08:00:00Z",
+        hasPendingApprovals: true,
+      },
+      {
+        id: "c-read",
+        projectId: "c",
+        updatedAt: "2026-10-26T07:00:00Z",
+        latestRun: { status: "completed", completedAt: "2026-10-26T07:00:00Z" },
+        lastVisitedAt: "2026-10-26T07:30:00Z",
+      },
+      {
+        id: "c-subagent",
+        projectId: "c",
+        updatedAt: "2026-10-26T06:00:00Z",
+        runtime: { status: "running" },
+        lineage: { relationshipToParent: "subagent" },
+      },
     ].map((thread) => ({
-      ...thread,
+      environmentId: "env",
       archivedAt: null,
       deletedAt: null,
       lineage: { relationshipToParent: null },
+      runtime: null,
+      latestRun: null,
+      hasPendingApprovals: false,
+      hasPendingUserInput: false,
+      snoozedUntil: null,
+      ...thread,
     })),
 }));
 vi.mock("../ui/sidebar", () => ({ useSidebar: () => ({ setOpen: () => {} }) }));
@@ -106,9 +156,23 @@ describe("project switcher navigation", () => {
     await expect
       .element(page.getByRole("option", { name: "B", exact: true }))
       .toHaveAttribute("aria-selected", "true");
-    await page.getByRole("option", { name: "Tous les projets sélectionnés", exact: true }).click();
+    await page.getByRole("option", { name: "All selected projects", exact: true }).click();
     expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
     expect(screen.router?.state.location.pathname).toBe("/env/a-latest");
+  });
+});
+
+describe("project switcher thread counts", () => {
+  it("counts each project's Input, Working and Done threads, and totals them", async () => {
+    using harness = setup();
+    await using _screen = await render(<ProjectSwitcher />, { router: "/env/a-latest" });
+    await harness.send("next");
+    const counts = (name: string) =>
+      expect.element(page.getByRole("option", { name, exact: true }));
+    await counts("A").toHaveAccessibleDescription("Input 1 Working 0 Done 0");
+    await counts("B").toHaveAccessibleDescription("Input 0 Working 2 Done 0");
+    await counts("C").toHaveAccessibleDescription("Input 1 Working 0 Done 1");
+    await counts("All selected projects").toHaveAccessibleDescription("Input 2 Working 2 Done 1");
   });
 });
 
@@ -124,8 +188,8 @@ describe("project switcher layout", () => {
     const harness = setup(keys);
     const screen = await render(<ProjectSwitcher />, { router: "/env/a-latest" });
     await harness.send("next");
-    await expect.element(page.getByRole("listbox", { name: "Projets" })).toBeVisible();
-    const list = page.getByRole("listbox", { name: "Projets" }).element() as HTMLElement;
+    await expect.element(page.getByRole("listbox", { name: "Projects" })).toBeVisible();
+    const list = page.getByRole("listbox", { name: "Projects" }).element() as HTMLElement;
     const cards = page.getByRole("option").elements();
     return { harness, screen, list, cards, popup: list.parentElement! };
   }

@@ -3,7 +3,7 @@
   position: relative;
   grid-row-start: 2;
   width: min(800px, 100%);
-  max-height: min(600px, 90dvh);
+  max-height: min(660px, 90dvh);
   overflow: auto;
   isolation: isolate;
   border: 1px solid color-mix(in srgb, var(--switcher-accent) 38%, transparent);
@@ -81,7 +81,7 @@
 }
 
 .t4-switcher-projects {
-  --switcher-card-height: 145px;
+  --switcher-card-height: 180px;
   --switcher-gap: 9px;
   --switcher-list-padding: 24px;
   box-sizing: border-box;
@@ -105,7 +105,7 @@
   min-width: 0;
   align-items: center;
   flex-direction: column;
-  padding: 18px 9px 15px;
+  padding: 16px 9px 11px;
   border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
   border-radius: 12px;
   background: color-mix(in srgb, var(--foreground) 3%, transparent);
@@ -146,10 +146,10 @@
 }
 .t4-switcher-icon {
   display: grid;
-  width: 48px;
-  height: 48px;
+  width: 42px;
+  height: 42px;
   place-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .t4-switcher-all-icon {
   display: grid;
@@ -174,11 +174,54 @@
   text-align: center;
   overflow-wrap: anywhere;
 }
-.t4-switcher-caption {
-  margin-top: 4px;
-  color: var(--muted-foreground);
+/* Thread counts reuse the sidebar row colors: Input, Working and Done. */
+.t4-switcher-counts {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  margin-top: 7px;
+  padding: 7px 2px 0;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+.t4-switcher-count {
+  --count-color: var(--muted-foreground);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 16px;
+  color: var(--count-color);
+  font-size: 10.5px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.t4-switcher-count svg {
+  flex-shrink: 0;
+}
+.t4-switcher-count[data-status="input"] {
+  --count-color: var(--color-indigo-600);
+}
+:global(.dark) .t4-switcher-count[data-status="input"] {
+  --count-color: var(--color-indigo-300);
+}
+.t4-switcher-count[data-status="working"] {
+  --count-color: var(--info-foreground);
+}
+.t4-switcher-count[data-status="done"] {
+  --count-color: var(--success-foreground);
+}
+.t4-switcher-count[data-empty] {
+  --count-color: var(--muted-foreground);
+  opacity: 0.4;
+}
+.t4-switcher-count-value {
+  margin-left: auto;
+  color: var(--popover-foreground);
   font-size: 11px;
-  line-height: 14px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.t4-switcher-count[data-status="input"]:not([data-empty]) .t4-switcher-count-value {
+  color: var(--count-color);
 }
 
 .t4-switcher-footer {
@@ -193,10 +236,23 @@
   font-size: 12px;
   font-weight: 550;
 }
-.t4-switcher-status > span:last-child {
+.t4-switcher-status-label {
+  min-width: 0;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+.t4-switcher-status .t4-switcher-counts {
+  display: flex;
+  flex-shrink: 0;
+  gap: 12px;
+  width: auto;
+  margin: 0 0 0 6px;
+  padding: 0;
+  border: 0;
+}
+.t4-switcher-status .t4-switcher-count-value {
+  margin-left: 0;
 }
 .t4-switcher-status-dot {
   width: 5px;

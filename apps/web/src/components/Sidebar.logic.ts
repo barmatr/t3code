@@ -1021,22 +1021,30 @@ export function resolveSidebarV2TopStatus(input: {
   return input.isUnread ? "done" : null;
 }
 
+/** The status a thread's sidebar row shows, given its resolved visit and wake times. */
+export function resolveThreadTopStatus(
+  thread: SidebarThreadSummary,
+  input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
+): SidebarV2TopStatusKind | null {
+  const isWoke =
+    input.wokeAt !== null &&
+    thread.settledOverride !== "settled" &&
+    (input.lastVisitedAt === undefined ||
+      Date.parse(input.lastVisitedAt) < Date.parse(input.wokeAt));
+  return resolveSidebarV2TopStatus({
+    status: resolveSidebarThreadStatus(thread),
+    isUnread: hasUnseenCompletion({ ...thread, lastVisitedAt: input.lastVisitedAt }),
+    isWoke,
+  });
+}
+
 /** Unread mode also keeps Working threads so ongoing work stays visible. */
 export function matchesUnreadThreadFilter(
   thread: SidebarThreadSummary,
   input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
 ): boolean {
   if (thread.archivedAt !== null) return false;
-  const isWoke =
-    input.wokeAt !== null &&
-    thread.settledOverride !== "settled" &&
-    (input.lastVisitedAt === undefined ||
-      Date.parse(input.lastVisitedAt) < Date.parse(input.wokeAt));
-  const topStatus = resolveSidebarV2TopStatus({
-    status: resolveSidebarThreadStatus(thread),
-    isUnread: hasUnseenCompletion({ ...thread, lastVisitedAt: input.lastVisitedAt }),
-    isWoke,
-  });
+  const topStatus = resolveThreadTopStatus(thread, input);
   return topStatus !== null && topStatus !== "waiting";
 }
 
