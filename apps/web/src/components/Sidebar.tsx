@@ -3129,7 +3129,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               projectScope={
                 <>
                   <SidebarHeaderIconButton
-                    label={unreadOnly ? "Show all threads" : "Show unread and working threads"}
+                    label={
+                      unreadOnly ? "Show all threads" : "Show unread, working and waiting threads"
+                    }
                     isActive={unreadOnly}
                     aria-pressed={unreadOnly}
                     onClick={() => {

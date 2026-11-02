@@ -1038,14 +1038,13 @@ export function resolveThreadTopStatus(
   });
 }
 
-/** Unread mode also keeps Working threads so ongoing work stays visible. */
+/** Unread mode also keeps Working and Waiting threads so ongoing work stays visible. */
 export function matchesUnreadThreadFilter(
   thread: SidebarThreadSummary,
   input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
 ): boolean {
   if (thread.archivedAt !== null) return false;
-  const topStatus = resolveThreadTopStatus(thread, input);
-  return topStatus !== null && topStatus !== "waiting";
+  return resolveThreadTopStatus(thread, input) !== null;
 }
 
 export function firstValidTimestampMs(

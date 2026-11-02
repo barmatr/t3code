@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-02 — Conversations « Waiting » dans le filtre non lues
+
+- **Demandeur :** Raoul Barmat, ajout du statut « Waiting » au bouton « Show unread and working threads ».
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** garder visibles dans ce filtre toutes les conversations encore actives, y compris celles qui attendent une autre conversation ou une tâche de fond.
+- **Effet pratique :** les personnalisations décrivent le filtre élargi et la nouvelle infobulle « Show unread, working and waiting threads ».
+
 ## 2026-11-02 — Compteurs de conversations dans ⌥Tab
 
 - **Demandeur :** Raoul Barmat, ajout par projet du nombre de conversations Input, Working et Done, puis passage du sélecteur en anglais.

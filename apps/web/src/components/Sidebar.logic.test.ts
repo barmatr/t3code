@@ -1002,15 +1002,18 @@ describe("matchesUnreadThreadFilter", () => {
     },
   );
 
-  it("still excludes Waiting threads blocked on another task", () => {
-    const thread = completed({ status: "running", blockedOnThreadWait: true });
+  it.each([
+    ["blocked on another thread", { status: "running", blockedOnThreadWait: true }],
+    ["idle on a background task", { status: "idle" }],
+  ] as const)("keeps Waiting threads %s even when already visited", (_, overrides) => {
+    const thread = completed(overrides);
     expect(resolveSidebarThreadStatus(thread)).toBe("waiting");
     expect(
       matchesUnreadThreadFilter(thread, {
         lastVisitedAt: "2026-06-20T01:01:00.000Z",
         wokeAt: null,
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it("does not restore archived Working threads", () => {
