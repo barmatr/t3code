@@ -1165,7 +1165,9 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
           ),
         );
   const chosenCheckedProjectKeys =
-    chosenScopeGroups.length === pickableGroups.length ? null : memberProjectKeys(chosenScopeGroups);
+    chosenScopeGroups.length === pickableGroups.length
+      ? null
+      : memberProjectKeys(chosenScopeGroups);
   const chosenScopeProjectKeys = chosenFocusedProjectGroup
     ? memberProjectKeys([chosenFocusedProjectGroup])
     : chosenCheckedProjectKeys;
