@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-02 — Compteurs de conversations dans ⌥Tab
+
+- **Demandeur :** Raoul Barmat, ajout par projet du nombre de conversations Input, Working et Done, puis passage du sélecteur en anglais.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** voir depuis le sélecteur quels projets attendent une réponse, travaillent encore ou ont terminé, avec le vocabulaire de T3.
+- **Effet pratique :** les personnalisations décrivent les trois compteurs, leurs règles de regroupement, les libellés anglais et les nouvelles dimensions ; les pièges de construction couvrent la réinstallation du Chromium des tests.
+
 ## 2026-10-29 — Conservation du filtre à l'ouverture d'une conversation
 
 - **Demandeur :** Raoul Barmat, maintien des projets cochés lors de « Nouveau message ».

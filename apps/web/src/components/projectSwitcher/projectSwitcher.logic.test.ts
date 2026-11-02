@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vite-plus/test";
+import type { SidebarV2TopStatusKind } from "../Sidebar.logic";
 import {
   advanceProjectSelection,
+  countProjectThreads,
   latestProjectThread,
   orderRecentProjects,
   rememberRecentProject,
   projectSwitcherCandidates,
   resolveFocusedProject,
+  sumThreadCounts,
 } from "./projectSwitcher.logic";
 
 describe("project switcher", () => {
@@ -110,5 +113,51 @@ describe("latest conversation in a project", () => {
     ).toBe("remote");
     expect(latestProjectThread(threads, [])).toBeNull();
     expect(latestProjectThread([], members)).toBeNull();
+  });
+});
+
+describe("thread counts per project", () => {
+  const thread = (id: string, environmentId: string, projectId: string) => ({
+    id,
+    environmentId,
+    projectId,
+    updatedAt: "2026-10-26T10:00:00Z",
+    archivedAt: null as string | null,
+    deletedAt: null as string | null,
+    lineage: { relationshipToParent: null as string | null },
+  });
+  const projects = [
+    {
+      projectKey: "grouped",
+      memberProjectRefs: [
+        { environmentId: "local", projectId: "app" },
+        { environmentId: "remote", projectId: "app" },
+      ],
+    },
+    { projectKey: "quiet", memberProjectRefs: [{ environmentId: "local", projectId: "quiet" }] },
+  ];
+  const statusById: Record<string, SidebarV2TopStatusKind | null> = {
+    input: "input",
+    approval: "approval",
+    request: "request",
+    working: "working",
+    waiting: "waiting",
+    done: "done",
+    failed: "failed",
+    woke: "woke",
+    read: null,
+  };
+  it("groups sidebar statuses into Input, Working and Done across a project's environments", () => {
+    const threads = [
+      ...Object.keys(statusById).map((id) => thread(id, "local", "app")),
+      thread("working", "remote", "app"),
+      thread("done", "elsewhere", "app"),
+      { ...thread("input", "local", "app"), archivedAt: "2026-10-26T11:00:00Z" },
+      { ...thread("working", "local", "app"), lineage: { relationshipToParent: "subagent" } },
+    ];
+    const counts = countProjectThreads(threads, projects, (t) => statusById[t.id] ?? null);
+    expect(counts.get("grouped")).toEqual({ input: 3, working: 3, done: 1 });
+    expect(counts.get("quiet")).toEqual({ input: 0, working: 0, done: 0 });
+    expect(sumThreadCounts(counts.values())).toEqual({ input: 3, working: 3, done: 1 });
   });
 });

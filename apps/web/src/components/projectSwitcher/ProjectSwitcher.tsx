@@ -1,11 +1,22 @@
 import { useNavigate } from "@tanstack/react-router";
-import { scopeProjectRef, scopeThreadRef } from "@t3tools/client-runtime/environment";
+import {
+  scopeProjectRef,
+  scopeThreadRef,
+  scopedThreadKey,
+} from "@t3tools/client-runtime/environment";
+import { threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
 import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import { useThreadRouteTarget } from "../../hooks/useThreadRouteTarget";
 import { readThreadShells, useQuietThreadShell } from "../../state/entities";
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { buildThreadRouteParams } from "../../threadRoutes";
-import { CheckIcon, LayoutGridIcon } from "lucide-react";
+import {
+  CheckIcon,
+  CircleCheckIcon,
+  CircleDashedIcon,
+  LayoutGridIcon,
+  MessageCircleQuestionIcon,
+} from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useSidebarProjectGroups } from "../../hooks/useSidebarProjectGroups";
 import { useRecentProjectKeys } from "../../hooks/useRecentProjectKeys";
@@ -13,6 +24,7 @@ import { defaultScopeProjects, projectKeyOf } from "../sidebar/recentProjects";
 import { useUiStateStore } from "../../uiStateStore";
 import { useThreadSelectionStore } from "../../threadSelectionStore";
 import { ProjectFavicon } from "../ProjectFavicon";
+import { resolveThreadLastVisitedAt, resolveThreadTopStatus } from "../Sidebar.logic";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import {
   Dialog,
@@ -29,17 +41,65 @@ import { toastManager } from "../ui/toast";
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import {
   advanceProjectSelection,
+  countProjectThreads,
   latestProjectThread,
   orderRecentProjects,
   rememberRecentProject,
   projectSwitcherCandidates,
   resolveFocusedProject,
+  sumThreadCounts,
+  type ThreadCounts,
 } from "./projectSwitcher.logic";
 import { useProjectSwitcherPreference } from "./useProjectSwitcherPreference";
 
 const ALL_PROJECTS_KEY = "t4:all-selected-projects";
 type SwitchOption = { key: string; label: string; project: SidebarProjectSnapshot | null };
-type SwitchSession = { options: readonly SwitchOption[]; selected: string };
+type SwitchSession = {
+  options: readonly SwitchOption[];
+  selected: string;
+  counts: ReadonlyMap<string, ThreadCounts>;
+};
+
+const NO_THREADS: ThreadCounts = { input: 0, working: 0, done: 0 };
+const THREAD_COUNT_ROWS = [
+  { key: "input", label: "Input", Icon: MessageCircleQuestionIcon },
+  { key: "working", label: "Working", Icon: CircleDashedIcon },
+  { key: "done", label: "Done", Icon: CircleCheckIcon },
+] as const;
+
+// Read when the switcher opens or moves rather than subscribed, so a closed switcher costs nothing.
+function readThreadCounts(projects: readonly SidebarProjectSnapshot[]) {
+  const localLastVisitedAtById = useUiStateStore.getState().threadLastVisitedAtById;
+  const now = new Date().toISOString();
+  return countProjectThreads(readThreadShells(), projects, (thread) =>
+    resolveThreadTopStatus(thread, {
+      lastVisitedAt: resolveThreadLastVisitedAt(
+        thread.lastVisitedAt,
+        localLastVisitedAtById[scopedThreadKey(scopeThreadRef(thread.environmentId, thread.id))],
+      ),
+      wokeAt: threadWokeAt(thread, { now }),
+    }),
+  );
+}
+
+function ThreadCountRows({ counts, id }: { counts: ThreadCounts; id?: string }) {
+  return (
+    <span id={id} className={styles["t4-switcher-counts"]}>
+      {THREAD_COUNT_ROWS.map(({ key, label, Icon }) => (
+        <span
+          key={key}
+          className={styles["t4-switcher-count"]}
+          data-status={key}
+          data-empty={counts[key] === 0 || undefined}
+        >
+          <Icon aria-hidden size={12} />
+          <span>{label}</span>
+          <span className={styles["t4-switcher-count-value"]}>{counts[key]}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
 
 export function ProjectSwitcher() {
   const projects = useSidebarProjectGroups();
@@ -50,10 +110,10 @@ export function ProjectSwitcher() {
   const clearThreadSelection = useThreadSelectionStore((state) => state.clearSelection);
   const allProjectsLabel =
     filterKeys.length > 0
-      ? "Tous les projets sélectionnés"
+      ? "All selected projects"
       : recentProjectKeys.size > 0
-        ? "Tous les projets récents"
-        : "Tous les projets";
+        ? "All recent projects"
+        : "All projects";
   const navigate = useNavigate();
   const openDraft = useNewThreadHandler();
   const routeTarget = useThreadRouteTarget();
@@ -123,8 +183,8 @@ export function ProjectSwitcher() {
     void opening.catch(() =>
       toastManager.add({
         type: "error",
-        title: "Impossible d’ouvrir la conversation",
-        description: "Sélectionne une conversation dans la barre de gauche pour réessayer.",
+        title: "Couldn’t open the thread",
+        description: "Pick a thread in the sidebar to try again.",
       }),
     );
   };
@@ -133,9 +193,9 @@ export function ProjectSwitcher() {
     if (action.endsWith("unavailable")) {
       toastManager.add({
         type: "error",
-        title: "Raccourci projets indisponible",
+        title: "Project shortcut unavailable",
         description:
-          "⌥ Tab n’a pas pu être activé. Vérifie qu’une autre application n’utilise pas déjà ce raccourci.",
+          "⌥ Tab couldn’t be enabled. Check that no other app already uses this shortcut.",
       });
       return;
     }
@@ -167,7 +227,13 @@ export function ProjectSwitcher() {
         action.endsWith("previous") ? -1 : 1,
       );
       if (selected === null) return;
-      const next = { options: list, selected };
+      const next = {
+        options: list,
+        selected,
+        counts: readThreadCounts(
+          list.flatMap((option) => (option.project ? [option.project] : [])),
+        ),
+      };
       sessionRef.current = next;
       setSession(next);
     }
@@ -184,6 +250,11 @@ export function ProjectSwitcher() {
       unsubscribe();
     };
   }, [available]);
+
+  const totalCounts = session ? sumThreadCounts(session.counts.values()) : NO_THREADS;
+  const countsOf = (option: SwitchOption) =>
+    option.project ? (session?.counts.get(option.key) ?? NO_THREADS) : totalCounts;
+  const selectedOption = session?.options.find((option) => option.key === session.selected);
 
   return (
     <Dialog
@@ -206,12 +277,12 @@ export function ProjectSwitcher() {
                 <StageBackdropArt variant="nightly" />
               </div>
               <div className={styles["t4-switcher-heading"]}>
-                <span className={styles["t4-switcher-eyebrow"]}>T4 · VOS ESPACES</span>
+                <span className={styles["t4-switcher-eyebrow"]}>T4 · WORKSPACES</span>
                 <DialogPrimitive.Title className={styles["t4-switcher-title"]}>
-                  Changer de projet
+                  Switch project
                 </DialogPrimitive.Title>
                 <DialogPrimitive.Description className={styles["t4-switcher-description"]}>
-                  Un projet à la fois. Gardez le fil.
+                  One project at a time. Keep the thread.
                 </DialogPrimitive.Description>
               </div>
               <div className={styles["t4-switcher-shortcut"]} aria-label="Option Tab">
@@ -222,7 +293,7 @@ export function ProjectSwitcher() {
             <div
               className={styles["t4-switcher-projects"]}
               role="listbox"
-              aria-label="Projets"
+              aria-label="Projects"
               aria-activedescendant={
                 session
                   ? `switch-project-${session.options.findIndex((option) => option.key === session.selected)}`
@@ -237,6 +308,7 @@ export function ProjectSwitcher() {
                   role="option"
                   aria-selected={option.key === session.selected}
                   aria-label={option.label}
+                  aria-describedby={`switch-project-${index}-threads`}
                   ref={(element) => {
                     if (element && option.key === session.selected)
                       element.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -256,39 +328,37 @@ export function ProjectSwitcher() {
                       </span>
                     )}
                   </span>
-                  <span className={styles["t4-switcher-label"]}>
-                    {option.project ? option.label : "Tous les projets"}
-                  </span>
-                  <span className={styles["t4-switcher-caption"]}>
-                    {option.project ? "Focus projet" : "Sélection actuelle"}
-                  </span>
+                  <span className={styles["t4-switcher-label"]}>{option.label}</span>
+                  <ThreadCountRows
+                    id={`switch-project-${index}-threads`}
+                    counts={countsOf(option)}
+                  />
                 </button>
               ))}
             </div>
             <footer className={styles["t4-switcher-footer"]}>
               <div className={styles["t4-switcher-status"]} aria-live="polite">
                 <span className={styles["t4-switcher-status-dot"]} aria-hidden="true" />
-                <span>
-                  {session?.options.find((option) => option.key === session.selected)?.label}
-                </span>
+                <span className={styles["t4-switcher-status-label"]}>{selectedOption?.label}</span>
+                {selectedOption ? <ThreadCountRows counts={countsOf(selectedOption)} /> : null}
               </div>
               <div className={styles["t4-switcher-bottom-line"]}>
                 <div className={styles["t4-switcher-hints"]}>
                   <span>
-                    Relâchez <kbd>⌥</kbd> pour valider
+                    Release <kbd>⌥</kbd> to switch
                   </span>
                   <span>
-                    <kbd>⇧ Tab</kbd> retour
+                    <kbd>⇧ Tab</kbd> back
                   </span>
                   <span>
-                    <kbd>esc</kbd> annuler
+                    <kbd>esc</kbd> cancel
                   </span>
                 </div>
                 <div className={styles["t4-switcher-credit"]}>
                   <span>
                     🚀 Powered by <strong>Raobar</strong>
                   </span>
-                  <img src={raobarAvatar} alt="Portrait de Raobar" width={28} height={28} />
+                  <img src={raobarAvatar} alt="Portrait of Raobar" width={28} height={28} />
                 </div>
               </div>
             </footer>
