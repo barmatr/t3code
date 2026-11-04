@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-04 — Rebase sur la Nightly `4165`
+
+- **Demandeur :** Raoul Barmat, installation de la mise à jour en gardant le snooze propre à T4.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** la cible `4080` préparée le 2 novembre était dépassée ; upstream a aligné le menu du filtre sur son bouton et placé l'épingle avant le badge d'environnement.
+- **Effet pratique :** T4 reprend ces deux retouches upstream ; les personnalisations restent inchangées.
+
 ## 2026-11-02 — Rebase sur la Nightly `4080`
 
 - **Demandeur :** Raoul Barmat, mise à jour proposée par T3, à appliquer au front T4 et au serveur T3.
