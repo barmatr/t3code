@@ -131,7 +131,7 @@
 .t4-flame-hot,
 .t4-flame-core {
   stroke-dasharray: var(--flame-length) calc(50px - var(--flame-length));
-  /* Four laps; the easing is the boost, fastest halfway through. */
+  /* Three laps; the easing is the boost, fastest halfway through. */
   animation: t4-flame-run 5s cubic-bezier(0.32, 0, 0.68, 1) both;
 }
 
@@ -174,7 +174,7 @@
     stroke-dashoffset: var(--flame-length);
   }
   to {
-    stroke-dashoffset: calc(var(--flame-length) - 400px);
+    stroke-dashoffset: calc(var(--flame-length) - 300px);
   }
 }
 
