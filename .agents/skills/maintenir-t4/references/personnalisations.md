@@ -44,6 +44,8 @@ Limites actuelles : l'historique récent et le focus sont des états de session 
 
 Présentation du focus (demande de Raoul du 9 novembre 2026) : une carte « Project focus » en haut de la barre latérale, à l'accent indigo du sélecteur, nomme le projet et porte le bouton de sortie. Elle remplace la ligne « Focus: <projet> » et le texte centré, trop discrets pour être compris comme un focus de projet. Fichiers : [ProjectFocusCard.tsx](../../../../apps/web/src/components/projectSwitcher/ProjectFocusCard.tsx) et son module CSS.
 
+Flamme du focus (demande de Raoul du 9 novembre 2026) : à chaque mise au point sur un projet, deux flammes bleues à tête blanche parcourent le liseré de la carte, quatre tours en 5 secondes avec une accélération à mi-parcours, puis le SVG se retire pour qu'aucun filtre ne tourne ensuite. La flamme se rallume quand le focus change de projet et ne part pas au lancement, car le focus n'est pas restauré. La carte n'a plus de `overflow: hidden` pour laisser la flamme déborder, et `prefers-reduced-motion` la masque. Mêmes fichiers.
+
 Repères : [ProjectSwitcher.tsx](../../../../apps/web/src/components/projectSwitcher/ProjectSwitcher.tsx), [logique et choix de conversation](../../../../apps/web/src/components/projectSwitcher/projectSwitcher.logic.ts), [raccourci natif](../../../../apps/desktop/src/window/ProjectSwitcherShortcuts.ts), [intégration de fenêtre](../../../../apps/desktop/src/window/DesktopWindow.ts) et [guide utilisateur](../../../../docs/user/thread-sidebar.md).
 
 ## Sections de la barre latérale

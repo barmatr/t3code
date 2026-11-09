@@ -7,7 +7,6 @@
   gap: 6px;
   margin: 2px 8px 10px;
   padding: 9px 6px 5px 12px;
-  overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--focus-accent) 45%, transparent);
   border-radius: 12px;
   background:
@@ -91,4 +90,118 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/*
+ * Nitro burst: two white-hot flames lap the border for 5 seconds, then the svg removes itself.
+ * pathLength="100" on each rect keeps the speed even around the rounded corners, and a dash
+ * offset of its length lines every layer's head up. Dash values carry px to stay valid in calc().
+ */
+.t4-focus-flames {
+  --flame-bleed: 14px;
+  position: absolute;
+  z-index: 1;
+  inset: calc(-1px - var(--flame-bleed));
+  width: calc(100% + 2px + 2 * var(--flame-bleed));
+  height: calc(100% + 2px + 2 * var(--flame-bleed));
+  overflow: visible;
+  pointer-events: none;
+  animation: t4-flames-life 5s linear both;
+}
+
+.t4-focus-flames rect {
+  x: var(--flame-bleed);
+  y: var(--flame-bleed);
+  width: calc(100% - 2 * var(--flame-bleed));
+  height: calc(100% - 2 * var(--flame-bleed));
+  rx: 12px;
+  fill: none;
+  stroke-linecap: round;
+}
+
+.t4-flame-ignition {
+  stroke: #bfdbfe;
+  stroke-width: 2.5;
+  animation: t4-flames-ignition 0.8s ease-out both;
+}
+
+.t4-flame-tail,
+.t4-flame-body,
+.t4-flame-outer,
+.t4-flame-hot,
+.t4-flame-core {
+  stroke-dasharray: var(--flame-length) calc(50px - var(--flame-length));
+  /* Four laps; the easing is the boost, fastest halfway through. */
+  animation: t4-flame-run 5s cubic-bezier(0.32, 0, 0.68, 1) both;
+}
+
+/* The flame thins out backwards: the longer the layer, the narrower it is. */
+.t4-flame-tail {
+  --flame-length: 32px;
+  opacity: 0.75;
+  stroke: #4338ca;
+  stroke-width: 1.5;
+}
+
+.t4-flame-body {
+  --flame-length: 20px;
+  opacity: 0.85;
+  stroke: #4f46e5;
+  stroke-width: 3.5;
+}
+
+.t4-flame-outer {
+  --flame-length: 12px;
+  opacity: 0.9;
+  stroke: #3b82f6;
+  stroke-width: 6.5;
+}
+
+.t4-flame-hot {
+  --flame-length: 6.5px;
+  stroke: #7dd3fc;
+  stroke-width: 4;
+}
+
+.t4-flame-core {
+  --flame-length: 2.8px;
+  stroke: #fff;
+  stroke-width: 2.4;
+}
+
+@keyframes t4-flame-run {
+  from {
+    stroke-dashoffset: var(--flame-length);
+  }
+  to {
+    stroke-dashoffset: calc(var(--flame-length) - 400px);
+  }
+}
+
+@keyframes t4-flames-life {
+  0% {
+    opacity: 0;
+  }
+  3%,
+  86% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes t4-flames-ignition {
+  from {
+    opacity: 0.95;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t4-focus-flames {
+    display: none;
+  }
 }

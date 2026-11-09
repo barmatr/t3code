@@ -23,7 +23,8 @@ Each project card counts its threads as the sidebar rows label them: **Input**
 or waiting on another thread or a background task) and **Done** (finished since you
 last opened it). The last card totals the projects in the switcher.
 
-While a project is focused, a **Project focus** card at the top of the sidebar names it. Choose
+While a project is focused, a **Project focus** card at the top of the sidebar names it; a
+flame runs around its border for five seconds each time focus lands on a project. Choose
 **All selected projects** in the switcher or on that card to leave focus and
 show the whole selected pool again (**All recent projects** when no filter is set).
 Changing the project checkboxes also clears focus. Focus lasts for the current

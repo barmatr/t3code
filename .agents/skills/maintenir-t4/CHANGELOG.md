@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-09 — Flamme de la carte « Project focus »
+
+- **Demandeur :** Raoul Barmat, animation de flammes ou de nitro sur le liseré bleu de la carte au moment de la mise au point, assez rapide sans excès, pendant 5 secondes.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** rendre la mise au point sur un projet visible et plaisante à l'instant où elle se produit, sans changer l'affichage de la carte.
+- **Effet pratique :** les personnalisations décrivent la flamme, son déclenchement et son retrait après 5 secondes.
+
 ## 2026-11-09 — Sections par défaut et carte « Project focus »
 
 - **Demandeur :** Raoul Barmat, sections « Settled » et « Snoozed » toujours repliées et « Working » toujours dépliée par défaut, y compris après un changement d'écran ou ⌥Tab ; focus de projet plus visible.
