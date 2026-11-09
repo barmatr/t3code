@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-09 — Sections par défaut et carte « Project focus »
+
+- **Demandeur :** Raoul Barmat, sections « Settled » et « Snoozed » toujours repliées et « Working » toujours dépliée par défaut, y compris après un changement d'écran ou ⌥Tab ; focus de projet plus visible.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** l'état des sections était enregistré et suivait Raoul d'un écran à l'autre, et la ligne « Focus » ne se lisait pas comme un focus de projet.
+- **Effet pratique :** les personnalisations décrivent la remise à zéro des sections et la carte « Project focus ».
+
 ## 2026-11-04 — Rebase sur la Nightly `4165`
 
 - **Demandeur :** Raoul Barmat, installation de la mise à jour en gardant le snooze propre à T4.

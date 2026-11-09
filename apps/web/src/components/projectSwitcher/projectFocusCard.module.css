@@ -1,0 +1,94 @@
+.t4-focus-card {
+  /* Same accent as the Option+Tab switcher, which is what sets the focus. */
+  --focus-accent: #818cf8;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 2px 8px 10px;
+  padding: 9px 6px 5px 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--focus-accent) 45%, transparent);
+  border-radius: 12px;
+  background:
+    radial-gradient(
+      120% 140% at 0% 0%,
+      color-mix(in srgb, var(--focus-accent) 26%, transparent),
+      transparent 70%
+    ),
+    color-mix(in srgb, var(--focus-accent) 7%, var(--sidebar));
+  box-shadow: 0 8px 22px -14px color-mix(in srgb, var(--focus-accent) 80%, transparent);
+  color: var(--sidebar-foreground);
+}
+
+.t4-focus-card::before {
+  content: "";
+  position: absolute;
+  inset: 9px auto 9px 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--focus-accent);
+}
+
+.t4-focus-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: color-mix(in srgb, var(--focus-accent) 72%, var(--sidebar-foreground));
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.t4-focus-project {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.t4-focus-name {
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.t4-focus-exit {
+  display: flex;
+  width: calc(100% + 6px);
+  height: 24px;
+  margin-left: -6px;
+  align-items: center;
+  gap: 6px;
+  padding-inline: 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: color-mix(in srgb, var(--sidebar-foreground) 68%, transparent);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.t4-focus-exit:hover {
+  background: color-mix(in srgb, var(--focus-accent) 18%, transparent);
+  color: var(--sidebar-foreground);
+}
+
+.t4-focus-exit:focus-visible {
+  outline: 2px solid var(--focus-accent);
+  outline-offset: -2px;
+}
+
+.t4-focus-exit-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

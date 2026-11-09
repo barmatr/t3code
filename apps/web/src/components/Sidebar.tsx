@@ -11,7 +11,6 @@ import { requestCustomSnooze } from "./CustomSnoozeDialog";
 import { useAtomValue } from "@effect/atom-react";
 import * as Option from "effect/Option";
 import { Atom } from "effect/reactivity";
-import * as Schema from "effect/Schema";
 import {
   DndContext,
   useSensor,
@@ -81,7 +80,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
 } from "react";
-import { type AnyRouter, useRouter } from "@tanstack/react-router";
+import { type AnyRouter, useLocation, useRouter } from "@tanstack/react-router";
 
 import {
   isAtomCommandInterrupted,
@@ -118,6 +117,7 @@ import {
   resolveProjectExpanded,
   useUiStateStore,
 } from "../uiStateStore";
+import { ProjectFocusCard } from "./projectSwitcher/ProjectFocusCard";
 import { resolveFocusedProject } from "./projectSwitcher/projectSwitcher.logic";
 import {
   getThreadKeysToDeselectAfterDelete,
@@ -137,7 +137,6 @@ import { registerSettleAndAdvance } from "../settleAndAdvance";
 import { startNewThreadFromContext } from "../lib/chatThreadActions";
 import { useClientSettings } from "../hooks/useSettings";
 import { useCopyToClipboard } from "../hooks/useCopyToClipboard";
-import { useLocalStorage } from "../hooks/useLocalStorage";
 import { useNowMinute } from "../hooks/useNowMinute";
 import { useRecentProjectKeys } from "../hooks/useRecentProjectKeys";
 import {
@@ -281,6 +280,7 @@ import {
   type SidebarSweepAction,
 } from "./sidebar/SidebarThreadRow";
 import { SidebarDraftBlock } from "./sidebar/SidebarDraftBlock";
+import { useSidebarShelves } from "./sidebar/useSidebarShelves";
 import {
   SidebarProjectFolderHeader,
   sidebarFolderRowId,
@@ -345,9 +345,6 @@ const EMPTY_THREADS: readonly EnvironmentThreadShell[] = [];
 
 const SETTLED_TAIL_INITIAL_COUNT = 10;
 const SETTLED_TAIL_PAGE_COUNT = 25;
-const SETTLED_SHELF_EXPANDED_KEY = "t3code:sidebar:settled-expanded";
-const SNOOZED_SHELF_EXPANDED_KEY = "t3code:sidebar:snoozed-expanded";
-const WORKING_SHELF_EXPANDED_KEY = "t3code:sidebar:working-expanded";
 
 const inboxReturns = createInboxReturnTracker();
 
@@ -465,21 +462,14 @@ function useSidebarThreads(input: {
   const nowMinute = useNowMinute();
   // Minute-quantized clocks would delay second-precise snooze wakes by up to a minute.
   const snoozeWakeClock = useSnoozeWakeClock(threads);
-  const [settledShelfExpanded, setSettledShelfExpanded] = useLocalStorage(
-    SETTLED_SHELF_EXPANDED_KEY,
-    false,
-    Schema.Boolean,
+  const pathname = useLocation({ select: (location) => location.pathname });
+  const shelfResetCount = useUiStateStore((store) => store.sidebarShelfResetCount);
+  const { shelves, toggleShelf } = useSidebarShelves(
+    [projectScopeKey, pathname, shelfResetCount].join("\0"),
   );
-  const [snoozedShelfExpanded, setSnoozedShelfExpanded] = useLocalStorage(
-    SNOOZED_SHELF_EXPANDED_KEY,
-    false,
-    Schema.Boolean,
-  );
-  const [workingShelfExpanded, setWorkingShelfExpanded] = useLocalStorage(
-    WORKING_SHELF_EXPANDED_KEY,
-    false,
-    Schema.Boolean,
-  );
+  const settledShelfExpanded = shelves.settled;
+  const snoozedShelfExpanded = shelves.snoozed;
+  const workingShelfExpanded = shelves.working;
   // Shared with the old per-project sidebar, so folders keep their open state.
   const projectExpandedById = useUiStateStore((store) => store.projectExpandedById);
   const setProjectExpanded = useUiStateStore((store) => store.setProjectExpanded);
@@ -599,11 +589,11 @@ function useSidebarThreads(input: {
         count: current.count + SETTLED_TAIL_PAGE_COUNT,
       })),
     settledShelfExpanded,
-    toggleSettledShelf: () => setSettledShelfExpanded((value) => !value),
+    toggleSettledShelf: () => toggleShelf("settled"),
     snoozedShelfExpanded,
-    toggleSnoozedShelf: () => setSnoozedShelfExpanded((value) => !value),
+    toggleSnoozedShelf: () => toggleShelf("snoozed"),
     workingShelfExpanded,
-    toggleWorkingShelf: () => setWorkingShelfExpanded((value) => !value),
+    toggleWorkingShelf: () => toggleShelf("working"),
     projectFolders,
     toggleProjectFolder: (group: SidebarProjectSnapshot) => {
       const keys = sidebarFolderExpansionKeys(group);
@@ -3394,26 +3384,20 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               onClearSearch={clearThreadSearch}
             />
             {focusedProjectGroup ? (
-              <div className="flex flex-col gap-1 px-2 pb-2">
-                <div className="flex min-w-0 items-center gap-2 text-sm" aria-live="polite">
-                  <ProjectFavicon project={focusedProjectGroup} className="size-4 shrink-0" />
-                  <span className="truncate">Focus: {focusedProjectGroup.displayName}</span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    clearSelection();
-                    setFocusedProjectKey(null);
-                  }}
-                >
-                  {projectScopeKeys.length > 0
+              <ProjectFocusCard
+                project={focusedProjectGroup}
+                exitLabel={
+                  projectScopeKeys.length > 0
                     ? "All selected projects"
                     : recentProjectKeys.size > 0
                       ? "All recent projects"
-                      : "All projects"}
-                </Button>
-              </div>
+                      : "All projects"
+                }
+                onExit={() => {
+                  clearSelection();
+                  setFocusedProjectKey(null);
+                }}
+              />
             ) : null}
           </SidebarGroup>
         }
