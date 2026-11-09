@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-09 — Feu de la carte « Project focus »
+
+- **Demandeur :** Raoul Barmat, tout le liseré enflammé au lieu de flammes qui se courent après, en mouvement pendant qu'il brûle, deux fois moins vite que la première maquette et pendant 1,4 seconde.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** la flamme qui fait trois tours ne plaisait plus, et les essais par filtre SVG donnaient un motif presque figé.
+- **Effet pratique :** les personnalisations décrivent le feu dessiné sur canvas, son déclenchement et son retrait après 1,4 seconde.
+
 ## 2026-11-09 — Flamme de la carte « Project focus »
 
 - **Demandeur :** Raoul Barmat, animation de flammes ou de nitro sur le liseré bleu de la carte au moment de la mise au point, assez rapide sans excès, pendant 5 secondes ; version posée, à 3 tours, choisie sur maquette.
