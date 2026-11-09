@@ -995,7 +995,7 @@ export type SidebarV2TopStatusKind =
   | "woke"
   | "working";
 
-export function resolveSidebarV2TopStatus(input: {
+function resolveSidebarV2TopStatus(input: {
   readonly status: SidebarThreadStatus;
   readonly isUnread: boolean;
   readonly isWoke: boolean;

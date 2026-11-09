@@ -42,7 +42,17 @@ Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) et [ui
 
 Limites actuelles : l'historique récent et le focus sont des états de session ; leur persistance après redémarrage n'a pas été demandée. La mécanique de focus cible la barre latérale moderne ; ne pas annoncer une couverture du mode historique sans la vérifier.
 
+Présentation du focus (demande de Raoul du 9 novembre 2026) : une carte « Project focus » en haut de la barre latérale, à l'accent indigo du sélecteur, nomme le projet et porte le bouton de sortie. Elle remplace la ligne « Focus: <projet> » et le texte centré, trop discrets pour être compris comme un focus de projet. Fichiers : [ProjectFocusCard.tsx](../../../../apps/web/src/components/projectSwitcher/ProjectFocusCard.tsx) et son module CSS.
+
 Repères : [ProjectSwitcher.tsx](../../../../apps/web/src/components/projectSwitcher/ProjectSwitcher.tsx), [logique et choix de conversation](../../../../apps/web/src/components/projectSwitcher/projectSwitcher.logic.ts), [raccourci natif](../../../../apps/desktop/src/window/ProjectSwitcherShortcuts.ts), [intégration de fenêtre](../../../../apps/desktop/src/window/DesktopWindow.ts) et [guide utilisateur](../../../../docs/user/thread-sidebar.md).
+
+## Sections de la barre latérale
+
+- Demande de Raoul du 9 novembre 2026 : **Working** est dépliée par défaut, **Snoozed** et **Settled** sont repliées. L'état n'est plus enregistré entre deux écrans ni entre deux lancements (les anciennes clés `t3code:sidebar:*-expanded` ne sont plus lues).
+- Un clic sur l'en-tête bascule la section jusqu'au prochain changement d'écran. Tout changement de chemin de route (autre conversation, brouillon, Settings), de portée des projets ou de focus restaure les valeurs par défaut, y compris un clic sur une conversation à l'intérieur de la section.
+- Un choix validé avec ⌥Tab les restaure aussi, même s'il ne change ni le focus ni la conversation ; Échap ne touche à rien. La conversation ouverte reste visible dans une section repliée.
+
+Repères : [useSidebarShelves.ts](../../../../apps/web/src/components/sidebar/useSidebarShelves.ts), `sidebarShelfResetCount` dans [uiStateStore.ts](../../../../apps/web/src/uiStateStore.ts) et `choose` dans [ProjectSwitcher.tsx](../../../../apps/web/src/components/projectSwitcher/ProjectSwitcher.tsx).
 
 ## Présentation du sélecteur
 

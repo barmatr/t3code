@@ -149,9 +149,11 @@ describe("project switcher navigation", () => {
     await expect
       .element(page.getByRole("option", { name: "B", exact: true }))
       .toHaveAttribute("aria-selected", "true");
+    const shelfResets = useUiStateStore.getState().sidebarShelfResetCount;
     await harness.send("cancel");
     expect(screen.router?.state.location.pathname).toBe("/env/a-latest");
     expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBe("a");
+    expect(useUiStateStore.getState().sidebarShelfResetCount).toBe(shelfResets);
     await harness.send("next");
     await expect
       .element(page.getByRole("option", { name: "B", exact: true }))
@@ -159,6 +161,8 @@ describe("project switcher navigation", () => {
     await page.getByRole("option", { name: "All selected projects", exact: true }).click();
     expect(useUiStateStore.getState().sidebarFocusedProjectKey).toBeNull();
     expect(screen.router?.state.location.pathname).toBe("/env/a-latest");
+    // This choice keeps the conversation, and still folds the sidebar shelves.
+    expect(useUiStateStore.getState().sidebarShelfResetCount).toBe(shelfResets + 1);
   });
 });
 

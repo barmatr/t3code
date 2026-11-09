@@ -23,7 +23,8 @@ Each project card counts its threads as the sidebar rows label them: **Input**
 or waiting on another thread or a background task) and **Done** (finished since you
 last opened it). The last card totals the projects in the switcher.
 
-Choose **All selected projects** in the switcher or above the conversations to leave focus and
+While a project is focused, a **Project focus** card at the top of the sidebar names it. Choose
+**All selected projects** in the switcher or on that card to leave focus and
 show the whole selected pool again (**All recent projects** when no filter is set).
 Changing the project checkboxes also clears focus. Focus lasts for the current
 app session; the checkboxes remain saved across restarts. Opening a conversation
@@ -148,6 +149,10 @@ position, so using **Un-settle** returns it to the top. Pinning and snoozing pre
 position until you move it again. Thread activity does not change the order. The settled shelf
 continues to use settlement time.
 
+**Working** opens by default, and **Snoozed** and **Settled** stay collapsed. You can toggle them
+at any time; opening another screen or choosing a project with `Option+Tab` restores these
+defaults. The thread you have open stays visible even in a collapsed section.
+
 If dragging is unavailable for one environment, update the T3 Code server running in that
 environment. Pinned and active reordering require server support. Threads from older servers keep
 their default order until the server is updated.
@@ -167,7 +172,7 @@ open.
 
 ### Fold working threads (beta)
 
-Threads that are working or waiting on work they will resume from move into a collapsed
+Threads that are working or waiting on work they will resume from move into an expanded
 **Working** section below the active list.
 That includes subagents, watched pull requests, and background commands or monitors the agent
 says it is waiting on. A dev server or other process an agent leaves running does not keep a thread

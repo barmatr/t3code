@@ -438,6 +438,9 @@ interface UiStateStore extends UiState {
   // Focus is temporary; the persisted project checkboxes remain the navigation pool.
   sidebarFocusedProjectKey: string | null;
   setSidebarFocusedProjectKey: (key: string | null) => void;
+  // Lets Option+Tab fold the shelves even when the choice changes neither focus nor route.
+  sidebarShelfResetCount: number;
+  resetSidebarShelves: () => void;
   markThreadVisited: (threadId: string, visitedAt: string) => void;
   markThreadUnread: (threadId: string, latestTurnCompletedAt: string | null | undefined) => void;
   setThreadChangedFilesExpanded: (threadId: string, turnId: string, expanded: boolean) => void;
@@ -457,6 +460,9 @@ export const useUiStateStore = create<UiStateStore>((set) => ({
   ...readPersistedState(),
   sidebarFocusedProjectKey: null,
   setSidebarFocusedProjectKey: (key) => set({ sidebarFocusedProjectKey: key }),
+  sidebarShelfResetCount: 0,
+  resetSidebarShelves: () =>
+    set((state) => ({ sidebarShelfResetCount: state.sidebarShelfResetCount + 1 })),
   markThreadVisited: (threadId, visitedAt) =>
     set((state) => markThreadVisited(state, threadId, visitedAt)),
   markThreadUnread: (threadId, latestTurnCompletedAt) =>

@@ -107,6 +107,7 @@ export function ProjectSwitcher() {
   const recentProjectKeys = useRecentProjectKeys(projects);
   const focusedKey = useUiStateStore((state) => state.sidebarFocusedProjectKey);
   const setFocusedKey = useUiStateStore((state) => state.setSidebarFocusedProjectKey);
+  const resetSidebarShelves = useUiStateStore((state) => state.resetSidebarShelves);
   const clearThreadSelection = useThreadSelectionStore((state) => state.clearSelection);
   const allProjectsLabel =
     filterKeys.length > 0
@@ -139,7 +140,7 @@ export function ProjectSwitcher() {
   const activeProject =
     resolveFocusedProject(projects, filterKeys, focusedKey)?.projectKey ?? routeProjectKey;
   const recentProjects = useRef<string[]>([]);
-  // oxlint-disable-next-line t3code/react-effect-budget -- the active project also changes through sidebar clicks, the palette and links, which no handler here sees.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- the active project also changes through sidebar clicks, the palette and links, which no handler here sees.
   useEffect(() => {
     recentProjects.current = rememberRecentProject(recentProjects.current, activeProject);
   }, [activeProject]);
@@ -171,6 +172,7 @@ export function ProjectSwitcher() {
     }
     clearThreadSelection();
     setFocusedKey(key === ALL_PROJECTS_KEY ? null : key);
+    resetSidebarShelves();
     setOpen(true);
     if (!project) return;
     const latest = latestProjectThread(readThreadShells(), project.memberProjectRefs);
@@ -239,7 +241,7 @@ export function ProjectSwitcher() {
     }
   });
   const available = enabled && candidates.length > 0;
-  // oxlint-disable-next-line t3code/react-effect-budget -- subscribes to the native Option+Tab bridge, an external system.
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- subscribes to the native Option+Tab bridge, an external system.
   useEffect(() => {
     const bridge = window.desktopBridge;
     if (!bridge?.setProjectSwitcherEnabled) return;
