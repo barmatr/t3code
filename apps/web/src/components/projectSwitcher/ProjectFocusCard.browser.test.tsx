@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { act, render } from "../../../test/render";
+import { act, fakeTimers, render, stubGlobal } from "../../../test/render";
 import type { SidebarProjectSnapshot } from "../../sidebarProjectGrouping";
 import { ProjectFocusCard } from "./ProjectFocusCard";
 
@@ -9,11 +9,10 @@ vi.mock("../ProjectFavicon", () => ({ ProjectFavicon: () => null }));
 const project = { displayName: "reno-obsid", projectKey: "reno" } as SidebarProjectSnapshot;
 const otherProject = { displayName: "t4code", projectKey: "t4" } as SidebarProjectSnapshot;
 
-const flamesIn = (container: HTMLElement) =>
-  container.querySelector<SVGSVGElement>("[data-focus-flames]");
+const fireIn = (container: HTMLElement) =>
+  container.querySelector<HTMLCanvasElement>("[data-focus-fire]");
 
-const endAnimationOn = (target: Element) =>
-  act(() => target.dispatchEvent(new AnimationEvent("animationend", { bubbles: true })));
+const advance = (milliseconds: number) => act(() => vi.advanceTimersByTime(milliseconds));
 
 describe("ProjectFocusCard", () => {
   it("names the focus and the project, and leaves focus from its exit button", async () => {
@@ -30,33 +29,48 @@ describe("ProjectFocusCard", () => {
     expect(onExit).toHaveBeenCalledOnce();
   });
 
-  it("burns for five seconds and only stops when the whole burst ends", async () => {
+  it("burns for 1.4 seconds, then removes its canvas", async () => {
+    using _timers = fakeTimers();
     await using screen = await render(
       <ProjectFocusCard project={project} exitLabel="All selected projects" onExit={vi.fn()} />,
       { router: false },
     );
-    const flames = flamesIn(screen.container)!;
-    expect(getComputedStyle(flames).animationDuration).toBe("5s");
+    await advance(1350);
+    expect(fireIn(screen.container)).not.toBeNull();
 
-    await endAnimationOn(flames.querySelector("rect")!);
-    expect(flamesIn(screen.container)).not.toBeNull();
+    await advance(100);
+    expect(fireIn(screen.container)).toBeNull();
+  });
 
-    await endAnimationOn(flames);
-    expect(flamesIn(screen.container)).toBeNull();
+  it("draws flames around the card and leaves its inside untouched", async () => {
+    using _timers = fakeTimers();
+    await using screen = await render(
+      <ProjectFocusCard project={project} exitLabel="All selected projects" onExit={vi.fn()} />,
+      { router: false },
+    );
+    await advance(500);
+    const canvas = fireIn(screen.container)!;
+    const context = canvas.getContext("2d")!;
+    const center = context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
+    expect(center[3]).toBe(0);
+
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    expect(data.some((value, index) => index % 4 === 3 && value > 0)).toBe(true);
   });
 
   it("relights when focus moves to another project, not when the same one re-renders", async () => {
+    using _timers = fakeTimers();
     await using screen = await render(
       <ProjectFocusCard project={project} exitLabel="All selected projects" onExit={vi.fn()} />,
       { router: false },
     );
-    await endAnimationOn(flamesIn(screen.container)!);
-    expect(flamesIn(screen.container)).toBeNull();
+    await advance(1500);
+    expect(fireIn(screen.container)).toBeNull();
 
     await screen.rerender(
       <ProjectFocusCard project={project} exitLabel="All recent projects" onExit={vi.fn()} />,
     );
-    expect(flamesIn(screen.container)).toBeNull();
+    expect(fireIn(screen.container)).toBeNull();
 
     await screen.rerender(
       <ProjectFocusCard
@@ -65,6 +79,16 @@ describe("ProjectFocusCard", () => {
         onExit={vi.fn()}
       />,
     );
-    expect(flamesIn(screen.container)).not.toBeNull();
+    expect(fireIn(screen.container)).not.toBeNull();
+  });
+
+  it("stays unlit when the system asks for reduced motion", async () => {
+    using _motion = stubGlobal("matchMedia", () => ({ matches: true }));
+    await using screen = await render(
+      <ProjectFocusCard project={project} exitLabel="All selected projects" onExit={vi.fn()} />,
+      { router: false },
+    );
+    expect(fireIn(screen.container)).toBeNull();
+    await expect.element(screen.getByText("reno-obsid")).toBeVisible();
   });
 });
