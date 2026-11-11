@@ -1910,7 +1910,8 @@ it("keeps threads read in the last five minutes while HOT", () => {
         completedAt: "2026-01-01T00:00:00.000Z",
         assistantMessageId: null,
       },
-      lastVisitedAt: new Date(nowMs - visitedAgoMs).toISOString(),
+      lastVisitedAt: "2026-01-01T00:00:00.000Z",
+      opens: { openedAt: nowMs - visitedAgoMs, score: 1, picks: [] },
     });
   const threads = [make("just-read", 60_000), make("read-earlier", 6 * 60_000)];
   const hot = (hotReadSinceMs?: number) =>

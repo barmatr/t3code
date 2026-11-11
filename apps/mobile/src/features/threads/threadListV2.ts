@@ -312,22 +312,28 @@ export function threadIsHot(thread: EnvironmentThreadShell, queued = false): boo
 /** HOT keeps a thread read in the last five minutes, so opening it does not drop it at once. */
 export const HOT_RECENT_READ_MS = 5 * 60_000;
 
+// `lastVisitedAt` holds the thread's update time at the visit, not the visit
+// itself; the server's open record carries the real opening time (epoch ms).
+function threadOpenedAtMs(thread: Pick<EnvironmentThreadShell, "opens">): number {
+  return thread.opens?.openedAt ?? 0;
+}
+
 export function threadReadSince(
-  thread: Pick<EnvironmentThreadShell, "lastVisitedAt">,
+  thread: Pick<EnvironmentThreadShell, "opens">,
   sinceMs: number,
 ): boolean {
-  const visitedMs = parseTimestampMs(thread.lastVisitedAt ?? "");
-  return Number.isFinite(visitedMs) && visitedMs > sinceMs;
+  return threadOpenedAtMs(thread) > sinceMs;
 }
 
 /** When the next recently read thread leaves HOT, or null when none is pending. */
 export function nextHotRecentReadExpiry(
-  threads: ReadonlyArray<Pick<EnvironmentThreadShell, "lastVisitedAt">>,
+  threads: ReadonlyArray<Pick<EnvironmentThreadShell, "opens">>,
   nowMs: number,
 ): number | null {
   let next: number | null = null;
   for (const thread of threads) {
-    const expiresAt = parseTimestampMs(thread.lastVisitedAt ?? "") + HOT_RECENT_READ_MS;
+    const openedAt = threadOpenedAtMs(thread);
+    const expiresAt = openedAt > 0 ? openedAt + HOT_RECENT_READ_MS : Number.NaN;
     if (Number.isFinite(expiresAt) && expiresAt > nowMs && (next === null || expiresAt < next))
       next = expiresAt;
   }
