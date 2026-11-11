@@ -46,6 +46,8 @@ import {
   threadListV2ListItemsAreEqual,
   threadHasUnseenCompletion,
   threadIsHot,
+  HOT_RECENT_READ_MS,
+  nextHotRecentReadExpiry,
   threadListShowsMultipleEnvironments,
   sortFollowUpListItems,
   groupThreadListV2ItemsByProject,
@@ -1855,13 +1857,76 @@ it("orders mobile follow-up across pins and collapsed shelves, and demotes a rea
     }).items.map(({ thread }) => thread.id);
   expect(list(threads)).toEqual(["input", "approval", "unread", "working", "pinned-read"]);
   expect(list([...threads].reverse())).toEqual(list(threads));
-  expect(
-    list(
-      threads.map((thread) =>
-        thread.id === "unread" ? { ...thread, lastVisitedAt: NOW } : thread,
-      ),
-    ),
-  ).toEqual(["input", "approval", "working", "pinned-read", "unread"]);
+  const read = threads.map((thread) =>
+    thread.id === "unread" ? { ...thread, lastVisitedAt: NOW } : thread,
+  );
+  // A read Done leaves follow-up for the settled shelf, hidden while collapsed.
+  expect(list(read)).toEqual(["input", "approval", "working", "pinned-read"]);
+  const expanded = buildThreadListV2Items({
+    threads: read,
+    environmentId: null,
+    searchQuery: "",
+    now: NOW,
+    prioritizeFollowUp: true,
+    workingShelfEnabled: true,
+    settledShelfExpanded: true,
+  });
+  expect(expanded.items.map(({ thread }) => thread.id)).toEqual([
+    "input",
+    "approval",
+    "working",
+    "pinned-read",
+    "unread",
+  ]);
+  expect(expanded.settledShelfHeaderIndex).toBe(4);
+  expect(expanded.settledCount).toBe(1);
+  const rows = sortFollowUpListItems(
+    buildThreadListV2ListItems({
+      items: expanded.items,
+      pendingTasks: [],
+      settledCount: expanded.settledCount,
+      settledShelfHeaderIndex: expanded.settledShelfHeaderIndex,
+      settledShelfExpanded: true,
+    }),
+  );
+  expect(rows.map((item) => (item.type === "v2-thread" ? item.item.thread.id : item.type))).toEqual(
+    ["input", "approval", "working", "pinned-read", "v2-settled-shelf", "unread"],
+  );
+});
+
+it("keeps threads read in the last five minutes while HOT", () => {
+  const nowMs = Date.parse(NOW);
+  const make = (id: string, visitedAgoMs: number) =>
+    makeThread({
+      id: ThreadId.make(id),
+      title: id,
+      settledOverride: "settled",
+      runtime: null,
+      latestRun: {
+        runId: RunId.make(id),
+        status: "completed",
+        requestedAt: "2026-01-01T00:00:00.000Z",
+        startedAt: "2026-01-01T00:00:00.000Z",
+        completedAt: "2026-01-01T00:00:00.000Z",
+        assistantMessageId: null,
+      },
+      lastVisitedAt: new Date(nowMs - visitedAgoMs).toISOString(),
+    });
+  const threads = [make("just-read", 60_000), make("read-earlier", 6 * 60_000)];
+  const hot = (hotReadSinceMs?: number) =>
+    buildThreadListV2Items({
+      threads,
+      environmentId: null,
+      searchQuery: "",
+      now: NOW,
+      prioritizeFollowUp: true,
+      hot: true,
+      ...(hotReadSinceMs === undefined ? {} : { hotReadSinceMs }),
+    }).items.map(({ thread }) => thread.id);
+  expect(hot()).toEqual([]);
+  expect(hot(nowMs - HOT_RECENT_READ_MS)).toEqual(["just-read"]);
+  expect(nextHotRecentReadExpiry(threads, nowMs)).toBe(nowMs - 60_000 + HOT_RECENT_READ_MS);
+  expect(nextHotRecentReadExpiry(threads, nowMs + HOT_RECENT_READ_MS)).toBeNull();
 });
 
 it("includes each hot status, excludes read and empty ready rows, and keeps real unread semantics", () => {

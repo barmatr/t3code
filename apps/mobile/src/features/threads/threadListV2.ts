@@ -309,6 +309,31 @@ export function threadIsHot(thread: EnvironmentThreadShell, queued = false): boo
   return queued || threadFollowUpPriority(thread) < 3;
 }
 
+/** HOT keeps a thread read in the last five minutes, so opening it does not drop it at once. */
+export const HOT_RECENT_READ_MS = 5 * 60_000;
+
+export function threadReadSince(
+  thread: Pick<EnvironmentThreadShell, "lastVisitedAt">,
+  sinceMs: number,
+): boolean {
+  const visitedMs = parseTimestampMs(thread.lastVisitedAt ?? "");
+  return Number.isFinite(visitedMs) && visitedMs > sinceMs;
+}
+
+/** When the next recently read thread leaves HOT, or null when none is pending. */
+export function nextHotRecentReadExpiry(
+  threads: ReadonlyArray<Pick<EnvironmentThreadShell, "lastVisitedAt">>,
+  nowMs: number,
+): number | null {
+  let next: number | null = null;
+  for (const thread of threads) {
+    const expiresAt = parseTimestampMs(thread.lastVisitedAt ?? "") + HOT_RECENT_READ_MS;
+    if (Number.isFinite(expiresAt) && expiresAt > nowMs && (next === null || expiresAt < next))
+      next = expiresAt;
+  }
+  return next;
+}
+
 function threadFollowUpTime(thread: EnvironmentThreadShell): number {
   return Math.max(
     ...[
@@ -351,7 +376,12 @@ export function sortFollowUpListItems(
       : item.type === "v2-pending"
         ? parseTimestampMs(item.pendingTask.createdAt)
         : 0;
-  const rows = items
+  // Rows from the first shelf on (the settled shelf) keep their own order.
+  const shelfIndex = items.findIndex(
+    (item) => item.type !== "v2-thread" && item.type !== "v2-pending",
+  );
+  const shelf = shelfIndex === -1 ? [] : items.slice(shelfIndex);
+  const rows = (shelfIndex === -1 ? items : items.slice(0, shelfIndex))
     .filter((item) => item.type === "v2-thread" || item.type === "v2-pending")
     .sort(
       (left, right) =>
@@ -359,13 +389,20 @@ export function sortFollowUpListItems(
         time(right) - time(left) ||
         compareStableKeys(left.key, right.key),
     );
-  return rows.map((item, index) =>
-    item.type === "v2-thread" || item.type === "v2-pending"
-      ? {
-          ...item,
-          showTrailingDivider: index < rows.length - 1,
-          ...(item.type === "v2-pending" ? { showPendingDivider: false } : {}),
-        }
+  return [
+    ...rows.map((item) =>
+      item.type === "v2-thread" || item.type === "v2-pending"
+        ? {
+            ...item,
+            showTrailingDivider: false,
+            ...(item.type === "v2-pending" ? { showPendingDivider: false } : {}),
+          }
+        : item,
+    ),
+    ...shelf,
+  ].map((item, index) =>
+    (item.type === "v2-thread" || item.type === "v2-pending") && index < rows.length
+      ? { ...item, showTrailingDivider: index < rows.length - 1 }
       : item,
   );
 }
@@ -804,6 +841,8 @@ function sortSettledThreadsReusingLast(
 export function buildThreadListV2Items(input: {
   readonly prioritizeFollowUp?: boolean;
   readonly hot?: boolean;
+  /** In HOT, also keep threads read after this instant (epoch ms). */
+  readonly hotReadSinceMs?: number;
   readonly pendingOrder?: PendingThreadOrder | null;
   readonly threads: ReadonlyArray<EnvironmentThreadShell>;
   readonly environmentId: EnvironmentId | null;
@@ -891,7 +930,8 @@ export function buildThreadListV2Items(input: {
         }
         return (
           !input.hot ||
-          threadIsHot(thread, queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`))
+          threadIsHot(thread, queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`)) ||
+          (input.hotReadSinceMs !== undefined && threadReadSince(thread, input.hotReadSinceMs))
         );
       })
       .sort((left, right) => compareThreadsByFollowUp(left, right, queuedThreadKeys));
@@ -912,14 +952,24 @@ export function buildThreadListV2Items(input: {
       (thread) => input.isListedSettled?.(thread) ?? true,
     );
     const visibleSettled = new Set(listedSettled.slice(0, input.settledLimit ?? Infinity));
-    const visible = matches.filter(
-      (thread) =>
-        !ordinarySet.has(thread) ||
-        visibleSettled.has(thread) ||
-        `${thread.environmentId}:${thread.id}` === input.selectedThreadKey,
-    );
+    const isSelected = (thread: EnvironmentThreadShell) =>
+      `${thread.environmentId}:${thread.id}` === input.selectedThreadKey;
     const settledTotal =
       ordinarySettled.length + (input.hot ? 0 : (input.unloadedSettledCount ?? 0));
+    // Outside HOT, read settled rows go below the follow-up list in a collapsible shelf.
+    const shelved = !input.hot;
+    const settledExpanded = input.settledShelfExpanded !== false;
+    const followUp = shelved ? matches.filter((thread) => !ordinarySet.has(thread)) : matches;
+    const visible = shelved
+      ? [
+          ...followUp,
+          ...ordinarySettled.filter(
+            (thread) => (settledExpanded && visibleSettled.has(thread)) || isSelected(thread),
+          ),
+        ]
+      : matches.filter(
+          (thread) => !ordinarySet.has(thread) || visibleSettled.has(thread) || isSelected(thread),
+        );
     return {
       items: visible.map((thread, index) => ({
         thread,
@@ -943,7 +993,7 @@ export function buildThreadListV2Items(input: {
       snoozedCount: 0,
       snoozedShelfHeaderIndex: null,
       settledCount: settledTotal,
-      settledShelfHeaderIndex: null,
+      settledShelfHeaderIndex: shelved && settledTotal > 0 ? followUp.length : null,
       nextSnoozeWakeAt: null,
       contentOnlyThreadKeys,
     };

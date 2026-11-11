@@ -13,7 +13,10 @@ import {
   threadListInboxReturns,
   threadListV2LayoutTime,
   sortFollowUpListItems,
+  HOT_RECENT_READ_MS,
+  nextHotRecentReadExpiry,
 } from "./threadListV2";
+import { useNowAfter, useNowMinuteMs } from "../../lib/clock";
 import { computeThreadMoveAvailability } from "./threadOrder";
 import type { ThreadAge } from "../../lib/thread-age";
 import { useThreadAgeFilter } from "./use-thread-age-filter";
@@ -163,13 +166,16 @@ export function useThreadListV2(input: {
       }),
     [input.environmentId, input.projectRefs, input.settlementEnvironmentIds],
   );
+  // HOT keeps recently read threads; re-render when the next one expires.
+  const minuteMs = useNowMinuteMs();
+  const hotExpiryMs = useNowAfter(
+    input.hot === true ? nextHotRecentReadExpiry(threads, minuteMs) : null,
+  );
+  const hotReadSinceMs =
+    input.hot === true ? Math.max(minuteMs, hotExpiryMs) - HOT_RECENT_READ_MS : undefined;
   const olderSettledShelf = useOlderSettledShelf({
     scopes,
-    expanded:
-      ageFiltered ||
-      input.hot === true ||
-      input.prioritizeFollowUp === true ||
-      input.settledShelfExpanded,
+    expanded: ageFiltered || input.hot === true || input.settledShelfExpanded,
     // A search lists only matches, so the shelf would page forever; loaded pages stay.
     visibleCount: input.searchQuery.trim().length === 0 ? input.settledLimit : 0,
   });
@@ -178,6 +184,7 @@ export function useThreadListV2(input: {
     () => ({
       prioritizeFollowUp: input.prioritizeFollowUp,
       hot: input.hot,
+      hotReadSinceMs,
       pendingOrder: input.pendingOrder,
       threads: threads.filter((thread) => thread.archivedAt === null),
       environmentId: input.environmentId,
@@ -212,6 +219,7 @@ export function useThreadListV2(input: {
     [
       input.prioritizeFollowUp,
       input.hot,
+      hotReadSinceMs,
       input.pendingOrder,
       threads,
       input.environmentId,

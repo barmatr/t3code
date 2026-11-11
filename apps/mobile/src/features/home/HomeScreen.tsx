@@ -885,7 +885,7 @@ export function HomeScreen(props: HomeScreenProps) {
                         else showMoreSettled();
                       }}
                     />
-                  ) : (ageFiltered || settledShelfExpanded || !props.hot) &&
+                  ) : (ageFiltered || settledShelfExpanded) &&
                     threadListV2Layout.hiddenSettledCount > 0 ? (
                     <ThreadListV2ShowMoreRow
                       hiddenCount={threadListV2Layout.hiddenSettledCount}
