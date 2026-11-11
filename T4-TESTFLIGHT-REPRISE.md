@@ -1,6 +1,34 @@
 # T4 Mobile — reprise pour TestFlight
 
-## Dernière livraison : 0.1.0 (9), nouvelle icône
+## Dernière livraison : 0.1.0 (10), lignes compactes et contexte des filtres
+
+Le 11 novembre 2026, le build **10** a été compilé, signé, exporté, validé par
+Apple puis distribué à **T4 Interne** (UUID `a1663390-4250-4c11-b9de-ba67272202a8`).
+État relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées. Sources : commit `220ae1cd75`.
+
+- Pour une seule machine représentée et une taille de texte normale, titre,
+  statut (ou âge) et icône fournisseur tiennent sur la même ligne ; les titres
+  trop longs sont tronqués. Les grandes tailles d’accessibilité gardent plusieurs lignes.
+- **Settled reste visible et repliable avec les filtres d’âge**, y compris avec
+  le regroupement par projet. Les fils réglés et lus restent en bas ; les Done non lus restent en haut.
+- Depuis la liste filtrée sur un projet, **Nouveau chat présélectionne ce projet**
+  avant le dernier utilisé, même si la préférence de réutilisation est désactivée.
+  Le filtre de machine est respecté ; sinon une copie connectée du projet est privilégiée.
+- **114 tests ciblés / 5 fichiers** passent. `check:changed HEAD` avant commit :
+  format, lint, knip, types et compilateur React passent. Tests de régression rouges avant correction.
+- Recette iPhone 17 Simulator / iOS 26.4 : lignes avant/après, Settled replié/déplié
+  avec projet + Last day, création d’un brouillon Beta après consultation d’Alpha,
+  grande taille de texte. Preuves et limites : `build/ios-local/build-10-candidat/recette/RECETTE.md`.
+  iPhone physique, Android et iPad non exécutés ; multi-machine vérifié par tests de logique.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-11/T4 Mobile 21.29.45.xcarchive`.
+- IPA : `build/ios-local/build-10/export/T4Mobile.ipa`, **61 606 137 octets**,
+  SHA-256 `89bee5df3ee1c18cc403c3fe0c2a443d39d632dc8c21c4cc3e893ef9ceeade38`.
+- Preuve de livraison : `build/ios-local/build-10/deployment.json` ; identité T4,
+  signature EMAX, debug désactivé, ZIP, bundle JavaScript et empreintes des sources vérifiés.
+  Connexion de recette retirée du simulateur ; Device, Metro et backend isolé fermés.
+
+## Historique : 0.1.0 (9), nouvelle icône
 
 Le 11 novembre 2026, le build **9** a été compilé, signé, exporté, validé par
 Apple puis distribué à **T4 Interne** (UUID `258bab20-85f9-4a87-8a25-c34de2064111`,
@@ -377,8 +405,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=10
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-10"
+export T4_IOS_BUILD_NUMBER=11
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-11"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -482,11 +510,12 @@ remplacent pas l’autorisation de Raoul pour une livraison.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Le dernier build est `0.1.0 (9)`, valide et distribué à T4 Interne (UUID
-> `258bab20-85f9-4a87-8a25-c34de2064111`), sur T3 `v0.1.9-nightly.20261111.4515`,
-> branche `t4-mobile-4515` : zone Settled, fils lus récemment en HOT, nouvelle icône.
+> Le dernier build est `0.1.0 (10)`, valide et distribué à T4 Interne (UUID
+> `a1663390-4250-4c11-b9de-ba67272202a8`), sur T3 `v0.1.9-nightly.20261111.4515`,
+> branche `t4-mobile-4515` : lignes compactes, Settled conservé sous filtre d’âge,
+> nouveau chat présélectionné dans le projet filtré.
 > Lis la recette et ses limites ci-dessus. Contrôle l’état Apple actuel avant une
-> nouvelle livraison, utilise un numéro supérieur à 9 et ne renvoie ni n’expire
+> nouvelle livraison, utilise un numéro supérieur à 10 et ne renvoie ni n’expire
 > les anciens builds. Suis la demande actuelle de Raoul pour tout nouvel envoi.
 > Son compte TestFlight est déjà dans le groupe. Ne montre pas les secrets et ne
 > touche pas à T4 PC, Plume ou Myga.
