@@ -1,6 +1,25 @@
 # T4 Mobile — reprise pour TestFlight
 
-## Dernière livraison : 0.1.0 (7), mise à niveau sur la nightly T3 du 11 novembre
+## Dernière livraison : 0.1.0 (8), zone Settled et fils lus récemment en HOT
+
+Le 11 novembre 2026, le build **8** a été compilé, signé, exporté, validé par
+Apple puis distribué à **T4 Interne** (UUID `0e38888f-01dd-438d-909a-9eff01b0415f`,
+VALID, notifications automatiques désactivées).
+
+- En liste prioritaire, les fils réglés et lus reviennent en bas dans la zone
+  **Settled** repliable, sous les fils à suivre ; un Done non lu reste en haut.
+- En **HOT**, un fil ouvert depuis moins de 5 minutes reste listé, puis sort seul.
+  Le délai part de `opens.openedAt` : `lastVisitedAt` contient la date de mise à
+  jour du fil au moment de la visite, pas l’heure de lecture.
+- Commits `7d2c74f56a` et `cf14189064` sur `t4-mobile-4515`.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-11/T4 Mobile 17.58.18.xcarchive`.
+- IPA : `build/ios-local/build-8/export/T4Mobile.ipa`, **59 906 189 octets**,
+  SHA-256 `068f302bde35cdabba2a9782037af759607a6717a50e4035afce8ae36619e993`.
+- 1 455 tests ciblés, typecheck, lint et knip passent. Recette et contre-recette
+  simulateur : `build/ios-local/build-8-candidat/recette/` (Settled replié, déplié,
+  Show more ; HOT conservé puis expiré à 5 min ; reprise et Agents inchangés).
+
+## Historique : 0.1.0 (7), mise à niveau sur la nightly T3 du 11 novembre
 
 Le 11 novembre 2026, le build **7** a été compilé, signé, exporté, validé par
 Apple puis distribué à **T4 Interne**. État relu par API : **VALID /
@@ -341,8 +360,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=8
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-8"
+export T4_IOS_BUILD_NUMBER=9
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-9"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -446,11 +465,11 @@ remplacent pas l’autorisation de Raoul pour une livraison.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Le dernier build est `0.1.0 (7)`, valide et distribué à T4 Interne (UUID
-> `a73c6eb4-d842-4cba-818f-ed2d3907e878`). Il reprend les personnalisations du
-> build 6 sur T3 `v0.1.9-nightly.20261111.4515`, branche `t4-mobile-4515`.
+> Le dernier build est `0.1.0 (8)`, valide et distribué à T4 Interne (UUID
+> `0e38888f-01dd-438d-909a-9eff01b0415f`), sur T3 `v0.1.9-nightly.20261111.4515`,
+> branche `t4-mobile-4515` ; il ajoute la zone Settled et les fils lus récemment en HOT.
 > Lis la recette et ses limites ci-dessus. Contrôle l’état Apple actuel avant une
-> nouvelle livraison, utilise un numéro supérieur à 7 et ne renvoie ni n’expire
+> nouvelle livraison, utilise un numéro supérieur à 8 et ne renvoie ni n’expire
 > les anciens builds. Suis la demande actuelle de Raoul pour tout nouvel envoi.
 > Son compte TestFlight est déjà dans le groupe. Ne montre pas les secrets et ne
 > touche pas à T4 PC, Plume ou Myga.
