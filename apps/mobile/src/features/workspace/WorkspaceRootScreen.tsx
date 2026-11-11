@@ -21,11 +21,11 @@ import {
   useNativeColumnLayoutMetrics,
   useNativeLayoutMetrics,
 } from "../../native/native-layout-metrics";
+import { useHomeHotMode } from "../home/home-list-options";
 import { HomeRouteScreen } from "../home/HomeRouteScreen";
 import { dispatchHardwareKeyboardCommand } from "../keyboard/hardwareKeyboardCommands";
 import { WorkspaceConnectionTitle } from "../home/WorkspaceConnectionTitle";
 import { useAdaptiveWorkspaceLayout } from "../layout/AdaptiveWorkspaceLayout";
-import { PullRequestsScreen } from "../pull-requests/PullRequestsScreen";
 import {
   WorkspaceTabsContext,
   WorkspaceTabsProvider,
@@ -53,6 +53,11 @@ function WorkspaceRootTitle(props: {
   readonly onOpenEnvironments: () => void;
 }) {
   const { state, settingsOpen } = useWorkspaceTabs()!;
+  const hot = useHomeHotMode(state.selectedTab === "pullRequests");
+  const continuousFire =
+    hot &&
+    !settingsOpen &&
+    (state.selectedTab === "threads" || state.selectedTab === "pullRequests");
   const maxWidth = Math.max(0, props.columnWidth - (use(HeaderItemsWidthContext) ?? 160));
   const enabled = useEnabledNavigationTabs();
   const tabTitle = settingsOpen
@@ -63,7 +68,13 @@ function WorkspaceRootTitle(props: {
   return (
     <View style={{ width: maxWidth, minHeight: 32, justifyContent: "center" }}>
       <WorkspaceConnectionTitle
-        brand={<CompactBrandTitle accessibilityLabel={`T3 Code, ${tabTitle}`} fit />}
+        brand={
+          <CompactBrandTitle
+            continuousFire={continuousFire}
+            accessibilityLabel={`T4 Mobile, ${tabTitle}`}
+            fit
+          />
+        }
         maxWidth={maxWidth}
         onPress={props.onOpenEnvironments}
       />
@@ -171,7 +182,7 @@ function WorkspaceRootContent() {
                 ? [
                     {
                       accessibilityLabel:
-                        state.selectedTab === "threads" ? "Search threads" : "Search pull requests",
+                        state.selectedTab === "threads" ? "Search threads" : "Rechercher un agent",
                       icon: "magnifyingglass" as const,
                       onPress: () => {
                         dispatchHardwareKeyboardCommand("focusSearch");
@@ -195,7 +206,7 @@ function WorkspaceRootContent() {
           ) : state.selectedTab === "threads" ? (
             <HomeRouteScreen />
           ) : state.selectedTab === "pullRequests" ? (
-            <PullRequestsScreen />
+            <HomeRouteScreen agents />
           ) : (
             <WorkspaceExtraTab tab={state.selectedTab} />
           )}

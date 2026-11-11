@@ -81,12 +81,11 @@ describe("opening a workspace tab", () => {
     expect(names(open("ios"))).toEqual(["Home", "Thread"]);
   });
 
-  it("opens the remembered page beside the list with columns, and the list without", () => {
+  it("opens Agents on its project list instead of restoring the previous PR page", () => {
     const state = { routes: [home, thread] };
     const selections = { threads: thread.params, pullRequests: pullRequest.params };
     expect(names(workspaceTabNavigationState(state, "pullRequests", selections, columns))).toEqual([
       "Home",
-      "PullRequest",
     ]);
     expect(
       names(

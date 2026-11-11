@@ -6,6 +6,7 @@ import IconGitPullRequestDraft from "@tabler/icons-react-native/IconGitPullReque
 import type { SFSymbol } from "expo-symbols";
 import IconGitPullRequest from "@tabler/icons-react-native/IconGitPullRequest";
 import IconFileDiff from "@tabler/icons-react-native/IconFileDiff";
+import IconRobotFace from "@tabler/icons-react-native/IconRobotFace";
 import { SymbolView as ExpoSymbolView } from "expo-symbols";
 import { withUniwind } from "uniwind";
 import type { AppSymbolViewProps } from "./AppSymbol";
@@ -14,6 +15,7 @@ export type { SFSymbol } from "expo-symbols";
 export type { AppSymbolName } from "./AppSymbol";
 
 const CUSTOM_ICONS = {
+  robot: IconRobotFace,
   "file.diff": IconFileDiff,
   "arrow.triangle.pull": IconGitPullRequest,
   "arrow.triangle.merge": IconGitMerge,

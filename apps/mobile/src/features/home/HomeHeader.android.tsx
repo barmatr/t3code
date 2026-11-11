@@ -1,7 +1,10 @@
+import { ThreadListFilters, HotFilterButton } from "./ThreadListFilters";
+import { View } from "react-native";
 import type { MenuAction } from "@react-native-menu/menu";
 import { NativeStackScreenOptions } from "../../native/StackHeader";
 import { ThreadListToolbar } from "./ThreadListToolbar";
 import type { HomeHeaderProps } from "./HomeHeader.types";
+import { isThreadAge, THREAD_AGE_OPTIONS } from "../../lib/thread-age";
 
 export type { HomeHeaderEnvironment } from "./HomeHeader.types";
 
@@ -11,7 +14,9 @@ function checkedMenuState(checked: boolean) {
 
 export function HomeHeader(props: HomeHeaderProps) {
   const hasCustomListOptions =
-    props.selectedEnvironmentId !== null || props.selectedProjectKey !== null;
+    props.selectedEnvironmentId !== null ||
+    props.selectedProjectKey !== null ||
+    props.selectedAge !== "all";
   const menuActions: MenuAction[] = [
     {
       id: "environment",
@@ -19,7 +24,7 @@ export function HomeHeader(props: HomeHeaderProps) {
       subactions: [
         {
           id: "environment:all",
-          title: "All environments",
+          title: "All env",
           state: checkedMenuState(props.selectedEnvironmentId === null),
         },
         ...props.environments.map((environment) => ({
@@ -49,9 +54,24 @@ export function HomeHeader(props: HomeHeaderProps) {
             ],
           },
         ] satisfies MenuAction[])),
+    {
+      id: "age",
+      title: props.hot ? "Age ignored while hot" : "Age",
+      attributes: props.hot ? { disabled: true } : undefined,
+      subactions: THREAD_AGE_OPTIONS.map((option) => ({
+        id: `age:${option.id}`,
+        title: option.label,
+        state: checkedMenuState(props.selectedAge === option.id),
+      })),
+    },
   ];
   const handleMenuAction = (event: { nativeEvent: { event: string } }) => {
     const id = event.nativeEvent.event;
+    if (id.startsWith("age:")) {
+      const age = id.slice("age:".length);
+      if (!props.hot && isThreadAge(age)) props.onAgeChange(age);
+      return;
+    }
     if (id === "environment:all") {
       props.onEnvironmentChange(null);
       return;
@@ -88,11 +108,22 @@ export function HomeHeader(props: HomeHeaderProps) {
       <ThreadListToolbar
         searchQuery={props.searchQuery}
         onSearchQueryChange={props.onSearchQueryChange}
-        filterActions={menuActions}
+        workspaceTab={props.workspaceTab}
+        hot={props.hot}
+        filterActions={props.fixedScope ? [] : menuActions}
         filterCustomized={hasCustomListOptions}
         onFilterSelect={(event) => handleMenuAction({ nativeEvent: { event } })}
         onOpenEnvironments={props.onOpenEnvironments}
       />
+      {props.fixedScope ? (
+        props.onHotChange ? (
+          <View className="items-end px-4">
+            <HotFilterButton hot={props.hot ?? false} onChange={props.onHotChange} />
+          </View>
+        ) : null
+      ) : (
+        <ThreadListFilters {...props} gutter={0} />
+      )}
     </>
   );
 }

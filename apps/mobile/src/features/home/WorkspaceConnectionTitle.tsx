@@ -161,6 +161,7 @@ export function WorkspaceConnectionTitle(props: {
 }
 
 export function getConnectionAwareBrandHeaderOptions(opts: {
+  readonly continuousFire?: boolean | undefined;
   readonly headerWidth: number;
   readonly trailingItemCount?: number;
   readonly onOpenEnvironments: () => void;
@@ -172,7 +173,7 @@ export function getConnectionAwareBrandHeaderOptions(opts: {
     ...getCompactBrandHeaderOptions(opts.fallbackTitleStyle),
     headerTitle: () => (
       <WorkspaceConnectionTitle
-        brand={<CompactBrandTitle />}
+        brand={<CompactBrandTitle continuousFire={opts.continuousFire} />}
         maxWidth={maxWidth}
         onPress={opts.onOpenEnvironments}
         statusOffset={brandTitleOffset()}

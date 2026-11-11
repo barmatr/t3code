@@ -2,15 +2,11 @@ import { useAndroidFloatingTabs } from "../settings/appearance/AppearancePrefere
 import { WorkspaceNoTabs } from "./WorkspaceNoTabs";
 import { useEnabledNavigationTabs } from "./navigation-tabs";
 import { NAVIGATION_TAB_ORDER } from "./navigation-tab-order";
-import { useNavigationState } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
 import { FLOATING_TABS } from "./floating-workspace-tabs";
 import { View } from "react-native";
-import { ScreenContent } from "../../components/ui/ScreenContent";
-import { PullRequestsScreen } from "../pull-requests/PullRequestsScreen";
-import { PullRequestToolbar } from "../pull-requests/PullRequestToolbar.android";
-import { selectedPullRequestKey } from "../pull-requests/pullRequestSelection";
+import { HomeRouteScreen } from "../home/HomeRouteScreen";
 import { AndroidHomeFabLayout } from "../home/AndroidHomeFab";
 import { useAdaptiveWorkspaceLayout } from "../layout/adaptive-workspace-context";
 import { useAndroidWorkspaceRoot } from "./AndroidWorkspaceTabsProvider";
@@ -26,8 +22,7 @@ export function AndroidWorkspaceSidebar() {
   const enabled = useEnabledNavigationTabs();
   const insets = useSafeAreaInsets();
   const { fabSize } = useAndroidControlSizing();
-  const { revealPrimarySidebar, startNewTask } = useAdaptiveWorkspaceLayout();
-  const selectedPullRequest = useNavigationState(selectedPullRequestKey);
+  const { startNewTask } = useAdaptiveWorkspaceLayout();
   // Settings and Usage cover the sidebar.
   const coveredByPage =
     (useAndroidWorkspaceRoot()?.settingsOpen ?? false) || workspace.state.selectedTab === "usage";
@@ -50,19 +45,7 @@ export function AndroidWorkspaceSidebar() {
             <View className="flex-1 bg-screen" />
           ) : (
             <WorkspaceTabsContext value={context}>
-              <PullRequestsScreen
-                sidebar
-                selectedPullRequestKey={selectedPullRequest}
-                renderFrame={(filters, list) => (
-                  <View className="flex-1 bg-header">
-                    <PullRequestToolbar
-                      filters={filters}
-                      onRequestVisibility={revealPrimarySidebar}
-                    />
-                    <ScreenContent insetHorizontal>{list}</ScreenContent>
-                  </View>
-                )}
-              />
+              <HomeRouteScreen agents sidebar />
             </WorkspaceTabsContext>
           )
         }

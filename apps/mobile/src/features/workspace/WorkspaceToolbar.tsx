@@ -18,11 +18,10 @@ import { WorkspaceDock } from "./WorkspaceDock";
 import { WorkspaceSearchField } from "./WorkspaceSearchField";
 import { useWorkspaceTabs } from "./WorkspaceTabsContext";
 import { WORKSPACE_TOOLBAR, type WorkspaceTab } from "./workspace-tabs-state";
-import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
 
 const TABS: ReadonlyArray<{ id: WorkspaceTab; label: string; icon: AppSymbolName }> = [
   { id: "threads", label: "Threads", icon: "text.bubble" },
-  { id: "pullRequests", label: "PRs", icon: PullRequestGlyph.pullRequest },
+  { id: "pullRequests", label: "Agents", icon: "robot" },
 ];
 
 function ToolbarButton(props: {

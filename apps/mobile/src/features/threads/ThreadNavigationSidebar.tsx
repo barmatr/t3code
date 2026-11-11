@@ -1,3 +1,5 @@
+import { Button } from "../../components/ui/Button";
+import { ThreadAgeFilterNotice } from "../home/ThreadAgeFilterNotice";
 import { useActiveNewTask } from "../../state/active-new-task";
 import { ThreadUndoNotice } from "../home/ThreadUndoNotice";
 import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
@@ -67,6 +69,7 @@ import { createSidebarHeaderItems } from "./sidebar-native-header-items";
 import { SidebarNavigationShell } from "./sidebar-navigation-shell";
 import {
   ThreadListV2PendingRow,
+  ThreadListV2ProjectHeader,
   ThreadListV2Row,
   ThreadListV2SettledShelfHeader,
   ThreadListV2ShowMoreRow,
@@ -189,7 +192,7 @@ function ThreadNavigationSidebarPane(
   const availableEnvironmentIds = new Set(
     environments.map((environment) => environment.environmentId),
   );
-  const { options, setSelectedEnvironmentId, setSelectedProjectKey } =
+  const { options, setSelectedEnvironmentId, setSelectedProjectKey, setSelectedAge } =
     useHomeListOptions(availableEnvironmentIds);
   const searchEnvironmentIds =
     options.selectedEnvironmentId === null
@@ -262,7 +265,7 @@ function ThreadNavigationSidebarPane(
   const [settledVisibleCount, setSettledVisibleCount] = useState(
     THREAD_LIST_V2_SETTLED_INITIAL_COUNT,
   );
-  const settledResetKey = `${options.selectedEnvironmentId ?? "all"}:${selectedProjectKey ?? "all"}:${props.searchQuery.trim()}`;
+  const settledResetKey = `${options.selectedEnvironmentId ?? "all"}:${selectedProjectKey ?? "all"}:${options.selectedAge}:${props.searchQuery.trim()}`;
   const [lastSettledResetKey, setLastSettledResetKey] = useState(settledResetKey);
   if (lastSettledResetKey !== settledResetKey) {
     setLastSettledResetKey(settledResetKey);
@@ -299,13 +302,18 @@ function ThreadNavigationSidebarPane(
   const {
     layout: threadListV2Layout,
     items: threadListV2Items,
+    ageFiltered,
     contentOnlyThreadKeys,
     olderSettledShelf,
+    ageFilter,
+    hasUncheckedOlderThreads,
   } = useThreadListV2({
     threads,
+    age: options.selectedAge,
     pendingTasks,
     environmentId: options.selectedEnvironmentId,
     projectRefs: selectedProjectScope === null ? null : selectedProjectScope.projectRefs,
+    projectGroups: projectScopes,
     searchQuery: props.searchQuery,
     searchMatches: threadSearchMatchByKey,
     settlementEnvironmentIds,
@@ -324,7 +332,7 @@ function ThreadNavigationSidebarPane(
     selectedThreadKey: props.selectedThreadKey ?? null,
   });
   const listItems: readonly SidebarListItem[] =
-    settledShelfExpanded && threadListV2Layout.hiddenSettledCount > 0
+    (ageFiltered || settledShelfExpanded) && threadListV2Layout.hiddenSettledCount > 0
       ? [
           ...threadListV2Items,
           {
@@ -346,7 +354,7 @@ function ThreadNavigationSidebarPane(
       subactions: [
         {
           id: "environment:all",
-          title: "All environments",
+          title: "All env",
           subtitle: "Show threads from every environment",
           state: options.selectedEnvironmentId === null ? "on" : "off",
         },
@@ -501,6 +509,8 @@ function ThreadNavigationSidebarPane(
   useHardwareKeyboardCommand("focusSearch", focusSearch);
   const renderListItem = ({ item }: { readonly item: SidebarListItem }) => {
     switch (item.type) {
+      case "v2-project-header":
+        return <ThreadListV2ProjectHeader title={item.title} />;
       case "v2-pending": {
         const pendingScopeKey = scopedProjectKey(
           item.pendingTask.environmentId,
@@ -657,7 +667,10 @@ function ThreadNavigationSidebarPane(
         );
     }
   };
-  const filterCustomized = options.selectedEnvironmentId !== null || selectedProjectKey !== null;
+  const filterCustomized =
+    options.selectedEnvironmentId !== null ||
+    selectedProjectKey !== null ||
+    options.selectedAge !== "all";
   const filterIcon = filterCustomized
     ? "line.3.horizontal.decrease.circle.fill"
     : "line.3.horizontal.decrease.circle";
@@ -666,6 +679,8 @@ function ThreadNavigationSidebarPane(
     projects: projectFilterOptions,
     selectedEnvironmentId: options.selectedEnvironmentId,
     selectedProjectKey,
+    selectedAge: options.selectedAge,
+    onAgeChange: setSelectedAge,
     onEnvironmentChange: setSelectedEnvironmentId,
     onProjectChange: setSelectedProjectKey,
   });
@@ -690,9 +705,11 @@ function ThreadNavigationSidebarPane(
             ? threadSearch.isPending
               ? "Searching thread messages…"
               : "No matching threads"
-            : selectedProjectScope !== null
-              ? `No threads in ${selectedProjectScope.title}`
-              : "No threads yet"}
+            : options.selectedAge !== "all"
+              ? "No recent conversations"
+              : selectedProjectScope !== null
+                ? `No threads in ${selectedProjectScope.title}`
+                : "No threads yet"}
     </Text>
   );
 
@@ -759,6 +776,25 @@ function ThreadNavigationSidebarPane(
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 style={styles.threadList}
+                ListHeaderComponent={<ThreadAgeFilterNotice {...ageFilter} />}
+                ListFooterComponent={
+                  hasUncheckedOlderThreads ? (
+                    <Button
+                      label={
+                        olderSettledShelf.failed
+                          ? "Retry older conversations"
+                          : "Check older conversations"
+                      }
+                      loading={olderSettledShelf.loading || ageFilter.pending}
+                      tone="secondary"
+                      onPress={() => {
+                        if (!ageFiltered && !settledShelfExpanded) toggleSettledShelf();
+                        if (olderSettledShelf.failed) olderSettledShelf.retry();
+                        else showMoreSettled();
+                      }}
+                    />
+                  ) : undefined
+                }
                 ListEmptyComponent={listEmpty}
               />
             </GestureDetector>
@@ -793,8 +829,11 @@ function ThreadNavigationSidebarPane(
             : { paddingBottom: insets.bottom }
         }
       >
-        {Platform.OS === "android" && listItems.length === 0 ? (
-          <View className="flex-1 items-center justify-center">{listEmpty}</View>
+        {Platform.OS === "android" && listItems.length === 0 && !hasUncheckedOlderThreads ? (
+          <View className="flex-1 items-center justify-center">
+            <ThreadAgeFilterNotice {...ageFilter} />
+            {listEmpty}
+          </View>
         ) : (
           <SwipeableScrollGateProvider enabled={swipeEnabled}>
             <GestureDetector gesture={sidebarScrollGesture}>
@@ -829,6 +868,25 @@ function ThreadNavigationSidebarPane(
                 scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 style={styles.threadList}
+                ListHeaderComponent={<ThreadAgeFilterNotice {...ageFilter} />}
+                ListFooterComponent={
+                  hasUncheckedOlderThreads ? (
+                    <Button
+                      label={
+                        olderSettledShelf.failed
+                          ? "Retry older conversations"
+                          : "Check older conversations"
+                      }
+                      loading={olderSettledShelf.loading || ageFilter.pending}
+                      tone="secondary"
+                      onPress={() => {
+                        if (!ageFiltered && !settledShelfExpanded) toggleSettledShelf();
+                        if (olderSettledShelf.failed) olderSettledShelf.retry();
+                        else showMoreSettled();
+                      }}
+                    />
+                  ) : undefined
+                }
                 ListEmptyComponent={listEmpty}
               />
             </GestureDetector>

@@ -20,6 +20,19 @@ export function subscribeAppActive(onActive: Listener): () => void {
   return () => subscription.remove();
 }
 
+/** A real background → active return, not an alert or Control Center interruption. */
+export function subscribeAppForegroundReturn(onReturn: Listener): () => void {
+  let wasBackgrounded = AppState.currentState === "background";
+  const subscription = AppState.addEventListener("change", (state) => {
+    if (state === "background") wasBackgrounded = true;
+    if (state === "active" && wasBackgrounded) {
+      wasBackgrounded = false;
+      onReturn();
+    }
+  });
+  return () => subscription.remove();
+}
+
 export function useAppActive(): boolean {
   return useSyncExternalStore(subscribeAppState, isAppActive);
 }

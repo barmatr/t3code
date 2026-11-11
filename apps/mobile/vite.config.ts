@@ -18,6 +18,7 @@ const reactTests = [
   "src/features/diffs/nativeReviewDiffSurface.test.tsx",
   "src/features/pull-requests/usePullRequestDiff.test.tsx",
   "src/components/ProjectFavicon.test.tsx",
+  "src/components/BrandForegroundFire.test.tsx",
   "src/components/ui/Dialog.android.test.tsx",
   "src/features/pull-requests/usePullRequestList.test.tsx",
   "src/components/ui/AppBar.android.test.tsx",
@@ -38,8 +39,10 @@ const reactTests = [
   "src/state/use-selected-thread-git-state.test.tsx",
   "src/features/terminal/useTerminalExitNavigation.test.tsx",
   "src/features/threads/use-thread-list-now.test.tsx",
+  "src/features/threads/use-thread-age-filter.test.tsx",
   "src/features/threads/useThreadListV2.test.tsx",
   "src/features/home/home-list-options.test.tsx",
+  "src/features/home/home-route-visibility.test.tsx",
   "src/features/workspace/useSearchScrollRestoration.test.tsx",
   "src/features/connection/ConnectionsNewRouteScreen.test.tsx",
 ];

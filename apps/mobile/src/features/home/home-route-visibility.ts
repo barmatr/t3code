@@ -1,5 +1,5 @@
 import { RegistryContext } from "@effect/atom-react";
-import { useNavigation } from "@react-navigation/native";
+import { useIsFocused } from "@react-navigation/native";
 import { useContext, useRef, useSyncExternalStore } from "react";
 import type { Atom } from "effect/reactivity";
 
@@ -42,11 +42,10 @@ export function recordHomeFocus(): void {
 }
 
 export function useHomeRouteVisible(): boolean {
-  const navigation = useNavigation();
+  const focused = useIsFocused();
   const visible = useSyncExternalStore(subscribeHomeVisibility, () => homeVisible);
-  // Before Home's first navigation event: a cold deep link mounts Home under
-  // its Thread without ever showing it.
-  return visible ?? navigation.isFocused();
+  // Native tab/header transitions can report disappearance while Home remains focused.
+  return focused || visible === true;
 }
 
 export function useAtomValueWhileVisible<A>(atom: Atom.Atom<A>, visible: boolean): A {

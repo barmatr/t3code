@@ -219,8 +219,9 @@ export function workspaceTabNavigationState<
     return { ...settings, index: routes.length - 1, routes };
   }
   const home = state.routes.find((route) => route.name === "Home") ?? { name: "Home" };
+  // Agents always opens its project list, never the former PR tab's saved detail.
   const detail =
-    options.columns && tab !== "usage"
+    options.columns && tab === "threads"
       ? detailRoute(state, tab, selections, options.check)
       : undefined;
   const routes = [...[home, ...(detail ? [detail] : [])].map(keyed), ...overlays];

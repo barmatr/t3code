@@ -17,6 +17,7 @@ import {
 import type { AndroidNavigationStyle } from "../lib/androidNavigationStyle";
 import type { ComposerEnterBehavior } from "../lib/composerEnterBehavior";
 import type { FollowUpBehavior } from "../lib/followUpBehavior";
+import type { ThreadAgeBasis } from "../lib/thread-age";
 import { isMicrophoneKind, type MicrophoneEntry } from "../lib/microphonePriority";
 import { MOBILE_THEME_IDS, type MobileThemeId, type MobileThemeMode } from "../lib/mobileTheme";
 import * as MobileDatabase from "./mobile-database";
@@ -37,8 +38,11 @@ export const PullRequestListControls = Schema.Struct({
 export type PullRequestListControls = typeof PullRequestListControls.Type;
 
 const ThreadListFilters = Schema.Struct({
+  hot: Schema.optional(Schema.Boolean),
+  agentsHot: Schema.optional(Schema.Boolean),
   environmentId: Schema.NullOr(EnvironmentId),
   projectKey: Schema.NullOr(Schema.String),
+  age: Schema.optional(Schema.Literals(["all", "10m", "1h", "1d", "1w"])),
 });
 export type ThreadListFilters = typeof ThreadListFilters.Type;
 
@@ -126,6 +130,7 @@ export interface Preferences {
   readonly threadListSnoozedShelfExpanded?: boolean;
   readonly threadListWorkingShelfExpanded?: boolean;
   readonly threadListFilters?: ThreadListFilters;
+  readonly threadAgeBasis?: ThreadAgeBasis;
   readonly pullRequestListFilters?: PullRequestListPreferences;
   readonly workspaceSelections?: WorkspaceSelections;
 }
@@ -203,6 +208,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     threadListSnoozedShelfExpanded?: boolean;
     threadListWorkingShelfExpanded?: boolean;
     threadListFilters?: ThreadListFilters;
+    threadAgeBasis?: ThreadAgeBasis;
     pullRequestListFilters?: PullRequestListPreferences;
     workspaceSelections?: WorkspaceSelections;
   } = {};
@@ -352,6 +358,12 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   }
   if (isThreadListFilters(parsed.threadListFilters)) {
     preferences.threadListFilters = parsed.threadListFilters;
+  }
+  if (
+    parsed.threadAgeBasis === "assistant_reply" ||
+    parsed.threadAgeBasis === "conversation_activity"
+  ) {
+    preferences.threadAgeBasis = parsed.threadAgeBasis;
   }
   if (isPullRequestListPreferences(parsed.pullRequestListFilters)) {
     preferences.pullRequestListFilters = parsed.pullRequestListFilters;

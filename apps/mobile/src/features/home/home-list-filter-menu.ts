@@ -1,4 +1,5 @@
 import type { EnvironmentId } from "@t3tools/contracts";
+import { THREAD_AGE_OPTIONS, type ThreadAge } from "../../lib/thread-age";
 
 export interface HomeListFilterMenuEnvironment {
   readonly environmentId: EnvironmentId;
@@ -34,8 +35,10 @@ export function buildHomeListFilterMenu(props: {
   readonly projects: ReadonlyArray<HomeListFilterMenuProject>;
   readonly selectedEnvironmentId: EnvironmentId | null;
   readonly selectedProjectKey: string | null;
+  readonly selectedAge: ThreadAge;
   readonly onEnvironmentChange: (environmentId: EnvironmentId | null) => void;
   readonly onProjectChange: (projectKey: string | null) => void;
+  readonly onAgeChange: (age: ThreadAge) => void;
 }): HomeListFilterMenu {
   const items: Array<HomeListFilterMenuAction | HomeListFilterMenuSubmenu> = [];
 
@@ -45,7 +48,7 @@ export function buildHomeListFilterMenu(props: {
     items: [
       {
         type: "action",
-        title: "All environments",
+        title: "All env",
         subtitle: "Show threads from every environment",
         state: props.selectedEnvironmentId === null ? "on" : "off",
         onPress: () => props.onEnvironmentChange(null),
@@ -83,6 +86,17 @@ export function buildHomeListFilterMenu(props: {
       ],
     });
   }
+
+  items.push({
+    type: "submenu",
+    title: "Age",
+    items: THREAD_AGE_OPTIONS.map((option) => ({
+      type: "action",
+      title: option.label,
+      state: props.selectedAge === option.id ? "on" : "off",
+      onPress: () => props.onAgeChange(option.id),
+    })),
+  });
 
   return {
     title: "Thread list options",

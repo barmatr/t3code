@@ -1,3 +1,27 @@
+# T4 Mobile — contexte local
+
+Ce dépôt indépendant est le client mobile personnel de Raoul, voisin de `../t4code`
+(client PC). Base initiale : `268dbc1988f7b1e66d6c14e6e11ca540e685623e`,
+T3 Nightly `v0.1.8-nightly.20261104.4165`.
+
+- Mobile autonome : lire [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md) avant de modifier
+  l’app, sa signature ou ses commandes de build.
+- Exploitation et limites : [T4-MOBILE.md](T4-MOBILE.md).
+- Reprise sans historique : pour la signature, les accès Apple ou TestFlight,
+  lire [T4-TESTFLIGHT-REPRISE.md](T4-TESTFLIGHT-REPRISE.md) avant d’agir. Ce document
+  donne les dépendances propres à ce Mac, les preuves datées et les étapes restantes.
+  Vérifier l’état actuel avec `node scripts/t4/app-store-connect.mjs check` (GET
+  uniquement) et `vp run t4:ios:doctor` ; leurs succès ne prouvent pas un déploiement.
+  Le script charge lui-même `.env.app-store-connect.local` ; les secrets n’ont pas
+  à être copiés dans le chat ou exportés à la main.
+- Conserver les identifiants `@t3tools/*` des packages internes et la licence MIT.
+- Les scripts de maintenance desktop hérités visent l’application PC ; leur exécution
+  se fait uniquement dans `../t4code`. Ici, utiliser les commandes `t4:ios:*`.
+- Les remotes servent à lire les sources. Aucun commit, push, upload Apple ou build
+  EAS sans demande explicite. La demande initiale autorise la préparation locale.
+
+Les conventions techniques amont ci-dessous s’appliquent dans ce périmètre.
+
 # T3 Code
 
 T3 Code is a minimal GUI for coding agents. A Node WebSocket server wraps provider CLIs and agents (Codex, Claude Code, Cursor, Grok, OpenCode, Antigravity, Kiro) and serves web, desktop, and mobile clients.
@@ -211,13 +235,9 @@ Architecture and its constraints: `docs/internals/overview.md`. Glossary: `docs/
 
 - Security is important, but should not be over-indexed on, especially for dev mode/maintainer-only features.
 
-## Fork T4 (Raoul)
+## Portée mobile du fork T4
 
-Cette branche `t4` est T4 Code, client personnel du serveur T3 officiel. Pour toute modification de T4, suivre le skill [maintenir-t4](.agents/skills/maintenir-t4/SKILL.md).
-
-- T4 tourne depuis le DMG installé dans `/Applications/T4 Code.app`, jamais en mode dev. Une modification n'est visible qu'après commit, build du DMG, installation et relance.
-- Livrer ainsi par défaut toute modification demandée, sans redemander la méthode. Seule la fermeture de T4, qui coupe Raoul quelques secondes, attend son feu vert. T3 et les agents continuent de tourner.
-- Sauvegarder l'ancienne app dans `~/Desktop/workspace/t4-sauvegardes/<date>-<sujet>/` avant de la remplacer.
-- Commits T4 : étiqueter `feat(t4)`, `fix(t4)`, `docs(t4)` ou `chore(t4)`, jamais un scope upstream comme `(sidebar)`. Ce préfixe repère les personnalisations lors des rebases sur la Nightly.
-- Ajouter sous le titre un court corps qui donne les règles retenues et leur raison. Signaler un diff gonflé par du réindentage.
-- Un correctif d'une fonction pas encore installée se fusionne dans son commit, tant que la branche n'est pas poussée ; réserver `fix(t4)` aux défauts d'une version livrée.
+Ce dépôt suit la branche `t4-mobile` et les instructions mobiles en tête de ce
+fichier. Les procédures de livraison desktop du dépôt voisin `../t4code`
+(skill `maintenir-t4`, DMG et remplacement d’application macOS) s’exécutent dans
+ce dépôt voisin uniquement, sur demande visant le client PC.

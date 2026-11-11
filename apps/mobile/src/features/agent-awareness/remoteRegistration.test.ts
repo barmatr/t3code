@@ -251,25 +251,28 @@ describe("makeRelayDeviceRegistrationRequest", () => {
     environmentConfigsMock.configs.clear();
   });
 
-  it("disables push features in Personal Team relay registrations", () => {
-    Constants.expoConfig!.extra = { iosPersonalTeamBuild: true };
+  it.each(["iosPersonalTeamBuild", "iosLocalOnlyBuild"])(
+    "disables push features for %s builds",
+    (capability) => {
+      Constants.expoConfig!.extra = { [capability]: true };
 
-    expect(
-      makeRelayDeviceRegistrationRequest({
-        deviceId: "device-1",
-        label: "Julius's iPhone",
-        iosMajorVersion: 18,
-        appVersion: "1.0.0",
-        pushToken: "apns-token",
-        pushToStartToken: "push-to-start-token",
-        notificationsEnabled: true,
-        preferences: {},
-      }).preferences,
-    ).toMatchObject({
-      liveActivitiesEnabled: false,
-      notificationsEnabled: false,
-    });
-  });
+      expect(
+        makeRelayDeviceRegistrationRequest({
+          deviceId: "device-1",
+          label: "Julius's iPhone",
+          iosMajorVersion: 18,
+          appVersion: "1.0.0",
+          pushToken: "apns-token",
+          pushToStartToken: "push-to-start-token",
+          notificationsEnabled: true,
+          preferences: {},
+        }).preferences,
+      ).toMatchObject({
+        liveActivitiesEnabled: false,
+        notificationsEnabled: false,
+      });
+    },
+  );
 
   it.effect("registers one push-token listener per Live Activity across wrappers", () => {
     const addPushTokenListener = vi.fn();

@@ -1,3 +1,4 @@
+import { Button } from "../../components/ui/Button";
 import { usePaneRole } from "../../components/ui/Pane";
 import { ScreenContent } from "../../components/ui/ScreenContent";
 import { useActiveNewTask } from "../../state/active-new-task";
@@ -62,6 +63,7 @@ import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import { useQueuedThreadKeys } from "../../state/use-thread-outbox";
 import {
   ThreadListV2PendingRow,
+  ThreadListV2ProjectHeader,
   ThreadListV2Row,
   ThreadListV2SettledShelfHeader,
   ThreadListV2ShowMoreRow,
@@ -73,6 +75,7 @@ import { useOpenThreadPullRequests } from "../threads/use-open-thread-pull-reque
 import type { ThreadPrPresentation } from "../../state/thread-pr-presentation";
 import {
   threadListV2ListItemsAreEqual,
+  threadListShowsMultipleEnvironments,
   THREAD_LIST_V2_SETTLED_INITIAL_COUNT,
   THREAD_LIST_V2_SETTLED_PAGE_COUNT,
   type ThreadListV2ListItem,
@@ -88,9 +91,14 @@ import { createSwipeRowActivation } from "./swipe-row-activation";
 import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-swipe-actions";
 import { useFabScroll } from "./FabScrollContext";
 import { useWorkspaceTabs } from "../workspace/WorkspaceTabsContext";
-import { ThreadListFilters } from "./ThreadListFilters";
+import { ThreadListFilters, HotFilterButton } from "./ThreadListFilters";
+import { AppText as Text } from "../../components/ui/AppText";
+import { ThreadAgeFilterNotice } from "./ThreadAgeFilterNotice";
+import type { ThreadAge } from "../../lib/thread-age";
 
 interface HomeScreenProps {
+  readonly fixedScope?: string | undefined;
+  readonly workspaceTab?: "threads" | "pullRequests" | undefined;
   readonly projects: ReadonlyArray<EnvironmentProject>;
   readonly threads: ReadonlyArray<EnvironmentThreadShell>;
   readonly pendingTasks: ReadonlyArray<PendingNewTask>;
@@ -102,11 +110,15 @@ interface HomeScreenProps {
   readonly searchQuery: string;
   readonly selectedEnvironmentId: EnvironmentId | null;
   readonly selectedProjectKey: string | null;
+  readonly selectedAge: ThreadAge;
+  readonly hot?: boolean;
+  readonly onHotChange?: (hot: boolean) => void;
   readonly projectSortOrder: HomeProjectSortOrder;
   readonly projectGroupingMode: SidebarProjectGroupingMode;
   readonly onSearchQueryChange: (query: string) => void;
   readonly onEnvironmentChange: (environmentId: EnvironmentId | null) => void;
   readonly onProjectChange: (projectKey: string | null) => void;
+  readonly onAgeChange: (age: ThreadAge) => void;
   readonly onAddConnection: () => void;
   readonly onOpenSettings: () => void;
   readonly onStartNewTask: () => void;
@@ -320,8 +332,9 @@ export function HomeScreen(props: HomeScreenProps) {
   };
   const onFabScroll = useFabScroll();
   const listRef = useRef<LegendListRef>(null);
-  const searchMode = workspace?.state.tabs.threads.searchMode;
-  const restoredOffset = workspace?.state.tabs.threads.scrollOffset;
+  const workspaceTab = props.workspaceTab ?? "threads";
+  const searchMode = workspace?.state.tabs[workspaceTab].searchMode;
+  const restoredOffset = workspace?.state.tabs[workspaceTab].scrollOffset;
   useSearchScrollRestoration(searchMode, () => {
     if (restoredOffset === undefined) return;
     void listRef.current?.scrollToOffset({
@@ -345,7 +358,7 @@ export function HomeScreen(props: HomeScreenProps) {
     onFabScroll?.(event);
     if (workspace)
       workspace.recordScrollOffset(
-        "threads",
+        workspaceTab,
         Math.max(0, event.nativeEvent.contentOffset.y + (Platform.OS === "ios" ? insets.top : 0)),
       );
     clearTimeout(activationTimerRef.current);
@@ -421,7 +434,7 @@ export function HomeScreen(props: HomeScreenProps) {
   const [settledVisibleCount, setSettledVisibleCount] = useState(
     THREAD_LIST_V2_SETTLED_INITIAL_COUNT,
   );
-  const settledResetKey = `${props.selectedEnvironmentId ?? "all"}:${v2ProjectScopeKey ?? "all"}:${props.searchQuery.trim()}`;
+  const settledResetKey = `${props.selectedEnvironmentId ?? "all"}:${v2ProjectScopeKey ?? "all"}:${props.selectedAge}:${props.searchQuery.trim()}`;
   const [lastSettledResetKey, setLastSettledResetKey] = useState(settledResetKey);
   if (lastSettledResetKey !== settledResetKey) {
     setLastSettledResetKey(settledResetKey);
@@ -458,13 +471,20 @@ export function HomeScreen(props: HomeScreenProps) {
   const {
     layout: threadListV2Layout,
     items: threadListV2Items,
+    ageFiltered,
     contentOnlyThreadKeys,
     olderSettledShelf,
+    ageFilter,
+    hasUncheckedOlderThreads,
   } = useThreadListV2({
     threads: props.threads,
+    age: props.selectedAge,
+    hot: props.hot,
+    prioritizeFollowUp: true,
     pendingTasks: props.pendingTasks,
     environmentId: props.selectedEnvironmentId,
     projectRefs: v2ScopedProjectGroup === null ? null : v2ScopedProjectGroup.projectRefs,
+    projectGroups: projectScopes,
     searchQuery: props.searchQuery,
     searchMatches: threadSearchMatchByKey,
     settlementEnvironmentIds,
@@ -503,7 +523,9 @@ export function HomeScreen(props: HomeScreenProps) {
     if (swipeEnabled) activateVisibleRows(threadListV2Items);
   }, [activateVisibleRows, swipeEnabled, threadListV2Items]);
 
+  const multipleEnvironments = threadListShowsMultipleEnvironments(threadListV2Items);
   const renderV2Item = ({ item }: { readonly item: ThreadListV2ListItem }) => {
+    if (item.type === "v2-project-header") return <ThreadListV2ProjectHeader title={item.title} />;
     if (item.type === "v2-pending") {
       const pendingScopeKey = scopedProjectKey(
         item.pendingTask.environmentId,
@@ -522,7 +544,7 @@ export function HomeScreen(props: HomeScreenProps) {
           project={projectByKey.get(pendingScopeKey) ?? null}
           projectTitle={v2ProjectTitleByProjectKey.get(pendingScopeKey)}
           environmentLabel={
-            Object.keys(props.savedConnectionsById).length > 1
+            multipleEnvironments
               ? (props.savedConnectionsById[item.pendingTask.environmentId]?.environmentLabel ??
                 null)
               : null
@@ -574,6 +596,7 @@ export function HomeScreen(props: HomeScreenProps) {
     return (
       <ThreadListV2Row
         pane={sidebarSurface ? "sidebar" : "screen"}
+        inlineProviderWithStatus={!multipleEnvironments}
         selected={scopedThreadKey(thread.environmentId, thread.id) === selectedThreadKey}
         fullSwipeWidth={fullSwipeWidth}
         onNewThreadOnBranch={props.onNewThreadOnBranch}
@@ -591,7 +614,7 @@ export function HomeScreen(props: HomeScreenProps) {
         providerInstance={resolveProviderInstance(thread)}
         providers={providersByEnvironmentId.get(thread.environmentId)}
         environmentLabel={
-          Object.keys(props.savedConnectionsById).length > 1
+          multipleEnvironments
             ? (props.savedConnectionsById[thread.environmentId]?.environmentLabel ?? null)
             : null
         }
@@ -620,11 +643,7 @@ export function HomeScreen(props: HomeScreenProps) {
         snoozePresets={snoozePresetsByEnvironmentId.get(thread.environmentId)}
         pinningSupported={pinningEnvironmentIds.has(thread.environmentId)}
         autoSettleOptOutSupported={autoSettleOptOutEnvironmentIds.has(thread.environmentId)}
-        reorderSupported={
-          item.item.pinned
-            ? pinReorderEnvironmentIds.has(thread.environmentId)
-            : !workingShelfEnabled && activeReorderEnvironmentIds.has(thread.environmentId)
-        }
+        reorderSupported={false}
         canMoveUp={item.canMoveUp}
         canMoveDown={item.canMoveDown}
         onSnoozeThread={handleSnoozeThread}
@@ -654,6 +673,7 @@ export function HomeScreen(props: HomeScreenProps) {
     selectedThreadKey,
     threadSearchMatchByKey,
     workingShelfEnabled,
+    multipleEnvironments,
   };
 
   const hasAnyThreads =
@@ -670,9 +690,45 @@ export function HomeScreen(props: HomeScreenProps) {
     projectCount: props.projects.length,
   });
 
+  const filterControls = props.fixedScope ? (
+    <View className="flex-row items-center justify-between px-5 pb-3" style={{ paddingTop: 6.4 }}>
+      <View className="min-w-0 flex-1">
+        <Text accessibilityRole="header" className="text-lg font-t3-bold text-foreground">
+          {props.fixedScope}
+        </Text>
+        <Text className="text-sm text-foreground-muted">{selectedEnvironmentLabel}</Text>
+      </View>
+      {Platform.OS === "ios" && props.onHotChange ? (
+        <HotFilterButton hot={props.hot ?? false} onChange={props.onHotChange} />
+      ) : null}
+    </View>
+  ) : Platform.OS === "ios" ? (
+    <ThreadListFilters
+      gutter={sidebarSurface ? 8 : 0}
+      environments={props.environments}
+      projects={pickableProjectGroups(projectScopes).map((scope) => ({
+        key: scope.key,
+        label: scope.title,
+      }))}
+      selectedEnvironmentId={props.selectedEnvironmentId}
+      selectedProjectKey={props.selectedProjectKey}
+      hot={props.hot}
+      onHotChange={props.onHotChange}
+      selectedAge={props.selectedAge}
+      onEnvironmentChange={props.onEnvironmentChange}
+      onProjectChange={props.onProjectChange}
+      onAgeChange={props.onAgeChange}
+    />
+  ) : null;
+
   if (!hasAnyThreads) {
     return (
       <View className={containerClassName}>
+        {Platform.OS === "ios" ? (
+          <View style={{ paddingTop: NATIVE_LIQUID_GLASS_SUPPORTED ? insets.top + 72 : 0 }}>
+            {filterControls}
+          </View>
+        ) : null}
         <ScreenContent surface={sidebarSurface ? "drawer" : "screen"}>
           <View
             className={cn(
@@ -682,7 +738,7 @@ export function HomeScreen(props: HomeScreenProps) {
             style={{
               paddingBottom:
                 Platform.OS === "ios" ? iosBottomClearance : Math.max(insets.bottom, 24),
-              paddingTop: NATIVE_LIQUID_GLASS_SUPPORTED ? insets.top + 72 : 0,
+
               paddingLeft: 32 + (contentSideInsets?.left ?? 0),
               paddingRight: 32 + (contentSideInsets?.right ?? 0),
             }}
@@ -727,20 +783,8 @@ export function HomeScreen(props: HomeScreenProps) {
   const v2ListHeader = (
     <>
       {listHeader}
-      {Platform.OS === "ios" && workspace ? (
-        <ThreadListFilters
-          gutter={sidebarSurface ? 8 : 0}
-          environments={props.environments}
-          projects={pickableProjectGroups(projectScopes).map((scope) => ({
-            key: scope.key,
-            label: scope.title,
-          }))}
-          selectedEnvironmentId={props.selectedEnvironmentId}
-          selectedProjectKey={props.selectedProjectKey}
-          onEnvironmentChange={props.onEnvironmentChange}
-          onProjectChange={props.onProjectChange}
-        />
-      ) : null}
+      {filterControls}
+      <ThreadAgeFilterNotice {...ageFilter} />
     </>
   );
 
@@ -749,6 +793,18 @@ export function HomeScreen(props: HomeScreenProps) {
       <EmptyState
         title="No results"
         detail={`No threads matching "${props.searchQuery}".`}
+        variant={Platform.OS === "android" ? "plain" : undefined}
+      />
+    ) : props.hot ? (
+      <EmptyState
+        title="Nothing hot"
+        detail="No actions, unread replies or agents at work in this scope."
+        variant={Platform.OS === "android" ? "plain" : undefined}
+      />
+    ) : props.selectedAge !== "all" ? (
+      <EmptyState
+        title="No recent conversations"
+        detail="Choose a longer period or All Ages to see older conversations."
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : v2ScopedProjectGroup !== null ? (
@@ -771,13 +827,14 @@ export function HomeScreen(props: HomeScreenProps) {
       />
     );
 
-  if (Platform.OS === "android" && threadListV2Items.length === 0) {
+  if (Platform.OS === "android" && threadListV2Items.length === 0 && !hasUncheckedOlderThreads) {
     return (
       <ScreenContent surface="screen">
         <View
           className="flex-1 items-center justify-center px-4"
           style={{ paddingBottom: insets.bottom }}
         >
+          <ThreadAgeFilterNotice {...ageFilter} />
           {v2ListEmpty}
         </View>
       </ScreenContent>
@@ -809,7 +866,23 @@ export function HomeScreen(props: HomeScreenProps) {
                 extraData={v2ExtraData}
                 ListHeaderComponent={v2ListHeader}
                 ListFooterComponent={
-                  settledShelfExpanded && threadListV2Layout.hiddenSettledCount > 0 ? (
+                  hasUncheckedOlderThreads ? (
+                    <Button
+                      label={
+                        olderSettledShelf.failed
+                          ? "Retry older conversations"
+                          : "Check older conversations"
+                      }
+                      tone="secondary"
+                      loading={olderSettledShelf.loading || ageFilter.pending}
+                      onPress={() => {
+                        if (!ageFiltered && !settledShelfExpanded) toggleSettledShelf();
+                        if (olderSettledShelf.failed) olderSettledShelf.retry();
+                        else showMoreSettled();
+                      }}
+                    />
+                  ) : (ageFiltered || settledShelfExpanded || !props.hot) &&
+                    threadListV2Layout.hiddenSettledCount > 0 ? (
                     <ThreadListV2ShowMoreRow
                       hiddenCount={threadListV2Layout.hiddenSettledCount}
                       {...(olderSettledShelf.loading
