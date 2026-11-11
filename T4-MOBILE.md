@@ -101,9 +101,10 @@ pas une publication publique : [documentation Apple](https://developer.apple.com
 
 ## Maintenance
 
-Branche locale `t4-mobile`, remotes de lecture `desktop-source` et `upstream`.
-Les URLs de push sont neutralisées par défaut. Aucun dépôt distant T4 Mobile n’a
-été créé. Conserver les commits personnalisés mobile à part avant toute mise à jour,
+Branches `t4-mobile` (builds 1 à 6) et `t4-mobile-4515` (depuis le build 7), avec
+les tags `t4-mobile-build-N`, poussées sur le fork `fork` (`barmatr/t3code`) depuis
+le 11 novembre 2026, à côté de la branche `t4` de T4 PC. Les remotes de lecture
+`desktop-source` et `upstream` gardent leur push neutralisé. Conserver les commits personnalisés mobile à part avant toute mise à jour,
 puis reprendre une base compatible avec les serveurs T3 réellement utilisés.
 Exécuter les vérifications ciblées après intégration ; éviter le script de mise à jour
 PC hérité (`scripts/t4/update-t4.sh`), qui installe l’application desktop.
