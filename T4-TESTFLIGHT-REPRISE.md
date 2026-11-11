@@ -1,6 +1,23 @@
 # T4 Mobile — reprise pour TestFlight
 
-## Dernière livraison : 0.1.0 (8), zone Settled et fils lus récemment en HOT
+## Dernière livraison : 0.1.0 (9), nouvelle icône
+
+Le 11 novembre 2026, le build **9** a été compilé, signé, exporté, validé par
+Apple puis distribué à **T4 Interne** (UUID `258bab20-85f9-4a87-8a25-c34de2064111`,
+VALID, notifications automatiques désactivées). Seul changement : l’icône
+(proposition 5 retenue par Raoul parmi six, T4 recentré, portrait de Raobar en
+sceau sur le pied du 4, « Powered by Raobar » dessous ; commit `aea2b8ad32`).
+Les propositions et leur planche sont dans `build/icones-propositions/` ;
+`generer.py` les régénère.
+
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-11/T4 Mobile 18.48.59.xcarchive`.
+- IPA : `build/ios-local/build-9/export/T4Mobile.ipa`, **61 605 006 octets**,
+  SHA-256 `16ebdf968feb77849a3a715c7d16c3efa6b187e7af7da73e393f40db63db6cc8`.
+- Icône vérifiée sur l’écran d’accueil du simulateur iPhone 17 :
+  `build/ios-local/build-9-candidat/icone-ecran-accueil.png`. La mention écrite est
+  illisible à la taille d’une icône d’écran d’accueil ; le portrait reste repérable.
+
+## Historique : 0.1.0 (8), zone Settled et fils lus récemment en HOT
 
 Le 11 novembre 2026, le build **8** a été compilé, signé, exporté, validé par
 Apple puis distribué à **T4 Interne** (UUID `0e38888f-01dd-438d-909a-9eff01b0415f`,
@@ -360,8 +377,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=9
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-9"
+export T4_IOS_BUILD_NUMBER=10
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-10"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -465,11 +482,11 @@ remplacent pas l’autorisation de Raoul pour une livraison.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Le dernier build est `0.1.0 (8)`, valide et distribué à T4 Interne (UUID
-> `0e38888f-01dd-438d-909a-9eff01b0415f`), sur T3 `v0.1.9-nightly.20261111.4515`,
-> branche `t4-mobile-4515` ; il ajoute la zone Settled et les fils lus récemment en HOT.
+> Le dernier build est `0.1.0 (9)`, valide et distribué à T4 Interne (UUID
+> `258bab20-85f9-4a87-8a25-c34de2064111`), sur T3 `v0.1.9-nightly.20261111.4515`,
+> branche `t4-mobile-4515` : zone Settled, fils lus récemment en HOT, nouvelle icône.
 > Lis la recette et ses limites ci-dessus. Contrôle l’état Apple actuel avant une
-> nouvelle livraison, utilise un numéro supérieur à 8 et ne renvoie ni n’expire
+> nouvelle livraison, utilise un numéro supérieur à 9 et ne renvoie ni n’expire
 > les anciens builds. Suis la demande actuelle de Raoul pour tout nouvel envoi.
 > Son compte TestFlight est déjà dans le groupe. Ne montre pas les secrets et ne
 > touche pas à T4 PC, Plume ou Myga.
