@@ -11,9 +11,11 @@ partagés. Les noms internes `@t3tools/*` restent compatibles.
 - iOS et Android : `fr.emaxconseils.t4`. Dev : suffixe `.dev`, preview : `.preview`.
 - Signature iOS : équipe `emax conseils`, `GY9P9U75F3`.
 - Première version locale : `0.1.0`, build `1` (modifiable avec `T4_IOS_BUILD_NUMBER`).
-- Sources : copie du commit T4 PC `268dbc1988f7b1e66d6c14e6e11ca540e685623e`,
-  aligné sur T3 `v0.1.8-nightly.20261104.4165`. Les changements PC ne deviennent pas
-  automatiquement des changements d’interface mobile.
+- Sources : depuis le build 7, branche `t4-mobile-4515`, partie de T3
+  `v0.1.9-nightly.20261111.4515` avec les seules personnalisations mobiles reprises
+  (commit du build 6 `7cc84fd38a`, tag `t4-mobile-build-6`). Les builds 1 à 6
+  venaient du commit T4 PC `268dbc1988`, aligné sur `v0.1.8-nightly.20261104.4165`.
+  Les changements PC ne deviennent pas automatiquement des changements mobiles.
 
 T3 et T4 ont des identifiants, schémas et espaces de stockage distincts. Les liens
 universels du domaine officiel restent réservés à T3. Pour connecter T4, utiliser
@@ -106,6 +108,22 @@ puis reprendre une base compatible avec les serveurs T3 réellement utilisés.
 Exécuter les vérifications ciblées après intégration ; éviter le script de mise à jour
 PC hérité (`scripts/t4/update-t4.sh`), qui installe l’application desktop.
 La licence MIT T3 est conservée dans `LICENSE`.
+
+Méthode de mise à niveau suivie pour le build 7 : récupérer le tag nightly avec
+`git -c fetch.negotiationAlgorithm=noop fetch upstream tag <tag> --no-tags` (le
+dépôt vient d’un clone partiel), créer une branche depuis ce tag, puis
+`git cherry-pick --no-commit` du seul commit mobile T4. Les écrans Pull Requests
+restent dans le code mais sont ignorés par knip : l’onglet Agents les remplace.
+
+Pièges de recette sur simulateur relevés le 11 novembre 2026 :
+
+- lancer le backend isolé avec `T3CODE_HOME="$PWD/.t3" vp run dev` : ce dépôt
+  n’est pas un worktree Git, et sans cette variable le serveur de dev écrit dans
+  `~/.t3/dev` ;
+- exporter `LANG=en_US.UTF-8` avant `vp run mobile:install`, sinon CocoaPods échoue ;
+- `mobile:install` régénère `apps/mobile/ios` en variante dev (`T4MobileDev`) :
+  relancer ensuite `vp run t4:ios:prebuild` (et non `ios-local.sh prebuild` depuis
+  la racine, dont le `pod install` échoue), puis `vp run t4:ios:doctor`.
 
 ## Vérifications du 10 novembre 2026
 

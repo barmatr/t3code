@@ -1,6 +1,32 @@
 # T4 Mobile — reprise pour TestFlight
 
-## Dernière livraison : 0.1.0 (6), mode HOT et listes prioritaires
+## Dernière livraison : 0.1.0 (7), mise à niveau sur la nightly T3 du 11 novembre
+
+Le 11 novembre 2026, le build **7** a été compilé, signé, exporté, validé par
+Apple puis distribué à **T4 Interne**. État relu par API : **VALID /
+INTERNAL_ONLY / READY_FOR_BETA_TESTING**, UUID
+`a73c6eb4-d842-4cba-818f-ed2d3907e878`, notifications automatiques désactivées.
+Le groupe contient sept builds et un testeur.
+
+Base : T3 `v0.1.9-nightly.20261111.4515`, branche `t4-mobile-4515`, avec les
+personnalisations du build 6 reprises (identité EMAX, Agents, âge, HOT, libellés
+français). Nouveautés T3 incluses, dont l’onglet Usage et le nom de fournisseur
+dans les lignes de fils.
+
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-11/T4 Mobile 13.54.53.xcarchive`.
+- IPA : `build/ios-local/build-7/export/T4Mobile.ipa`, **59 906 767 octets**.
+- SHA-256 : `94c55f20b6e89f21409d85d50fa16e470f4bee438eb6eff761938e4de99257bc`.
+- Signature `Apple Distribution: emax conseils (GY9P9U75F3)`, bundle
+  `fr.emaxconseils.t4`, version 0.1.0 (7).
+- Typecheck, lint, knip et 3 419 tests passent. Les 4 tests `app.config.test.ts`
+  qui attendent l’identifiant T3 échouent par construction depuis le build 1.
+- Recette simulateur iPhone 17 / iOS 26.4, backend isolé : lancement, filtres,
+  HOT, Agents (indisponible dans les données de test), sombre, et reprise
+  d’un fil créé en arrière-plan sans relance (avec et sans passage par Agents).
+  Captures : `build/ios-local/build-7-candidat/recette/`. Non vérifiés : état
+  working avec durée et nom de fournisseur réel, iPhone physique, Android, iPad.
+
+## Historique : 0.1.0 (6), mode HOT et listes prioritaires
 
 Le 11 novembre 2026, le build **6** a été compilé, signé, exporté, validé par
 Apple puis distribué à **T4 Interne**. État final relu par API :
@@ -315,8 +341,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=7
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-7"
+export T4_IOS_BUILD_NUMBER=8
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-8"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -420,12 +446,11 @@ remplacent pas l’autorisation de Raoul pour une livraison.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Le dernier build est `0.1.0 (6)`, valide et distribué à T4 Interne. Preuve :
-> `build/ios-local/build-6/validation/deployment.json`. Il ajoute HOT, le tri de suivi,
-> les améliorations des groupes et l’exclusion de Direction dans Chats ; il corrige
-> aussi le bouton Agents indisponible et la liste figée après changement d’onglet.
+> Le dernier build est `0.1.0 (7)`, valide et distribué à T4 Interne (UUID
+> `a73c6eb4-d842-4cba-818f-ed2d3907e878`). Il reprend les personnalisations du
+> build 6 sur T3 `v0.1.9-nightly.20261111.4515`, branche `t4-mobile-4515`.
 > Lis la recette et ses limites ci-dessus. Contrôle l’état Apple actuel avant une
-> nouvelle livraison, utilise un numéro supérieur à 6 et ne renvoie ni n’expire
+> nouvelle livraison, utilise un numéro supérieur à 7 et ne renvoie ni n’expire
 > les anciens builds. Suis la demande actuelle de Raoul pour tout nouvel envoi.
 > Son compte TestFlight est déjà dans le groupe. Ne montre pas les secrets et ne
 > touche pas à T4 PC, Plume ou Myga.
