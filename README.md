@@ -1,3 +1,11 @@
+# T4 Mobile
+
+Client mobile personnel de Raoul, voisin du front PC `../t4code`.
+Pour la configuration EMAX et la préparation TestFlight : [T4-MOBILE.md](T4-MOBILE.md).
+Pour reprendre sans historique : [AGENTS.md](AGENTS.md), puis
+[T4-TESTFLIGHT-REPRISE.md](T4-TESTFLIGHT-REPRISE.md) pour les accès Apple et le déploiement.
+La documentation amont conservée ci-dessous concerne le projet T3 dont il est dérivé.
+
 # T3 Code
 
 T3 Code is an "agent harness control surface". It enables control of the agents on your machine with a best-in-class mobile app ([iOS](https://apps.apple.com/us/app/t3-code-remote-claude-more/id6787819824), [Android](https://play.google.com/store/apps/details?id=com.t3tools.t3code)), [web app](https://app.t3.codes) and [Electron-based desktop app](https://t3.codes).

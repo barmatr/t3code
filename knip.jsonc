@@ -40,6 +40,8 @@
         "prepare-server-compile-cache.cjs",
         "smoke-desktop-app.ts",
         "verify-windows-desktop-artifact.ts",
+        // T4 : appelés par t4/ios-local.sh et la reprise TestFlight.
+        "t4/*.mjs",
       ],
       "ignoreDependencies": ["esbuild"],
       // The `t3` npm package's files: copied into the package, never imported.
@@ -119,6 +121,14 @@
         "scripts/generate-device-stream.mts",
         "src/features/devices/device-stream.browser.ts!",
         "src/features/browser/preview-stream.browser.ts!",
+      ],
+      // T4 : l'onglet Agents remplace la liste des pull requests ; ces fichiers
+      // upstream restent intacts pour limiter les conflits des prochaines mises à niveau.
+      "ignore": [
+        "src/features/pull-requests/PullRequestListRow.tsx",
+        "src/features/pull-requests/pullRequestSelection.ts",
+        "src/features/pull-requests/PullRequestsScreen.tsx",
+        "src/features/pull-requests/usePullRequestListActions.ts",
       ],
       // Fonts are configured as asset paths; Expo autolinks the native packages.
       "ignoreDependencies": [

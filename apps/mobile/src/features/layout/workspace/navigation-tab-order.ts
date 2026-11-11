@@ -1,3 +1,4 @@
+// Keep the saved second-slot key when replacing Pulls with the personal Agents view.
 export const NAVIGATION_TAB_ORDER = ["threads", "pullRequests", "usage"] as const;
 export type NavigationTab = (typeof NAVIGATION_TAB_ORDER)[number];
 
@@ -9,7 +10,7 @@ export function navigationCustomizationAvailable(
 
 export const NAVIGATION_TAB_LABELS: Readonly<Record<NavigationTab, string>> = {
   threads: "Threads",
-  pullRequests: "Pulls",
+  pullRequests: "Agents",
   usage: "Usage",
 };
 

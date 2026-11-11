@@ -16,6 +16,10 @@ export interface WorkspaceListHeaderProps {
     readonly customized: boolean;
     readonly items: ReadonlyArray<AppBarMenuItem>;
   };
+  /** T4: the tab this list fills; the Agents list reuses the second slot. Defaults to threads. */
+  readonly workspaceTab?: "threads" | "pullRequests" | undefined;
+  /** T4: hot keeps the brand fire burning while the list is shown. */
+  readonly hot?: boolean | undefined;
   /** iOS: a settings button. Android reaches Settings from the workspace navigation. */
   readonly onOpenSettings?: () => void;
   /**

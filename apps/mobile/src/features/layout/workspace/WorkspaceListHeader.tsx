@@ -44,9 +44,10 @@ function SidebarColumnHeader(
 
   return (
     <NativeStackScreenOptions
-      optionsVersion={[items, sidebar.width]}
+      optionsVersion={[items, sidebar.width, props.hot]}
       options={{
         ...getConnectionAwareBrandHeaderOptions({
+          continuousFire: props.hot,
           headerWidth: sidebar.width,
           trailingItemCount: items.length,
           onOpenEnvironments: props.onOpenEnvironments,

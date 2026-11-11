@@ -13,6 +13,7 @@ import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/
 import { ListChoiceRow as SettingsChoiceRow } from "../../components/ui/ListChoiceRow";
 import { SettingsSection } from "./components/SettingsSection";
 import { NewThreadSettingsSection, WorkingSectionSettings } from "./ThreadSettingsSections";
+import type { ThreadAgeBasis } from "../../lib/thread-age";
 
 const GROUPING_OPTIONS: ReadonlyArray<{
   readonly mode: SidebarProjectGroupingMode;
@@ -44,6 +45,9 @@ export function SettingsProjectGroupingRouteScreen() {
   const selectedMode = AsyncResult.isSuccess(preferencesResult)
     ? resolveMobileProjectGroupingSettings(preferencesResult.value).sidebarProjectGroupingMode
     : null;
+  const ageBasis: ThreadAgeBasis = AsyncResult.isSuccess(preferencesResult)
+    ? (preferencesResult.value.threadAgeBasis ?? "assistant_reply")
+    : "assistant_reply";
 
   return (
     <SettingsScreen title="General">
@@ -68,6 +72,23 @@ export function SettingsProjectGroupingRouteScreen() {
           ))}
         </SettingsSection>
         <WorkingSectionSettings />
+        <SettingsSection title="Age filter">
+          <SettingsChoiceRow
+            label="Last agent reply"
+            description="Count from the agent’s last response. Your messages do not reset the age."
+            selected={ageBasis === "assistant_reply"}
+            disabled={!preferencesReady}
+            onPress={() => savePreferences({ threadAgeBasis: "assistant_reply" })}
+          />
+          <SettingsChoiceRow
+            label="Last conversation activity"
+            description="Count from the latest message, including your own."
+            selected={ageBasis === "conversation_activity"}
+            separated
+            disabled={!preferencesReady}
+            onPress={() => savePreferences({ threadAgeBasis: "conversation_activity" })}
+          />
+        </SettingsSection>
         <NewThreadSettingsSection />
       </ScrollView>
     </SettingsScreen>

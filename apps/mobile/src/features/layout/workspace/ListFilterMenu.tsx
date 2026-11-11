@@ -8,6 +8,8 @@ export function ListFilterMenu(props: {
   readonly label: string;
   readonly accessibilityLabel: string;
   readonly active?: boolean;
+  readonly disabled?: boolean;
+  readonly accessibilityHint?: string | undefined;
   readonly icon?: boolean;
   readonly actions: MenuProps["actions"];
   readonly onSelect: (id: string) => void;
@@ -16,13 +18,16 @@ export function ListFilterMenu(props: {
   return (
     <Menu
       title={props.accessibilityLabel}
-      actions={props.actions}
+      actions={props.disabled ? [] : props.actions}
       onPressAction={({ nativeEvent }) => props.onSelect(nativeEvent.event)}
     >
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={props.accessibilityLabel}
-        accessibilityState={{ selected: Boolean(props.active) }}
+        accessibilityHint={props.accessibilityHint}
+        disabled={props.disabled}
+        style={{ opacity: props.disabled ? 0.45 : 1 }}
+        accessibilityState={{ selected: Boolean(props.active), disabled: Boolean(props.disabled) }}
         hitSlop={6}
       >
         <Chip

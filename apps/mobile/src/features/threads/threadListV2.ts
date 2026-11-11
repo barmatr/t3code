@@ -296,6 +296,97 @@ export function resolveThreadListV2Status(
   return "ready";
 }
 
+/** Mobile follow-up priority; ready is only urgent while its completion is unseen. */
+export function threadFollowUpPriority(thread: EnvironmentThreadShell, queued = false): number {
+  const status = resolveThreadListV2Status(thread);
+  if (["approval", "input", "request", "failed", "limited"].includes(status)) return 0;
+  if (status === "ready" && threadHasUnseenCompletion(thread)) return 1;
+  if (queued || status === "working" || status === "waiting") return 2;
+  return 3;
+}
+
+export function threadIsHot(thread: EnvironmentThreadShell, queued = false): boolean {
+  return queued || threadFollowUpPriority(thread) < 3;
+}
+
+function threadFollowUpTime(thread: EnvironmentThreadShell): number {
+  return Math.max(
+    ...[
+      thread.updatedAt,
+      thread.createdAt,
+      thread.latestUserMessageAt,
+      thread.latestRun?.completedAt,
+    ].map((value) => parseTimestampMs(value ?? "")),
+  );
+}
+
+export function compareThreadsByFollowUp(
+  left: EnvironmentThreadShell,
+  right: EnvironmentThreadShell,
+  queuedKeys?: ReadonlySet<string>,
+): number {
+  return (
+    threadFollowUpPriority(left, queuedKeys?.has(`${left.environmentId}:${left.id}`)) -
+      threadFollowUpPriority(right, queuedKeys?.has(`${right.environmentId}:${right.id}`)) ||
+    threadFollowUpTime(right) - threadFollowUpTime(left) ||
+    compareStableKeys(`${left.environmentId}:${left.id}`, `${right.environmentId}:${right.id}`)
+  );
+}
+
+function compareStableKeys(left: string, right: string): number {
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+/** Local unsent work shares the working tier, after actions and unseen completions. */
+export function sortFollowUpListItems(
+  items: readonly ThreadListV2ListItem[],
+): ThreadListV2ListItem[] {
+  const rank = (item: ThreadListV2ListItem) =>
+    item.type === "v2-thread"
+      ? threadFollowUpPriority(item.item.thread, item.hasQueuedMessages)
+      : 2;
+  const time = (item: ThreadListV2ListItem) =>
+    item.type === "v2-thread"
+      ? threadFollowUpTime(item.item.thread)
+      : item.type === "v2-pending"
+        ? parseTimestampMs(item.pendingTask.createdAt)
+        : 0;
+  const rows = items
+    .filter((item) => item.type === "v2-thread" || item.type === "v2-pending")
+    .sort(
+      (left, right) =>
+        rank(left) - rank(right) ||
+        time(right) - time(left) ||
+        compareStableKeys(left.key, right.key),
+    );
+  return rows.map((item, index) =>
+    item.type === "v2-thread" || item.type === "v2-pending"
+      ? {
+          ...item,
+          showTrailingDivider: index < rows.length - 1,
+          ...(item.type === "v2-pending" ? { showPendingDivider: false } : {}),
+        }
+      : item,
+  );
+}
+
+/** Count the machines represented by actual rows, after every scope/search/status filter. */
+export function threadListShowsMultipleEnvironments(
+  items: readonly ThreadListV2ListItem[],
+): boolean {
+  return (
+    new Set(
+      items.flatMap((item) =>
+        item.type === "v2-thread"
+          ? [item.item.thread.environmentId]
+          : item.type === "v2-pending"
+            ? [item.pendingTask.environmentId]
+            : [],
+      ),
+    ).size > 1
+  );
+}
+
 function parseTimestampMs(isoDate: string): number {
   const parsed = Date.parse(isoDate);
   return Number.isNaN(parsed) ? 0 : parsed;
@@ -429,7 +520,63 @@ export type ThreadListV2ListItem =
   | ThreadListV2PendingListItem
   | ThreadListV2WorkingShelfListItem
   | ThreadListV2SnoozedShelfListItem
-  | ThreadListV2SettledShelfListItem;
+  | ThreadListV2SettledShelfListItem
+  | { readonly type: "v2-project-header"; readonly key: string; readonly title: string };
+
+export function groupThreadListV2ItemsByProject(
+  items: ReadonlyArray<ThreadListV2ListItem>,
+  projects: ReadonlyArray<{
+    readonly key: string;
+    readonly title: string;
+    readonly projectRefs: ReadonlyArray<{
+      readonly environmentId: EnvironmentId;
+      readonly projectId: ProjectId;
+    }>;
+  }>,
+  inProjectOrder = false,
+): ReadonlyArray<ThreadListV2ListItem> {
+  const projectByRef = new Map<string, (typeof projects)[number]>(
+    projects.flatMap((project) =>
+      project.projectRefs.map((ref) => [`${ref.environmentId}:${ref.projectId}`, project] as const),
+    ),
+  );
+  const groups = new Map<string, { title: string; rows: ThreadListV2ListItem[] }>();
+  for (const item of items) {
+    const row =
+      item.type === "v2-thread"
+        ? item.item.thread
+        : item.type === "v2-pending"
+          ? item.pendingTask
+          : null;
+    if (row === null) continue;
+    const ref = `${row.environmentId}:${row.projectId}`;
+    const project = projectByRef.get(ref);
+    const key = project?.key ?? ref;
+    let group = groups.get(key);
+    if (group === undefined) {
+      group = { title: project?.title ?? "Unknown project", rows: [] };
+      groups.set(key, group);
+    }
+    group.rows.push(item);
+  }
+  // Follow-up changes reorder rows inside a project, never shuffle the project headings.
+  const projectIndex = new Map(projects.map((project, index) => [project.key, index]));
+  const orderedGroups = [...groups];
+  if (inProjectOrder)
+    orderedGroups.sort(
+      ([left], [right]) =>
+        (projectIndex.get(left) ?? Infinity) - (projectIndex.get(right) ?? Infinity) ||
+        compareStableKeys(left, right),
+    );
+  return orderedGroups.flatMap(([key, group]) => [
+    { type: "v2-project-header" as const, key: `v2-project:${key}`, title: group.title },
+    ...group.rows.map((item, index) =>
+      item.type === "v2-thread" || item.type === "v2-pending"
+        ? { ...item, showTrailingDivider: index < group.rows.length - 1 }
+        : item,
+    ),
+  ]);
+}
 
 export function isThreadListV2ListItem(value: {
   readonly type: string;
@@ -439,6 +586,7 @@ export function isThreadListV2ListItem(value: {
     value.type === "v2-pending" ||
     value.type === "v2-working-shelf" ||
     value.type === "v2-snoozed-shelf" ||
+    value.type === "v2-project-header" ||
     value.type === "v2-settled-shelf"
   );
 }
@@ -449,6 +597,10 @@ export function threadListV2ListItemsAreEqual(
   item: ThreadListV2ListItem,
 ): boolean {
   switch (item.type) {
+    case "v2-project-header":
+      return (
+        previous.type === item.type && previous.key === item.key && previous.title === item.title
+      );
     case "v2-thread":
       return (
         previous.type === "v2-thread" &&
@@ -650,6 +802,8 @@ function sortSettledThreadsReusingLast(
 }
 
 export function buildThreadListV2Items(input: {
+  readonly prioritizeFollowUp?: boolean;
+  readonly hot?: boolean;
   readonly pendingOrder?: PendingThreadOrder | null;
   readonly threads: ReadonlyArray<EnvironmentThreadShell>;
   readonly environmentId: EnvironmentId | null;
@@ -724,6 +878,76 @@ export function buildThreadListV2Items(input: {
   // Threads listed only because their messages match; only their rows show
   // the message and open at it.
   const contentOnlyThreadKeys = new Set<string>();
+  if (input.prioritizeFollowUp || input.hot) {
+    const matches = listedThreads
+      .filter((thread) => {
+        const key = threadSearchMatchKey({
+          environmentId: thread.environmentId,
+          threadId: thread.id,
+        });
+        if (matchingThreads !== null && !matchingThreads.has(thread)) {
+          if (input.matchedThreadKeys?.has(key) !== true) return false;
+          contentOnlyThreadKeys.add(key);
+        }
+        return (
+          !input.hot ||
+          threadIsHot(thread, queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`))
+        );
+      })
+      .sort((left, right) => compareThreadsByFollowUp(left, right, queuedThreadKeys));
+    // Only ordinary read settled rows paginate. Follow-up must never disappear behind a shelf,
+    // a manual pin order or the settled page limit. Pin/snooze state remains on the row.
+    const isSettled = (thread: EnvironmentThreadShell) =>
+      (input.settlementEnvironmentIds?.has(thread.environmentId) ?? true) &&
+      thread.settledOverride === "settled" &&
+      queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`) !== true;
+    const ordinarySettled = matches.filter(
+      (thread) =>
+        isSettled(thread) &&
+        threadFollowUpPriority(thread) === 3 &&
+        queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`) !== true,
+    );
+    const ordinarySet = new Set(ordinarySettled);
+    const listedSettled = ordinarySettled.filter(
+      (thread) => input.isListedSettled?.(thread) ?? true,
+    );
+    const visibleSettled = new Set(listedSettled.slice(0, input.settledLimit ?? Infinity));
+    const visible = matches.filter(
+      (thread) =>
+        !ordinarySet.has(thread) ||
+        visibleSettled.has(thread) ||
+        `${thread.environmentId}:${thread.id}` === input.selectedThreadKey,
+    );
+    const settledTotal =
+      ordinarySettled.length + (input.hot ? 0 : (input.unloadedSettledCount ?? 0));
+    return {
+      items: visible.map((thread, index) => ({
+        thread,
+        variant:
+          isSettled(thread) ||
+          ((input.snoozeEnvironmentIds?.has(thread.environmentId) ?? true) &&
+            effectiveSnoozed(thread, { now }))
+            ? ("slim" as const)
+            : ("card" as const),
+        pinned: thread.pinnedAt != null,
+        snoozed:
+          (input.snoozeEnvironmentIds?.has(thread.environmentId) ?? true) &&
+          effectiveSnoozed(thread, { now }),
+        wokeAt: resolveThreadListV2WokeAt(thread, { now }),
+        isLast: index === visible.length - 1,
+      })),
+      hiddenSettledCount: Math.max(0, settledTotal - visibleSettled.size),
+      listedSettledThreads: listedSettled,
+      workingCount: 0,
+      workingShelfHeaderIndex: null,
+      snoozedCount: 0,
+      snoozedShelfHeaderIndex: null,
+      settledCount: settledTotal,
+      settledShelfHeaderIndex: null,
+      nextSnoozeWakeAt: null,
+      contentOnlyThreadKeys,
+    };
+  }
   for (const thread of listedThreads) {
     if (matchingThreads !== null && !matchingThreads.has(thread)) {
       const key = threadSearchMatchKey({

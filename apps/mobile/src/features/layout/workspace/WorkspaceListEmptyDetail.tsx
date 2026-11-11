@@ -12,6 +12,8 @@ import { WorkspaceEmptyDetail } from "../WorkspaceEmptyDetail";
  */
 export function WorkspaceListEmptyDetail(props: {
   readonly hasConnections: boolean;
+  /** T4: the Agents list reuses the second tab slot and has its own empty detail. */
+  readonly tab?: "threads" | "pullRequests";
   readonly onAddConnection: () => void;
   readonly onStartNewTask: () => void;
 }) {
@@ -37,6 +39,7 @@ export function WorkspaceListEmptyDetail(props: {
       </Toolbar>
       <AppBar embedded title="Threads" />
       <WorkspaceEmptyDetail
+        tab={props.tab}
         onAddConnection={
           Platform.OS === "android" && !props.hasConnections ? props.onAddConnection : undefined
         }

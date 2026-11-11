@@ -5,6 +5,7 @@ import { Platform, View } from "react-native";
 
 import { AppText as Text } from "./ui/AppText";
 import { T3Wordmark } from "./T3Wordmark";
+import { BrandForegroundFire } from "./BrandForegroundFire";
 import { IPAD_HOME_TITLE_OFFSET } from "../lib/layoutMetrics";
 import { resolveMobileStageLabel } from "../lib/mobileBranding";
 import { useAndroidControlSizing } from "./ui/useAndroidControlSizing";
@@ -22,6 +23,7 @@ export function CompactBrandTitle(
     readonly accessibilityLabel?: string;
     /** Fills the row and hides the stage badge when the full title does not fit. */
     readonly fit?: boolean;
+    readonly continuousFire?: boolean | undefined;
   } = {},
 ) {
   const stageLabel = resolveMobileStageLabel(Constants.expoConfig?.extra?.appVariant);
@@ -30,16 +32,21 @@ export function CompactBrandTitle(
   const [availableWidth, setAvailableWidth] = useState<number | null>(null);
   // Measured only while the badge shows, so hiding it does not make it look like it fits.
   const [fullWidth, setFullWidth] = useState<number | null>(null);
+  const [brandSize, setBrandSize] = useState({ width: 0, height: 0 });
   const showStage =
     !props.fit || availableWidth === null || fullWidth === null || fullWidth <= availableWidth;
 
   const title = (
     <View
-      onLayout={
-        props.fit && showStage ? (event) => setFullWidth(event.nativeEvent.layout.width) : undefined
-      }
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setBrandSize((previous) =>
+          previous.width === width && previous.height === height ? previous : { width, height },
+        );
+        if (props.fit && showStage) setFullWidth(width);
+      }}
       aria-level={1}
-      accessibilityLabel={props.accessibilityLabel ?? "T3 Code, Threads"}
+      accessibilityLabel={`${props.accessibilityLabel ?? "T4 Mobile, Threads"}${props.continuousFire ? ", hot" : ""}`}
       accessible
       role="heading"
       className="flex-row items-center gap-1.5"
@@ -61,7 +68,11 @@ export function CompactBrandTitle(
       </Text>
       {showStage ? (
         <View
-          className="rounded-full bg-subtle px-1.5 py-0.5"
+          className={
+            props.continuousFire
+              ? "rounded-full bg-primary px-1.5 py-0.5"
+              : "rounded-full bg-subtle px-1.5 py-0.5"
+          }
           style={
             Platform.OS === "android"
               ? { paddingHorizontal: 5.25 * scale, paddingVertical: 1.75 * scale }
@@ -71,13 +82,29 @@ export function CompactBrandTitle(
           <Text
             allowFontScaling={props.allowFontScaling}
             maxFontSizeMultiplier={BRAND_MAX_FONT_SCALE}
-            className="font-t3-bold text-foreground-muted uppercase"
+            className={
+              props.continuousFire
+                ? "font-t3-bold text-primary-foreground uppercase"
+                : "font-t3-bold text-foreground-muted uppercase"
+            }
             style={{ fontSize: 9 * scale, letterSpacing: 0.9 * scale }}
           >
-            {stageLabel}
+            {props.continuousFire ? "hot" : stageLabel}
           </Text>
         </View>
       ) : null}
+      {props.continuousFire ? (
+        <View
+          pointerEvents="none"
+          accessible={false}
+          className="absolute inset-0 rounded-lg border border-primary"
+        />
+      ) : null}
+      <BrandForegroundFire
+        width={brandSize.width}
+        height={brandSize.height}
+        continuous={props.continuousFire}
+      />
     </View>
   );
 

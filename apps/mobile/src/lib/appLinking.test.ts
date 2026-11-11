@@ -10,15 +10,21 @@ import {
 } from "./appLinking";
 
 describe("shouldHandleAppLink", () => {
-  it.each(["t3code://", "t3code:///", "t3code-dev://", "t3code-preview://"])(
-    "ignores scheme-only URL %s",
-    (url) => {
-      expect(shouldHandleAppLink(url, true)).toBe(false);
-    },
-  );
+  it.each([
+    "t3code://",
+    "t3code:///",
+    "t3code-dev://",
+    "t3code-preview://",
+    "t4code://",
+    "t4code-dev://",
+    "t4code-preview://",
+  ])("ignores scheme-only URL %s", (url) => {
+    expect(shouldHandleAppLink(url, true)).toBe(false);
+  });
 
   it.each([
     "t3code://threads/env-1/thread-1",
+    "t4code://threads/env-1/thread-1",
     "t3code://pair?pairingUrl=x",
     "t3code-dev://settings/usage?tab=limits",
     "https://app.t3.codes/threads/env/thread?prompt=Fix%20expo-development-client%20and%20t3code://expo-sharing",

@@ -3,6 +3,7 @@ import { WorkspaceConnectionTitle } from "../../home/WorkspaceConnectionTitle";
 
 /** The title of a workspace list tab: the brand and the connection status. */
 export function WorkspaceBrandTitle(props: {
+  readonly continuousFire?: boolean | undefined;
   readonly accessibilityLabel: string;
   readonly onOpenEnvironments: () => void;
 }) {
@@ -12,6 +13,7 @@ export function WorkspaceBrandTitle(props: {
       onPress={props.onOpenEnvironments}
       brand={
         <CompactBrandTitle
+          continuousFire={props.continuousFire}
           allowFontScaling={false}
           accessibilityLabel={props.accessibilityLabel}
           fit

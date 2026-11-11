@@ -134,6 +134,16 @@ describe("mobile connection storage", () => {
     });
   });
 
+  it("round-trips hot with age and scope while reading legacy filters without hot", async () => {
+    const legacy = { environmentId: null, projectKey: "legacy-direction", age: "1h" as const };
+    mocks.setPreferencesJson(JSON.stringify({ threadListFilters: legacy }), 1);
+    expect((await loadPreferences()).threadListFilters).toEqual(legacy);
+    const filters = { ...legacy, hot: true, agentsHot: false };
+    await savePreferencesPatch({ threadListFilters: filters });
+    await savePreferencesPatch({ baseFontSize: 19 });
+    expect((await loadPreferences()).threadListFilters).toEqual(filters);
+  });
+
   it("loads legacy preferences when SQLite is unavailable", async () => {
     mocks.setDatabaseFailures(true, true);
     await mocks.setItemAsync("t3code.preferences", JSON.stringify({ baseFontSize: 17 }));

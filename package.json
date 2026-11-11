@@ -59,7 +59,12 @@
     "dist:desktop:win:x64": "node scripts/build-desktop-artifact.ts --platform win --target nsis --arch x64",
     "release:smoke": "node scripts/release-smoke.ts",
     "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules apps/*/dist apps/*/dist-electron packages/*/dist .vite-plus apps/*/.vite-plus packages/*/.vite-plus",
-    "sync:repos": "node scripts/sync-reference-repos.ts"
+    "sync:repos": "node scripts/sync-reference-repos.ts",
+    "t4:ios:doctor": "vp run --filter @t3tools/mobile t4:ios:doctor",
+    "t4:ios:prebuild": "vp run --filter @t3tools/mobile t4:ios:prebuild",
+    "t4:ios:archive": "vp run --filter @t3tools/mobile t4:ios:archive",
+    "t4:ios:archive:unsigned": "vp run --filter @t3tools/mobile t4:ios:archive:unsigned",
+    "t4:ios:export": "vp run --filter @t3tools/mobile t4:ios:export"
   },
   "devDependencies": {
     "@coderabbitai/config": "1.2.0",

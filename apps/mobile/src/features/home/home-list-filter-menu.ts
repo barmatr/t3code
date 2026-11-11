@@ -1,6 +1,7 @@
 import type { EnvironmentId } from "@t3tools/contracts";
 
 import type { AppBarMenuItem } from "../../components/ui/AppBar.types";
+import { THREAD_AGE_OPTIONS, type ThreadAge } from "../../lib/thread-age";
 
 export interface HomeListFilterMenuEnvironment {
   readonly environmentId: EnvironmentId;
@@ -17,8 +18,13 @@ export function buildHomeListFilterMenuItems(props: {
   readonly projects: ReadonlyArray<HomeListFilterMenuProject>;
   readonly selectedEnvironmentId: EnvironmentId | null;
   readonly selectedProjectKey: string | null;
+  /** T4: the age filter; omitted where the list has no age (the Agents tab). */
+  readonly selectedAge?: ThreadAge;
+  /** T4: hot ignores the age filter, so the age submenu is disabled meanwhile. */
+  readonly hot?: boolean;
   readonly onEnvironmentChange: (environmentId: EnvironmentId | null) => void;
   readonly onProjectChange: (projectKey: string | null) => void;
+  readonly onAgeChange?: (age: ThreadAge) => void;
 }): AppBarMenuItem[] {
   const items: AppBarMenuItem[] = [
     {
@@ -27,7 +33,7 @@ export function buildHomeListFilterMenuItems(props: {
       items: [
         {
           id: "environment:all",
-          title: "All environments",
+          title: "All env",
           subtitle: "Show threads from every environment",
           selected: props.selectedEnvironmentId === null,
           onPress: () => props.onEnvironmentChange(null),
@@ -61,6 +67,21 @@ export function buildHomeListFilterMenuItems(props: {
           onPress: () => props.onProjectChange(project.key),
         })),
       ],
+    });
+  }
+
+  const { selectedAge, onAgeChange } = props;
+  if (selectedAge !== undefined && onAgeChange !== undefined) {
+    items.push({
+      id: "age",
+      title: props.hot ? "Age ignored while hot" : "Age",
+      items: THREAD_AGE_OPTIONS.map((option) => ({
+        id: `age:${option.id}`,
+        title: option.label,
+        disabled: props.hot === true,
+        selected: selectedAge === option.id,
+        onPress: () => onAgeChange(option.id),
+      })),
     });
   }
 

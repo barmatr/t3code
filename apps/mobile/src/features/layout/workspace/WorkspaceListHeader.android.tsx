@@ -17,8 +17,8 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
   const workspace = useWorkspaceTabs();
   const isTabActive = workspace?.isTabActive;
   const homeFocused = useNavigationState((state) => state.routes[state.index]?.name === "Home");
-  const listFocused =
-    homeFocused && (workspace === null || workspace.state.selectedTab === "threads");
+  const tab = props.workspaceTab ?? "threads";
+  const listFocused = homeFocused && (workspace === null || workspace.state.selectedTab === tab);
   const connectionState = useWorkspaceConnectionState();
   const { search, sidebar } = props;
   const onSearchQueryChange = search.onChangeText;
@@ -43,24 +43,21 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
       // Frozen Home screens can keep effects alive after a detail route opens.
       const state = navigation.getState();
-      if (
-        !state ||
-        state.routes[state.index]?.name !== "Home" ||
-        isTabActive?.("threads") === false
-      )
+      if (!state || state.routes[state.index]?.name !== "Home" || isTabActive?.(tab) === false)
         return false;
       if (Keyboard.isVisible()) Keyboard.dismiss();
       else closeSearch();
       return true;
     });
     return () => subscription.remove();
-  }, [closeSearch, searching, listFocused, navigation, isTabActive]);
+  }, [closeSearch, searching, listFocused, navigation, isTabActive, tab]);
 
   return (
     <AppBar
-      title="T3 Code"
+      title="T4 Mobile"
       titleContent={
         <WorkspaceBrandTitle
+          continuousFire={listFocused && props.hot === true}
           accessibilityLabel={props.accessibilityLabel}
           onOpenEnvironments={props.onOpenEnvironments}
         />
@@ -75,7 +72,7 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
         onClose: closeSearch,
       }}
       menus={
-        connectionState.hasConnections
+        connectionState.hasConnections && props.filter.items.length > 0
           ? [
               {
                 title: "Filter threads",

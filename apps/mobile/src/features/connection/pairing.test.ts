@@ -23,10 +23,10 @@ describe("buildPairingUrl", () => {
 });
 
 describe("extractPairingUrlFromQrPayload", () => {
-  it("unwraps mobile deep links that carry an encoded pairing url", () => {
+  it.each(["t3code", "t4code"])("unwraps %s mobile pairing links", (scheme) => {
     expect(
       extractPairingUrlFromQrPayload(
-        "t3code://pair?pairingUrl=https%3A%2F%2Fremote.example.com%2Fpair%23token%3Dpairing-token",
+        `${scheme}://pair?pairingUrl=https%3A%2F%2Fremote.example.com%2Fpair%23token%3Dpairing-token`,
       ),
     ).toBe("https://remote.example.com/pair#token=pairing-token");
   });

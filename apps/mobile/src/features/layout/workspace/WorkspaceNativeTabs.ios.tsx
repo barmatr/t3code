@@ -29,7 +29,7 @@ import { WorkspaceSidebarTabs } from "./WorkspaceSidebarTabs";
 import { useAdaptiveWorkspaceLayout, useWorkspacePaneState } from "../AdaptiveWorkspaceLayout";
 import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
 
-const PULL_REQUEST_ICON = require("../../../../assets/icons/pull-request.png");
+const AGENTS_ICON = require("../../../../assets/icons/robot.png");
 
 /** Retain each native controller tree; removing its root can leave RNS's stack empty. */
 function RetainedWorkspaceTab(props: {
@@ -139,7 +139,7 @@ export function WorkspaceNativeTabs(props: {
                 icon: settings
                   ? { type: "sfSymbol", name: "gearshape" }
                   : tab === "pullRequests"
-                    ? { type: "templateSource", templateSource: PULL_REQUEST_ICON }
+                    ? { type: "templateSource", templateSource: AGENTS_ICON }
                     : { type: "sfSymbol", name: NAVIGATION_TAB_ICONS[tab] },
                 selectedIcon:
                   !settings && tab === "threads"

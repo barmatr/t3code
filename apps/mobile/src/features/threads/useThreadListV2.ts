@@ -9,10 +9,14 @@ import {
   buildThreadListV2Items,
   buildThreadListV2ListItems,
   getThreadListV2OrderedSection,
+  groupThreadListV2ItemsByProject,
   threadListInboxReturns,
   threadListV2LayoutTime,
+  sortFollowUpListItems,
 } from "./threadListV2";
 import { computeThreadMoveAvailability } from "./threadOrder";
+import type { ThreadAge } from "../../lib/thread-age";
+import { useThreadAgeFilter } from "./use-thread-age-filter";
 
 /**
  * Screens' select handlers read the content-only key set; a fresh one per list rebuild gave
@@ -65,8 +69,41 @@ export function useThreadListV2(input: {
   readonly snoozedShelfExpanded: boolean;
   readonly settledShelfExpanded: boolean;
   readonly selectedThreadKey: string | null;
+  readonly age?: ThreadAge;
+  readonly hot?: boolean;
+  readonly prioritizeFollowUp?: boolean;
+  readonly projectGroups?: Parameters<typeof groupThreadListV2ItemsByProject>[1];
 }) {
-  const { threads, workingShelfEnabled } = input;
+  const { threads } = input;
+  const effectiveAge = input.hot ? "all" : input.age;
+  const ageFiltered = effectiveAge !== undefined && effectiveAge !== "all";
+  const groupByProject =
+    (ageFiltered || input.hot === true) &&
+    input.projectRefs == null &&
+    input.projectGroups !== undefined;
+  const workingShelfEnabled =
+    !input.prioritizeFollowUp && !ageFiltered && input.workingShelfEnabled;
+  const ageCandidates = useMemo(() => {
+    if (effectiveAge === undefined || effectiveAge === "all") return threads;
+    const projectKeys =
+      input.projectRefs == null
+        ? null
+        : new Set(
+            input.projectRefs.map((ref) => scopedProjectKey(ref.environmentId, ref.projectId)),
+          );
+    return threads.filter(
+      (thread) =>
+        thread.archivedAt === null &&
+        (input.environmentId === null || thread.environmentId === input.environmentId) &&
+        (projectKeys === null ||
+          projectKeys.has(scopedProjectKey(thread.environmentId, thread.projectId))),
+    );
+  }, [threads, effectiveAge, input.environmentId, input.projectRefs]);
+  const ageFilter = useThreadAgeFilter(
+    ageCandidates,
+    effectiveAge ?? "all",
+    input.pendingTasks.map((task) => task.createdAt),
+  );
   const layoutTime = useMemo(
     () => threadListV2LayoutTime({ threads, now: input.now, searchQuery: input.searchQuery }),
     [threads, input.now, input.searchQuery],
@@ -82,6 +119,7 @@ export function useThreadListV2(input: {
   );
   // Compute move availability per section; per-row planning is quadratic.
   const moveAvailability = useMemo(() => {
+    if (input.prioritizeFollowUp) return new Map();
     const sectionAvailability = (section: "pinned" | "active") =>
       computeThreadMoveAvailability({
         allThreads: threads,
@@ -104,6 +142,7 @@ export function useThreadListV2(input: {
       ...(workingShelfEnabled ? [] : sectionAvailability("active")),
     ]);
   }, [
+    input.prioritizeFollowUp,
     threads,
     input.pendingOrder,
     input.pinReorderEnvironmentIds,
@@ -126,46 +165,53 @@ export function useThreadListV2(input: {
   );
   const olderSettledShelf = useOlderSettledShelf({
     scopes,
-    expanded: input.settledShelfExpanded,
+    expanded:
+      ageFiltered ||
+      input.hot === true ||
+      input.prioritizeFollowUp === true ||
+      input.settledShelfExpanded,
     // A search lists only matches, so the shelf would page forever; loaded pages stay.
     visibleCount: input.searchQuery.trim().length === 0 ? input.settledLimit : 0,
   });
   const { isListed, unloadedCount } = olderSettledShelf;
-  const layout = useMemo(
-    () =>
-      buildThreadListV2Items({
-        pendingOrder: input.pendingOrder,
-        threads: threads.filter((thread) => thread.archivedAt === null),
-        environmentId: input.environmentId,
-        projectRefs: input.projectRefs,
-        searchQuery: input.searchQuery,
-        matchedThreadKeys: new Set(input.searchMatches.keys()),
-        settlementEnvironmentIds: input.settlementEnvironmentIds,
-        snoozeEnvironmentIds: input.snoozeEnvironmentIds,
-        queuedThreadKeys: input.queuedThreadKeys,
-        settledLimit: input.settledLimit,
-        now: layoutTime,
-        workingShelfEnabled,
-        workingShelfExpanded: input.workingShelfExpanded,
-        inboxReturnAt: inbox.returnedAt,
-        isWorking: inbox.isWorking,
-        snoozedShelfExpanded: input.snoozedShelfExpanded,
-        settledShelfExpanded: input.settledShelfExpanded,
-        selectedThreadKey: input.selectedThreadKey,
-        isListedSettled: isListed,
-        unloadedSettledCount: unloadedCount(
-          threads.filter(
-            (thread) =>
-              thread.archivedAt === null &&
-              scopes.some(
-                (scope) =>
-                  scope.environmentId === thread.environmentId &&
-                  (scope.projectIds === null || scope.projectIds.includes(thread.projectId)),
-              ),
-          ),
+  const layoutInput = useMemo(
+    () => ({
+      prioritizeFollowUp: input.prioritizeFollowUp,
+      hot: input.hot,
+      pendingOrder: input.pendingOrder,
+      threads: threads.filter((thread) => thread.archivedAt === null),
+      environmentId: input.environmentId,
+      projectRefs: input.projectRefs,
+      searchQuery: input.searchQuery,
+      matchedThreadKeys: new Set(input.searchMatches.keys()),
+      settlementEnvironmentIds: input.settlementEnvironmentIds,
+      snoozeEnvironmentIds: input.snoozeEnvironmentIds,
+      queuedThreadKeys: input.queuedThreadKeys,
+      settledLimit: input.settledLimit,
+      now: layoutTime,
+      workingShelfEnabled,
+      workingShelfExpanded: ageFiltered || input.workingShelfExpanded,
+      inboxReturnAt: inbox.returnedAt,
+      isWorking: inbox.isWorking,
+      snoozedShelfExpanded: ageFiltered || input.snoozedShelfExpanded,
+      settledShelfExpanded: ageFiltered || input.settledShelfExpanded,
+      selectedThreadKey: input.selectedThreadKey,
+      isListedSettled: isListed,
+      unloadedSettledCount: unloadedCount(
+        threads.filter(
+          (thread) =>
+            thread.archivedAt === null &&
+            scopes.some(
+              (scope) =>
+                scope.environmentId === thread.environmentId &&
+                (scope.projectIds === null || scope.projectIds.includes(thread.projectId)),
+            ),
         ),
-      }),
+      ),
+    }),
     [
+      input.prioritizeFollowUp,
+      input.hot,
       input.pendingOrder,
       threads,
       input.environmentId,
@@ -178,6 +224,7 @@ export function useThreadListV2(input: {
       input.settledLimit,
       layoutTime,
       workingShelfEnabled,
+      ageFiltered,
       input.workingShelfExpanded,
       inbox.returnedAt,
       inbox.isWorking,
@@ -189,7 +236,27 @@ export function useThreadListV2(input: {
       scopes,
     ],
   );
-  useOlderSettledShelfGrowth(olderSettledShelf, layout.listedSettledThreads);
+  const unfilteredLayout = useMemo(() => buildThreadListV2Items(layoutInput), [layoutInput]);
+  const layout = useMemo(
+    () =>
+      effectiveAge === undefined || effectiveAge === "all"
+        ? unfilteredLayout
+        : buildThreadListV2Items({
+            ...layoutInput,
+            threads: ageFilter.threads,
+            // Unloaded rows have not been checked for replies; do not count them as matches.
+            unloadedSettledCount: 0,
+          }),
+    [effectiveAge, unfilteredLayout, layoutInput, ageFilter.threads],
+  );
+  // Fill the filtered list, even when a full page contains mostly old messages.
+  // Wait for message dates before deciding that another page is needed.
+  useOlderSettledShelfGrowth(
+    ageFilter.pending || ageFilter.failed
+      ? { ...olderSettledShelf, visibleCount: 0 }
+      : olderSettledShelf,
+    layout.listedSettledThreads,
+  );
   const contentOnlyThreadKeys = useKeySet([...layout.contentOnlyThreadKeys].sort().join("\n"));
   const pendingTasks = useMemo(() => {
     const scopedProjectKeys =
@@ -202,14 +269,24 @@ export function useThreadListV2(input: {
     return input.pendingTasks.filter(
       (pendingTask) =>
         (input.environmentId === null || pendingTask.environmentId === input.environmentId) &&
+        (ageFilter.cutoff === null ||
+          (ageFilter.basis === "conversation_activity" &&
+            Date.parse(pendingTask.createdAt) > ageFilter.cutoff)) &&
         (scopedProjectKeys === null ||
           scopedProjectKeys.has(
             scopedProjectKey(pendingTask.environmentId, pendingTask.projectId),
           )) &&
         (searchQuery.length === 0 || pendingTask.title.toLocaleLowerCase().includes(searchQuery)),
     );
-  }, [input.projectRefs, input.searchQuery, input.pendingTasks, input.environmentId]);
-  const items = useMemo(
+  }, [
+    input.projectRefs,
+    input.searchQuery,
+    input.pendingTasks,
+    input.environmentId,
+    ageFilter.cutoff,
+    ageFilter.basis,
+  ]);
+  const ungroupedItems = useMemo(
     () =>
       buildThreadListV2ListItems({
         items: layout.items,
@@ -242,7 +319,35 @@ export function useThreadListV2(input: {
       input.shelfPreferencesLoaded,
     ],
   );
-  return { layout, items, contentOnlyThreadKeys, olderSettledShelf };
+  const items = useMemo(() => {
+    const orderedItems = input.prioritizeFollowUp
+      ? sortFollowUpListItems(ungroupedItems)
+      : ungroupedItems;
+    if (groupByProject)
+      return groupThreadListV2ItemsByProject(
+        orderedItems,
+        input.projectGroups ?? [],
+        input.prioritizeFollowUp,
+      );
+    // An age filter is a result list, independent of collapsed status shelves.
+    return ageFiltered
+      ? orderedItems.filter((item) => item.type === "v2-thread" || item.type === "v2-pending")
+      : orderedItems;
+  }, [input.prioritizeFollowUp, ageFiltered, groupByProject, ungroupedItems, input.projectGroups]);
+  return {
+    layout,
+    items,
+    projectGrouped: groupByProject,
+    ageFiltered,
+    contentOnlyThreadKeys,
+    olderSettledShelf,
+    ageFilter,
+    hasUncheckedOlderThreads:
+      (ageFiltered || input.hot === true) &&
+      [...olderSettledShelf.environments.values()].some(
+        ({ older, pages }) => older !== null && pages.frontier !== null,
+      ),
+  };
 }
 
 /** The list's scope per environment: its projects there, or every project. */

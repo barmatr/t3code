@@ -45,6 +45,10 @@ import {
   sortThreadsForListV2,
   threadListV2ListItemsAreEqual,
   threadHasUnseenCompletion,
+  threadIsHot,
+  threadListShowsMultipleEnvironments,
+  sortFollowUpListItems,
+  groupThreadListV2ItemsByProject,
   type ThreadListV2ListItem,
 } from "./threadListV2";
 
@@ -1796,6 +1800,186 @@ describe("Working section beta", () => {
       "settled",
     ]);
   });
+});
+
+it("orders mobile follow-up across pins and collapsed shelves, and demotes a read Done", () => {
+  const make = (id: string, patch: Partial<EnvironmentThreadShell> = {}) =>
+    makeThread({
+      id: ThreadId.make(id),
+      title: id,
+      createdAt: "2026-06-01T00:00:00.000Z",
+      updatedAt: "2026-06-01T00:00:00.000Z",
+      settledOverride: "active",
+      ...patch,
+    });
+  const done = make("unread", {
+    settledOverride: "settled",
+    lastVisitedAt: "2026-05-01T00:00:00.000Z",
+    latestRun: {
+      runId: RunId.make("done"),
+      status: "completed",
+      requestedAt: NOW,
+      startedAt: NOW,
+      completedAt: NOW,
+      assistantMessageId: null,
+    },
+  });
+  const working = make("working", {
+    runtime: {
+      status: "running",
+      activeRunId: null,
+      providerInstanceId: ProviderInstanceId.make("codex"),
+      providerName: "Codex",
+      lastError: null,
+      updatedAt: NOW,
+    },
+  });
+  const threads = [
+    make("pinned-read", { pinnedAt: NOW, updatedAt: NOW }),
+    working,
+    done,
+    make("approval", { hasPendingApprovals: true, snoozedUntil: "2027-01-01T00:00:00.000Z" }),
+    make("input", { hasPendingUserInput: true, updatedAt: NOW }),
+  ];
+  const list = (rows: typeof threads) =>
+    buildThreadListV2Items({
+      threads: rows,
+      environmentId: null,
+      searchQuery: "",
+      now: NOW,
+      prioritizeFollowUp: true,
+      workingShelfEnabled: true,
+      workingShelfExpanded: false,
+      snoozedShelfExpanded: false,
+      settledShelfExpanded: false,
+    }).items.map(({ thread }) => thread.id);
+  expect(list(threads)).toEqual(["input", "approval", "unread", "working", "pinned-read"]);
+  expect(list([...threads].reverse())).toEqual(list(threads));
+  expect(
+    list(
+      threads.map((thread) =>
+        thread.id === "unread" ? { ...thread, lastVisitedAt: NOW } : thread,
+      ),
+    ),
+  ).toEqual(["input", "approval", "working", "pinned-read", "unread"]);
+});
+
+it("includes each hot status, excludes read and empty ready rows, and keeps real unread semantics", () => {
+  const ready = makeThread({
+    id: ThreadId.make("ready"),
+    title: "ready",
+    runtime: null,
+    latestRun: null,
+  });
+  const runtime = {
+    status: "running" as const,
+    activeRunId: null,
+    providerInstanceId: ProviderInstanceId.make("codex"),
+    providerName: "Codex",
+    lastError: null,
+    updatedAt: NOW,
+  };
+  for (const status of [
+    "preparing",
+    "queued",
+    "starting",
+    "running",
+    "waiting",
+    "idle",
+    "failed",
+  ] as const)
+    expect(threadIsHot({ ...ready, runtime: { ...runtime, status } })).toBe(true);
+  expect(
+    threadIsHot({
+      ...ready,
+      runtime: { ...runtime, status: "failed", lastErrorClass: "usage_limit" },
+    }),
+  ).toBe(true);
+  for (const patch of [
+    { hasPendingApprovals: true },
+    { hasPendingUserInput: true },
+    { pendingGuestMessageCount: 1 },
+    { pendingSubagentRequest: "approval" as const },
+    { pendingSubagentRequest: "user_input" as const },
+  ])
+    expect(threadIsHot({ ...ready, ...patch })).toBe(true);
+  expect(threadIsHot(ready)).toBe(false);
+  expect(threadIsHot(ready, true)).toBe(true);
+  const done = {
+    ...ready,
+    lastVisitedAt: "2026-01-01T00:00:00.000Z",
+    latestRun: {
+      runId: RunId.make("done"),
+      status: "completed" as const,
+      requestedAt: NOW,
+      startedAt: NOW,
+      completedAt: NOW,
+      assistantMessageId: null,
+    },
+  };
+  expect(threadIsHot(done)).toBe(true);
+  expect(threadIsHot({ ...done, lastVisitedAt: NOW })).toBe(false);
+  // Old servers with no visit tracking are not assigned a fictional unread acknowledgement.
+  expect(threadIsHot({ ...done, lastVisitedAt: undefined })).toBe(false);
+});
+
+it("preserves follow-up order when grouping with local work, and counts displayed machines", () => {
+  const projectId = ProjectId.make("follow-up");
+  const ready = makeThread({
+    id: ThreadId.make("ready"),
+    title: "ready",
+    projectId,
+    runtime: null,
+    latestRun: null,
+  });
+  const approval = { ...ready, id: ThreadId.make("approval"), hasPendingApprovals: true };
+  const threadRows = buildThreadListV2ListItems({
+    items: buildThreadListV2Items({
+      threads: [ready, approval],
+      environmentId: null,
+      searchQuery: "",
+      now: NOW,
+      prioritizeFollowUp: true,
+    }).items,
+    pendingTasks: [],
+  });
+  const task: PendingNewTask = {
+    kind: "draft",
+    key: "local",
+    environmentId,
+    projectId,
+    title: "local",
+    createdAt: NOW,
+    projectTitle: undefined,
+    projectCwd: undefined,
+    draftKey: "draft",
+    draft: { text: "local", attachments: [] },
+  };
+  const pendingRows = buildThreadListV2ListItems({ items: [], pendingTasks: [task] });
+  const sorted = sortFollowUpListItems([...threadRows, ...pendingRows]);
+  const grouped = groupThreadListV2ItemsByProject(sorted, [
+    { key: "project", title: "Project", projectRefs: [{ environmentId, projectId }] },
+  ]);
+  expect(
+    grouped.map((item) =>
+      item.type === "v2-thread"
+        ? item.item.thread.id
+        : item.type === "v2-pending"
+          ? item.pendingTask.key
+          : "header",
+    ),
+  ).toEqual(["header", "approval", "local", "ready"]);
+  expect(threadListShowsMultipleEnvironments(grouped)).toBe(false);
+  expect(threadListShowsMultipleEnvironments([])).toBe(false);
+  expect(
+    threadListShowsMultipleEnvironments([
+      ...grouped,
+      ...buildThreadListV2ListItems({
+        items: [],
+        pendingTasks: [{ ...task, environmentId: EnvironmentId.make("remote") }],
+      }),
+    ]),
+  ).toBe(true);
 });
 
 describe("queued messages keep a settled thread active", () => {
