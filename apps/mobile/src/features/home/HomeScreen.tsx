@@ -474,7 +474,6 @@ export function HomeScreen(props: HomeScreenProps) {
   const {
     layout: threadListV2Layout,
     items: threadListV2Items,
-    ageFiltered,
     contentOnlyThreadKeys,
     olderSettledShelf,
     ageFilter,
@@ -880,13 +879,12 @@ export function HomeScreen(props: HomeScreenProps) {
                       tone="secondary"
                       loading={olderSettledShelf.loading || ageFilter.pending}
                       onPress={() => {
-                        if (!ageFiltered && !settledShelfExpanded) toggleSettledShelf();
+                        if (!settledShelfExpanded) toggleSettledShelf();
                         if (olderSettledShelf.failed) olderSettledShelf.retry();
                         else showMoreSettled();
                       }}
                     />
-                  ) : (ageFiltered || settledShelfExpanded) &&
-                    threadListV2Layout.hiddenSettledCount > 0 ? (
+                  ) : settledShelfExpanded && threadListV2Layout.hiddenSettledCount > 0 ? (
                     <ThreadListV2ShowMoreRow
                       hiddenCount={threadListV2Layout.hiddenSettledCount}
                       {...(olderSettledShelf.loading

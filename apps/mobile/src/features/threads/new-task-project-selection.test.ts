@@ -187,6 +187,67 @@ describe("newTaskDestination", () => {
     });
   }
 
+  it.each([true, false, undefined])(
+    "prefills the filtered project even when reuse is %s",
+    (useLastProject) => {
+      const projects = [makeProject("remembered"), makeProject("filtered")];
+      expect(
+        newTaskDestination({
+          projects,
+          requestId: "request",
+          useLastProject,
+          currentProject: undefined,
+          lastProject: { environmentId: "environment", projectId: "remembered" },
+          projectFilter: {
+            projectKey: "environment:/work/filtered",
+            environmentId: null,
+            groupingMode: "separate",
+            connectedEnvironmentIds: new Set([EnvironmentId.make("environment")]),
+          },
+        }),
+      ).toEqual({
+        draft: { requestId: "request", environmentId: "environment", projectId: "filtered" },
+      });
+    },
+  );
+
+  it("resolves a repository filter within the chosen environment", () => {
+    const projects = [
+      makeProject("local", "mac", { repositoryKey: "github.com/t3tools/t3code" }),
+      makeProject("remote", "server", { repositoryKey: "github.com/t3tools/t3code" }),
+    ];
+    const base = {
+      projects,
+      requestId: "request",
+      useLastProject: true,
+      currentProject: undefined,
+      lastProject: undefined,
+    };
+    const filter = {
+      projectKey: makeScope(projects).key,
+      environmentId: null,
+      groupingMode: "repository" as const,
+      connectedEnvironmentIds: new Set([EnvironmentId.make("server")]),
+    };
+    expect(newTaskDestination({ ...base, projectFilter: filter })).toEqual({
+      draft: { requestId: "request", environmentId: "server", projectId: "remote" },
+    });
+    expect(
+      newTaskDestination({
+        ...base,
+        projectFilter: { ...filter, environmentId: EnvironmentId.make("mac") },
+      }),
+    ).toEqual({
+      draft: { requestId: "request", environmentId: "mac", projectId: "local" },
+    });
+    expect(
+      newTaskDestination({ ...base, projectFilter: { ...filter, projectKey: "removed" } }),
+    ).toEqual(picker);
+    expect(newTaskDestination({ ...base, projectFilter: { ...filter, projectKey: null } })).toEqual(
+      picker,
+    );
+  });
+
   it("starts in the current thread's project ahead of the remembered one", () => {
     const projects = [makeProject("remembered"), makeProject("current", "other-environment")];
     expect(

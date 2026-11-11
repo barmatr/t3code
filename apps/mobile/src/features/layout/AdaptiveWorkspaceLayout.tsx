@@ -56,6 +56,7 @@ import {
 import type { ThreadListFilters } from "../../persistence/mobile-preferences";
 import { appAtomRegistry } from "../../state/atom-registry";
 import { useProjects } from "../../state/entities";
+import { workspaceConnections } from "../../state/workspace";
 import { environmentThreadShells } from "../../state/threads";
 import { withKnownPullRequestSummary } from "../../state/use-thread-pr";
 import { mobilePreferencesAtom } from "../../state/preferences";
@@ -616,6 +617,20 @@ function AdaptiveWorkspaceLayoutContent(
         useLastProject: saved?.useLastProjectForNewThreads,
         currentProject: environmentId && projectId ? { environmentId, projectId } : undefined,
         lastProject: saved?.lastThreadProject,
+        projectFilter:
+          currentRoute?.name === "Home" && (workspace?.state.selectedTab ?? "threads") === "threads"
+            ? {
+                projectKey: saved?.threadListFilters?.projectKey ?? null,
+                environmentId: saved?.threadListFilters?.environmentId ?? null,
+                groupingMode: projectGroupingMode,
+                connectedEnvironmentIds: new Set(
+                  appAtomRegistry
+                    .get(workspaceConnections.environmentsAtom)
+                    .filter((environment) => environment.connectionState === "connected")
+                    .map((environment) => environment.environmentId),
+                ),
+              }
+            : undefined,
       }),
     );
   };

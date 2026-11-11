@@ -201,7 +201,7 @@ export function useThreadListV2(input: {
       inboxReturnAt: inbox.returnedAt,
       isWorking: inbox.isWorking,
       snoozedShelfExpanded: ageFiltered || input.snoozedShelfExpanded,
-      settledShelfExpanded: ageFiltered || input.settledShelfExpanded,
+      settledShelfExpanded: input.settledShelfExpanded,
       selectedThreadKey: input.selectedThreadKey,
       isListedSettled: isListed,
       unloadedSettledCount: unloadedCount(
@@ -331,15 +331,24 @@ export function useThreadListV2(input: {
     const orderedItems = input.prioritizeFollowUp
       ? sortFollowUpListItems(ungroupedItems)
       : ungroupedItems;
-    if (groupByProject)
-      return groupThreadListV2ItemsByProject(
-        orderedItems,
-        input.projectGroups ?? [],
-        input.prioritizeFollowUp,
-      );
-    // An age filter is a result list, independent of collapsed status shelves.
+    if (groupByProject) {
+      const settledIndex = orderedItems.findIndex((item) => item.type === "v2-settled-shelf");
+      return [
+        ...groupThreadListV2ItemsByProject(
+          settledIndex < 0 ? orderedItems : orderedItems.slice(0, settledIndex),
+          input.projectGroups ?? [],
+          input.prioritizeFollowUp,
+        ),
+        ...(settledIndex < 0 ? [] : orderedItems.slice(settledIndex)),
+      ];
+    }
     return ageFiltered
-      ? orderedItems.filter((item) => item.type === "v2-thread" || item.type === "v2-pending")
+      ? orderedItems.filter(
+          (item) =>
+            item.type === "v2-thread" ||
+            item.type === "v2-pending" ||
+            item.type === "v2-settled-shelf",
+        )
       : orderedItems;
   }, [input.prioritizeFollowUp, ageFiltered, groupByProject, ungroupedItems, input.projectGroups]);
   return {

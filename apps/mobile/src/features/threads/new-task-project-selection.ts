@@ -1,10 +1,19 @@
 import type { EnvironmentConnectionPhase } from "@t3tools/client-runtime/connection";
 import { availableScratchWorkspaceRoot } from "@t3tools/client-runtime/operations/projects";
 import type { EnvironmentProject } from "@t3tools/client-runtime/state/shell";
-import { repositoryGroupingKeyOf, type EnvironmentId, type ServerConfig } from "@t3tools/contracts";
+import {
+  repositoryGroupingKeyOf,
+  type EnvironmentId,
+  type ServerConfig,
+  type SidebarProjectGroupingMode,
+} from "@t3tools/contracts";
+import {
+  resolveScratchProjectScopeKey,
+  pickableProjectGroups,
+} from "@t3tools/client-runtime/state/project-grouping";
 
 import { scopedProjectKey } from "../../lib/scopedEntities";
-import type { HomeProjectScope } from "../home/homeThreadList";
+import { buildHomeProjectScopes, type HomeProjectScope } from "../home/homeThreadList";
 
 type DraftProjectSelectionResolution =
   | { readonly kind: "preserve" }
@@ -153,6 +162,12 @@ export function newTaskDestination(options: {
   readonly useLastProject: boolean | undefined;
   readonly currentProject: ProjectRef | undefined;
   readonly lastProject: ProjectRef | undefined;
+  readonly projectFilter?: {
+    readonly projectKey: string | null;
+    readonly environmentId: EnvironmentId | null;
+    readonly groupingMode: SidebarProjectGroupingMode;
+    readonly connectedEnvironmentIds: ReadonlySet<EnvironmentId>;
+  };
 }) {
   const find = (ref: ProjectRef | undefined) =>
     ref &&
@@ -161,10 +176,36 @@ export function newTaskDestination(options: {
     );
   // A remembered project that was archived since opens the picker; the current one still wins.
   const last = find(options.lastProject);
+  const filter = options.projectFilter;
+  const filteredScope = filter?.projectKey
+    ? pickableProjectGroups(
+        buildHomeProjectScopes({
+          projects: options.projects,
+          environmentId: filter.environmentId,
+          projectGroupingMode: filter.groupingMode,
+        }),
+      ).find(
+        (scope) =>
+          scope.key ===
+          resolveScratchProjectScopeKey(filter.projectKey, options.projects, {
+            sidebarProjectGroupingMode: filter.groupingMode,
+            sidebarProjectGroupingOverrides: {},
+          }),
+      )
+    : undefined;
+  const filteredProject =
+    filteredScope && filter
+      ? getProjectScopeSelectionTarget(
+          filteredScope,
+          filter.environmentId,
+          filter.connectedEnvironmentIds,
+        )
+      : undefined;
   const project =
-    options.useLastProject === false
+    filteredProject ??
+    (options.useLastProject === false
       ? undefined
-      : (find(options.currentProject) ?? (last?.archivedAt == null ? last : undefined));
+      : (find(options.currentProject) ?? (last?.archivedAt == null ? last : undefined)));
   return project
     ? {
         draft: {

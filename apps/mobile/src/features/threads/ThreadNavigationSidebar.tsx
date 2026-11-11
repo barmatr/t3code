@@ -269,7 +269,6 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
   const {
     layout: threadListV2Layout,
     items: threadListV2Items,
-    ageFiltered,
     contentOnlyThreadKeys,
     olderSettledShelf,
     ageFilter,
@@ -299,7 +298,7 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
     selectedThreadKey: props.selectedThreadKey ?? null,
   });
   const listItems: readonly SidebarListItem[] =
-    (ageFiltered || settledShelfExpanded) && threadListV2Layout.hiddenSettledCount > 0
+    settledShelfExpanded && threadListV2Layout.hiddenSettledCount > 0
       ? [
           ...threadListV2Items,
           {
@@ -421,6 +420,7 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
         const scopeKey = scopedProjectKey(thread.environmentId, thread.projectId);
         return (
           <ThreadListV2Row
+            inlineProviderWithStatus={Object.keys(savedConnectionsById).length <= 1}
             onNewThreadOnBranch={props.onNewThreadOnBranch}
             thread={thread}
             variant={item.item.variant}
@@ -642,7 +642,7 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
                       loading={olderSettledShelf.loading || ageFilter.pending}
                       tone="secondary"
                       onPress={() => {
-                        if (!ageFiltered && !settledShelfExpanded) toggleSettledShelf();
+                        if (!settledShelfExpanded) toggleSettledShelf();
                         if (olderSettledShelf.failed) olderSettledShelf.retry();
                         else showMoreSettled();
                       }}
@@ -717,7 +717,7 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
                       loading={olderSettledShelf.loading || ageFilter.pending}
                       tone="secondary"
                       onPress={() => {
-                        if (!ageFiltered && !settledShelfExpanded) toggleSettledShelf();
+                        if (!settledShelfExpanded) toggleSettledShelf();
                         if (olderSettledShelf.failed) olderSettledShelf.retry();
                         else showMoreSettled();
                       }}

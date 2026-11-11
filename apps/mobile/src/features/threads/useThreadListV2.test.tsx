@@ -409,142 +409,176 @@ it("reuses a large thread list across tab renders and updates when its inputs ch
   expect(seen.at(-1)!.layout.items).toHaveLength(0);
 });
 
-it("loads older pages until the age-filtered list is filled, including recent activity in an old settled thread", async () => {
-  vi.useFakeTimers({ now: Date.UTC(2026, 0, 2) });
-  using _timers = { [Symbol.dispose]: () => vi.useRealTimers() };
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  using _globals = { [Symbol.dispose]: () => vi.unstubAllGlobals() };
-  const registry = AtomRegistry.make();
-  using _registry = { [Symbol.dispose]: () => registry.dispose() };
-  registry.set(
-    testPreferencesAtom,
-    AsyncResult.success({ threadAgeBasis: "conversation_activity" }),
-  );
-  const environmentId = EnvironmentId.make("environment-age-pages");
-  const projectId = ProjectId.make("project-test");
-  const otherProjectId = ProjectId.make("project-b");
-  const before = "2026-01-01T00:00:00.000Z";
-  const older = { before, beforeMs: Date.parse(before), counts: new Map([[projectId, 1]]) };
-  const shelf = (loaded: boolean) =>
-    Atom.make<ReadonlyMap<EnvironmentId, OlderSettledShelfEnvironment>>(
-      new Map<EnvironmentId, OlderSettledShelfEnvironment>([
-        [
-          environmentId,
-          {
-            older,
-            pages: { reads: [], frontier: loaded ? null : { settledAt: before }, status: "ready" },
-          },
-        ],
-      ]),
+it.each(["1h", "1d"] as const)(
+  "keeps the settled shelf collapsible and loads matching older pages with age %s",
+  async (age) => {
+    vi.useFakeTimers({ now: Date.UTC(2026, 0, 2) });
+    using _timers = { [Symbol.dispose]: () => vi.useRealTimers() };
+    vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+    using _globals = { [Symbol.dispose]: () => vi.unstubAllGlobals() };
+    const registry = AtomRegistry.make();
+    using _registry = { [Symbol.dispose]: () => registry.dispose() };
+    registry.set(
+      testPreferencesAtom,
+      AsyncResult.success({ threadAgeBasis: "conversation_activity" }),
     );
-  const initialShelf = shelf(false);
-  const loadedShelf = shelf(true);
-  vi.mocked(olderSettledThreads.shelfAtom).mockImplementation((scopes) =>
-    scopes.some(({ pages }) => pages > 0) ? loadedShelf : initialShelf,
-  );
-  const row = (id: string, recent: boolean, olderPage = false) =>
-    presentThreadShell(
-      environmentId,
-      makeRawThreadShell({
-        id: ThreadId.make(id),
-        projectId: olderPage ? otherProjectId : projectId,
-        settledOverride: "settled",
-        settledAt: DateTime.makeUnsafe(
-          olderPage ? "2025-12-31T00:00:00.000Z" : "2026-01-01T12:00:00.000Z",
-        ),
-        latestVisibleMessage: {
-          id: MessageId.make(id),
-          role: "user",
-          text: "Activity",
-          updatedAt: DateTime.makeUnsafe(
-            recent ? "2026-01-01T23:59:00.000Z" : "2026-01-01T12:00:00.000Z",
+    const environmentId = EnvironmentId.make("environment-age-pages");
+    const projectId = ProjectId.make("project-test");
+    const otherProjectId = ProjectId.make("project-b");
+    const before = "2026-01-01T00:00:00.000Z";
+    const older = { before, beforeMs: Date.parse(before), counts: new Map([[projectId, 1]]) };
+    const shelf = (loaded: boolean) =>
+      Atom.make<ReadonlyMap<EnvironmentId, OlderSettledShelfEnvironment>>(
+        new Map<EnvironmentId, OlderSettledShelfEnvironment>([
+          [
+            environmentId,
+            {
+              older,
+              pages: {
+                reads: [],
+                frontier: loaded ? null : { settledAt: before },
+                status: "ready",
+              },
+            },
+          ],
+        ]),
+      );
+    const initialShelf = shelf(false);
+    const loadedShelf = shelf(true);
+    vi.mocked(olderSettledThreads.shelfAtom).mockImplementation((scopes) =>
+      scopes.some(({ pages }) => pages > 0) ? loadedShelf : initialShelf,
+    );
+    const row = (id: string, recent: boolean, olderPage = false) =>
+      presentThreadShell(
+        environmentId,
+        makeRawThreadShell({
+          id: ThreadId.make(id),
+          projectId: olderPage ? otherProjectId : projectId,
+          settledOverride: "settled",
+          settledAt: DateTime.makeUnsafe(
+            olderPage ? "2025-12-31T00:00:00.000Z" : "2026-01-01T12:00:00.000Z",
           ),
+          latestVisibleMessage: {
+            id: MessageId.make(id),
+            role: "user",
+            text: "Activity",
+            updatedAt: DateTime.makeUnsafe(
+              recent ? "2026-01-01T23:59:00.000Z" : "2025-12-30T12:00:00.000Z",
+            ),
+          },
+        }),
+      );
+    const environmentIds = new Set([environmentId]);
+    const input: Parameters<typeof useThreadListV2>[0] = {
+      threads: [
+        row("recent", true),
+        ...Array.from({ length: 30 }, (_, i) => row(`old-${i}`, false)),
+        row("recent-in-older-page", true, true),
+      ],
+      pendingTasks: [],
+      environmentId,
+      projectRefs: null,
+      projectGroups: [
+        { key: "a", title: "Projet A", projectRefs: [{ environmentId, projectId }] },
+        {
+          key: "b",
+          title: "Projet B",
+          projectRefs: [{ environmentId, projectId: otherProjectId }],
         },
-      }),
+      ],
+      searchQuery: "",
+      searchMatches: new Map(),
+      settlementEnvironmentIds: environmentIds,
+      snoozeEnvironmentIds: environmentIds,
+      pinReorderEnvironmentIds: environmentIds,
+      activeReorderEnvironmentIds: environmentIds,
+      queuedThreadKeys: new Set(),
+      settledLimit: 10,
+      now: "2026-01-02T00:00:00.000Z",
+      pendingOrder: null,
+      shelfPreferencesLoaded: true,
+      workingShelfEnabled: false,
+      workingShelfExpanded: true,
+      snoozedShelfExpanded: false,
+      settledShelfExpanded: true,
+      selectedThreadKey: null,
+      age,
+    };
+    let current: ReturnType<typeof useThreadListV2> | undefined;
+    function Probe({ input: listInput = input }: { input?: typeof input }) {
+      const value = useThreadListV2(listInput);
+      useLayoutEffect(() => {
+        current = value;
+      });
+      return null;
+    }
+    const root = createRoot(document.createElement("div"));
+    using _root = { [Symbol.dispose]: () => act(() => root.unmount()) };
+    await act(async () =>
+      root.render(
+        <RegistryContext value={registry}>
+          <Probe />
+        </RegistryContext>,
+      ),
     );
-  const environmentIds = new Set([environmentId]);
-  const input: Parameters<typeof useThreadListV2>[0] = {
-    threads: [
-      row("recent", true),
-      ...Array.from({ length: 30 }, (_, i) => row(`old-${i}`, false)),
-      row("recent-in-older-page", true, true),
-    ],
-    pendingTasks: [],
-    environmentId,
-    projectRefs: null,
-    projectGroups: [
-      { key: "a", title: "Projet A", projectRefs: [{ environmentId, projectId }] },
-      { key: "b", title: "Projet B", projectRefs: [{ environmentId, projectId: otherProjectId }] },
-    ],
-    searchQuery: "",
-    searchMatches: new Map(),
-    settlementEnvironmentIds: environmentIds,
-    snoozeEnvironmentIds: environmentIds,
-    pinReorderEnvironmentIds: environmentIds,
-    activeReorderEnvironmentIds: environmentIds,
-    queuedThreadKeys: new Set(),
-    settledLimit: 10,
-    now: "2026-01-02T00:00:00.000Z",
-    pendingOrder: null,
-    shelfPreferencesLoaded: true,
-    workingShelfEnabled: false,
-    workingShelfExpanded: true,
-    snoozedShelfExpanded: false,
-    settledShelfExpanded: false,
-    selectedThreadKey: null,
-    age: "1h",
-  };
-  let current: ReturnType<typeof useThreadListV2> | undefined;
-  function Probe({ input: listInput = input }: { input?: typeof input }) {
-    const value = useThreadListV2(listInput);
-    useLayoutEffect(() => {
-      current = value;
-    });
-    return null;
-  }
-  const root = createRoot(document.createElement("div"));
-  using _root = { [Symbol.dispose]: () => act(() => root.unmount()) };
-  await act(async () =>
-    root.render(
-      <RegistryContext value={registry}>
-        <Probe />
-      </RegistryContext>,
-    ),
-  );
-  expect(current!.layout.items.map(({ thread }) => thread.id).sort()).toEqual([
-    "recent",
-    "recent-in-older-page",
-  ]);
-  expect(current!.projectGrouped).toBe(true);
-  expect(
-    current!.items.filter((item) => item.type === "v2-project-header").map((item) => item.title),
-  ).toEqual(["Projet A", "Projet B"]);
-  expect(current!.hasUncheckedOlderThreads).toBe(false);
-  await act(async () =>
-    root.render(
-      <RegistryContext value={registry}>
-        <Probe input={{ ...input, age: "all" }} />
-      </RegistryContext>,
-    ),
-  );
-  expect(current!.projectGrouped).toBe(false);
-  expect(current!.items.some((item) => item.type === "v2-project-header")).toBe(false);
-  await act(async () =>
-    root.render(
-      <RegistryContext value={registry}>
-        <Probe
-          input={{
-            ...input,
-            projectRefs: [{ environmentId, projectId }],
-            settledShelfExpanded: false,
-          }}
-        />
-      </RegistryContext>,
-    ),
-  );
-  expect(current!.projectGrouped).toBe(false);
-  expect(current!.layout.items.map(({ thread }) => thread.id)).toEqual(["recent"]);
-});
+    expect(current!.layout.items.map(({ thread }) => thread.id).sort()).toEqual([
+      "recent",
+      "recent-in-older-page",
+    ]);
+    expect(current!.projectGrouped).toBe(true);
+    expect(current!.items.map((item) => item.type)).toEqual([
+      "v2-settled-shelf",
+      "v2-thread",
+      "v2-thread",
+    ]);
+    expect(current!.items[0]).toMatchObject({ count: 2, expanded: true });
+    expect(current!.hasUncheckedOlderThreads).toBe(false);
+    await act(async () =>
+      root.render(
+        <RegistryContext value={registry}>
+          <Probe input={{ ...input, age: "all" }} />
+        </RegistryContext>,
+      ),
+    );
+    expect(current!.projectGrouped).toBe(false);
+    expect(current!.items.some((item) => item.type === "v2-project-header")).toBe(false);
+    await act(async () =>
+      root.render(
+        <RegistryContext value={registry}>
+          <Probe
+            input={{
+              ...input,
+              prioritizeFollowUp: true,
+              projectRefs: [{ environmentId, projectId }],
+              settledShelfExpanded: false,
+            }}
+          />
+        </RegistryContext>,
+      ),
+    );
+    expect(current!.projectGrouped).toBe(false);
+    expect(current!.items.map((item) => item.type)).toEqual(["v2-settled-shelf"]);
+    expect(current!.items[0]).toMatchObject({ count: 1, expanded: false });
+    expect(current!.layout.items).toHaveLength(0);
+    await act(async () =>
+      root.render(
+        <RegistryContext value={registry}>
+          <Probe
+            input={{
+              ...input,
+              prioritizeFollowUp: true,
+              projectRefs: [{ environmentId, projectId }],
+              settledShelfExpanded: true,
+            }}
+          />
+        </RegistryContext>,
+      ),
+    );
+    expect(current!.items.map((item) => item.type)).toEqual(["v2-settled-shelf", "v2-thread"]);
+    expect(current!.items[0]).toMatchObject({ count: 1, expanded: true });
+    expect(current!.layout.items.map(({ thread }) => thread.id)).toEqual(["recent"]);
+  },
+);
 
 it("hot ignores age, preserves project/environment/search, and reacts to real Done visits", async () => {
   const now = Date.UTC(2026, 0, 2);
