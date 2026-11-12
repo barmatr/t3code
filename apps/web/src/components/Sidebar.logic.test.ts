@@ -11,6 +11,8 @@ import {
   getFallbackThreadIdAfterDelete,
   hasUnseenCompletion,
   matchesUnreadThreadFilter,
+  threadOpenedRecently,
+  HOT_RECENT_OPEN_MS,
   resolveSidebarRowThreadId,
   belongsInSidebarWorkingShelf,
   isSidebarEnvironmentDisconnected,
@@ -1752,5 +1754,24 @@ describe("shouldCreateNewThreadInCurrentProject", () => {
     expect(shouldCreateNewThreadInCurrentProject(false, 1, 3)).toBe(true);
     expect(shouldCreateNewThreadInCurrentProject(false, 0, 0)).toBe(true);
     expect(shouldCreateNewThreadInCurrentProject(true, 2, 2)).toBe(true);
+  });
+});
+
+describe("threadOpenedRecently", () => {
+  const now = Date.parse("2026-11-12T10:00:00.000Z");
+  const opened = (openedAt: number) => ({ opens: { openedAt, score: 1, picks: [] } });
+
+  it("keeps a thread opened less than five minutes ago in hot", () => {
+    expect(threadOpenedRecently(opened(now - 60_000), now)).toBe(true);
+    expect(threadOpenedRecently(opened(now - HOT_RECENT_OPEN_MS + 1), now)).toBe(true);
+  });
+
+  it("lets it go once five minutes have passed", () => {
+    expect(threadOpenedRecently(opened(now - HOT_RECENT_OPEN_MS), now)).toBe(false);
+  });
+
+  it("ignores threads with no recorded opening", () => {
+    expect(threadOpenedRecently({ opens: null }, now)).toBe(false);
+    expect(threadOpenedRecently({}, now)).toBe(false);
   });
 });

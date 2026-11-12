@@ -1047,6 +1047,18 @@ export function matchesUnreadThreadFilter(
   return resolveThreadTopStatus(thread, input) !== null;
 }
 
+/** Hot keeps a thread opened in the last five minutes, so reading it does not drop it at once. */
+export const HOT_RECENT_OPEN_MS = 5 * 60_000;
+
+/** Whether the server recorded an opening of this thread less than five minutes before `nowMs`. */
+export function threadOpenedRecently(
+  thread: Pick<SidebarThreadSummary, "opens">,
+  nowMs: number,
+): boolean {
+  const openedAt = thread.opens?.openedAt ?? 0;
+  return openedAt > 0 && nowMs - openedAt < HOT_RECENT_OPEN_MS;
+}
+
 export function firstValidTimestampMs(
   ...candidates: ReadonlyArray<string | null | undefined>
 ): number {

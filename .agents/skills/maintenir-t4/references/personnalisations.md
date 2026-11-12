@@ -77,16 +77,17 @@ Repères : [styles du sélecteur](../../../../apps/web/src/components/projectSwi
 
 Repères : [threadSettled.ts](../../../../packages/client-runtime/src/state/threadSettled.ts) (`resolveT4SnoozePresets`), [libellés web](../../../../apps/web/src/components/Sidebar.snooze.ts) et [tests](../../../../packages/client-runtime/src/state/threadSnoozed.test.ts).
 
-## Filtre « conversations non lues »
+## Bouton « hot » (filtre des conversations à suivre)
 
-- Demande de Raoul du 29 octobre 2026 : un bouton bulle avec point (`MessageSquareDot`), à gauche de l'entonnoir, filtre les conversations qui attendent Raoul : demande d'approbation ou d'input, requête invité, échec, limite d'usage, réveil de snooze non vu, ou fin de tour (« done ») non vue depuis la dernière visite.
+- Demande de Raoul du 29 octobre 2026 : un bouton, à gauche de l'entonnoir, filtre les conversations qui attendent Raoul : demande d'approbation ou d'input, requête invité, échec, limite d'usage, réveil de snooze non vu, ou fin de tour (« done ») non vue depuis la dernière visite.
 - À la demande de Raoul du 29 octobre 2026, les conversations en cours (« Working ») restent visibles dans ce filtre, même déjà lues. Depuis sa demande du 2 novembre 2026, les conversations « Waiting » (en attente d'une autre conversation ou d'une tâche de fond) le restent aussi.
-- Le bouton utilise l'état actif natif de la barre latérale (`isActive`) : fond sélectionné et icône éclaircie, en plus de `aria-pressed`. Son infobulle indique « Show unread, working and waiting threads » lorsqu'il est désactivé.
-- Le filtre ignore les projets cochés et le focus, sans modifier leur configuration ; il dure le temps de la session.
+- Depuis sa demande du 12 novembre 2026, ce filtre reprend le bouton **hot** de T4 Mobile : pastille ronde « hot » grisée quand il est inactif, pleine (couleur primaire) quand il est actif, entourée en continu de la flamme bleue de la carte Project focus, en version réduite (`HOT_BUTTON_FIRE`). La flamme disparaît si le système demande de réduire les animations. L'état est conservé après un redémarrage (`localStorage`, clé `t4:sidebar-hot`), comme sur le mobile.
+- Comme sur le mobile, une conversation ouverte depuis moins de 5 minutes reste listée, d'après l'heure d'ouverture enregistrée par le serveur (`opens.openedAt`). Le contrôle se fait à la minute : elle sort entre 5 et 6 minutes après l'ouverture.
+- Le filtre ignore les projets cochés et le focus, sans modifier leur configuration (choix du 29 octobre conservé ; T4 Mobile garde, lui, ses filtres machine et projet).
 - La conversation ouverte reste listée une fois lue, jusqu'à l'ouverture d'une autre.
 - Limite connue : une conversation classée peut rester dans l'étagère « Settled » repliée.
 
-Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`unreadOnly`) et [Sidebar.logic.ts](../../../../apps/web/src/components/Sidebar.logic.ts) (`matchesUnreadThreadFilter`).
+Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`hotOnly`), [HotFilterButton.tsx](../../../../apps/web/src/components/sidebar/HotFilterButton.tsx), [focusFire.ts](../../../../apps/web/src/components/projectSwitcher/focusFire.ts) (`burnFire`) et [Sidebar.logic.ts](../../../../apps/web/src/components/Sidebar.logic.ts) (`matchesUnreadThreadFilter`, `threadOpenedRecently`).
 
 ## Pièges de construction déjà rencontrés
 
