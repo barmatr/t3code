@@ -65,7 +65,6 @@ import {
   ChevronDownIcon,
   FolderIcon,
   ListFilterIcon,
-  MessageSquareDotIcon,
   PlusIcon,
   SettingsIcon,
 } from "lucide-react";
@@ -217,6 +216,7 @@ import {
   sortThreadsForSidebar,
   sortWorkingThreadsBySend,
   matchesUnreadThreadFilter,
+  threadOpenedRecently,
   useSnoozeWakeClock,
   threadShortcutContext,
   useThreadJumpHintsVisible,
@@ -264,6 +264,7 @@ import {
 } from "./ui/combobox";
 import { SidebarContent, SidebarGroup, useSidebar } from "./ui/sidebar";
 import { SidebarChromeFooter, SidebarChromeHeader } from "./sidebar/SidebarChrome";
+import { HotFilterButton, readSidebarHot, writeSidebarHot } from "./sidebar/HotFilterButton";
 import { SidebarHeaderIconButton, SidebarThreadHeader } from "./sidebar/SidebarThreadHeader";
 import { TooltipProvider } from "./ui/tooltip";
 import {
@@ -1043,8 +1044,8 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const [optimisticDrop, setOptimisticDrop] = useState<SidebarOptimisticDrop | null>(null);
   const threadSearchInputRef = useRef<HTMLInputElement>(null);
   const [threadSearchQuery, setThreadSearchQuery] = useState("");
-  // Session-only on purpose: the filter ignores and never changes the project checks.
-  const [unreadOnly, setUnreadOnly] = useState(false);
+  // Hot ignores and never changes the project checks; it survives a restart, as on T4 Mobile.
+  const [hotOnly, setHotOnly] = useState(readSidebarHot);
   const localLastVisitedAtById = useUiStateStore((store) => store.threadLastVisitedAtById);
   const attentionNow = `${useNowMinute()}:00.000Z`;
   const [searchHighlightKey, setSearchHighlightKey] = useState<string | null>(null);
@@ -1441,17 +1442,19 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
     pinnedKeysById,
     activeKeysById,
   } = useSidebarThreads({
-    projectScopeKey: unreadOnly ? "unread" : projectScopeKey,
-    scopedProjectKeys: unreadOnly ? null : scopedProjectKeys,
+    projectScopeKey: hotOnly ? "unread" : projectScopeKey,
+    scopedProjectKeys: hotOnly ? null : scopedProjectKeys,
     serverConfigs,
     connectedEnvironmentIds,
     optimisticDrop,
-    // The open thread stays listed once read, until another one opens.
-    threads: unreadOnly
+    // The open thread stays listed once read, until another one opens; a thread opened
+    // in the last five minutes stays too.
+    threads: hotOnly
       ? listedThreads.filter((thread) => {
           const key = threadShellKey(thread);
           return (
             key === routeRowThreadKey ||
+            threadOpenedRecently(thread, Date.parse(attentionNow)) ||
             matchesUnreadThreadFilter(thread, {
               lastVisitedAt: resolveThreadLastVisitedAt(
                 thread.lastVisitedAt,
@@ -3089,19 +3092,14 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
               hasProjects={projectGroups.length > 0}
               projectScope={
                 <>
-                  <SidebarHeaderIconButton
-                    label={
-                      unreadOnly ? "Show all threads" : "Show unread, working and waiting threads"
-                    }
-                    isActive={unreadOnly}
-                    aria-pressed={unreadOnly}
-                    onClick={() => {
+                  <HotFilterButton
+                    hot={hotOnly}
+                    onToggle={() => {
                       clearSelection();
-                      setUnreadOnly(!unreadOnly);
+                      setHotOnly(!hotOnly);
+                      writeSidebarHot(!hotOnly);
                     }}
-                  >
-                    <MessageSquareDotIcon className="size-4" />
-                  </SidebarHeaderIconButton>
+                  />
                   <Combobox
                     items={projectScopeItems}
                     filteredItems={filteredProjectScopeItems}

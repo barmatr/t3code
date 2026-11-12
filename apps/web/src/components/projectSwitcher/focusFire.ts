@@ -5,12 +5,37 @@
  */
 
 const DURATION_SECONDS = 1.4;
-const CARD_RADIUS = 12;
 /** One heat cell covers this many CSS pixels; drawing it larger smooths it. */
 const CELL_SIZE = 1.5;
-/** How far the flames reach from the border, in CSS pixels. */
-const REACH = { side: 15, top: 30, bottom: 11 };
-const BLEED = { side: REACH.side + 3, top: REACH.top + 4, bottom: REACH.bottom + 3 };
+
+interface FireReach {
+  readonly side: number;
+  readonly top: number;
+  readonly bottom: number;
+}
+
+export interface FireOptions {
+  /** Corner radius of the element the fire wraps, in CSS pixels. */
+  readonly radius: number;
+  /** How far the flames reach from the border, in CSS pixels. */
+  readonly reach: FireReach;
+  /** Width of the element's border, which sits outside the box absolute children start from. */
+  readonly border: number;
+  /** Burns until stopped instead of one burst. */
+  readonly continuous: boolean;
+}
+
+/** The Project focus card's burst. */
+const FOCUS_CARD_FIRE: FireOptions = {
+  radius: 12,
+  reach: { side: 15, top: 30, bottom: 11 },
+  border: 1,
+  continuous: false,
+};
+
+function bleedOf(reach: FireReach): FireReach {
+  return { side: reach.side + 3, top: reach.top + 4, bottom: reach.bottom + 3 };
+}
 
 /** Heat to color: indigo at the tips, blue in the body, white at the core. */
 const HEAT_STOPS: ReadonlyArray<readonly [heat: number, ...rgba: number[]]> = [
@@ -76,15 +101,20 @@ function flameHeight(progress: number): number {
 }
 
 /** Cells the fire can reach, with their distance to the border; the card's inside stays untouched. */
-function reachableCells(cardWidth: number, cardHeight: number, cols: number, rows: number) {
-  const centerX = BLEED.side + cardWidth / 2;
-  const centerY = BLEED.top + cardHeight / 2;
+function reachableCells(
+  cardWidth: number,
+  cardHeight: number,
+  cols: number,
+  rows: number,
+  { radius, reach: maxReach }: FireOptions,
+) {
+  const bleed = bleedOf(maxReach);
+  const centerX = bleed.side + cardWidth / 2;
+  const centerY = bleed.top + cardHeight / 2;
   const distanceToBorder = (x: number, y: number) => {
-    const dx = Math.abs(x - centerX) - (cardWidth / 2 - CARD_RADIUS);
-    const dy = Math.abs(y - centerY) - (cardHeight / 2 - CARD_RADIUS);
-    return (
-      Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - CARD_RADIUS
-    );
+    const dx = Math.abs(x - centerX) - (cardWidth / 2 - radius);
+    const dy = Math.abs(y - centerY) - (cardHeight / 2 - radius);
+    return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0) - radius;
   };
   const cells: Array<{ index: number; x: number; y: number; distance: number; reach: number }> = [];
   for (let row = 0; row < rows; row++) {
@@ -96,9 +126,9 @@ function reachableCells(cardWidth: number, cardHeight: number, cols: number, row
       // Tall above the card, shorter on its sides and shortest below it.
       const outwardY = distanceToBorder(x, y + 0.5) - distanceToBorder(x, y - 0.5);
       const reach =
-        REACH.side +
-        (REACH.top - REACH.side) * Math.max(0, -outwardY) -
-        (REACH.side - REACH.bottom) * Math.max(0, outwardY);
+        maxReach.side +
+        (maxReach.top - maxReach.side) * Math.max(0, -outwardY) -
+        (maxReach.side - maxReach.bottom) * Math.max(0, outwardY);
       if (distance > reach) continue;
       cells.push({ index: row * cols + col, x, y, distance: Math.max(0, distance), reach });
     }
@@ -111,6 +141,19 @@ function reachableCells(cardWidth: number, cardHeight: number, cols: number, row
  * function that stops the fire early.
  */
 export function burnFocusFire(canvas: HTMLCanvasElement, onBurnedOut: () => void): () => void {
+  return burnFire(canvas, FOCUS_CARD_FIRE, onBurnedOut);
+}
+
+/**
+ * Burns on a canvas placed inside the element it wraps, once or until stopped. Returns a function
+ * that stops the fire; `onBurnedOut` runs when a burst ends on its own.
+ */
+export function burnFire(
+  canvas: HTMLCanvasElement,
+  options: FireOptions,
+  onBurnedOut: () => void = () => {},
+): () => void {
+  const bleed = bleedOf(options.reach);
   const card = canvas.parentElement;
   const buffer = document.createElement("canvas");
   const context = canvas.getContext("2d");
@@ -120,27 +163,33 @@ export function burnFocusFire(canvas: HTMLCanvasElement, onBurnedOut: () => void
     return () => {};
   }
 
-  const cssWidth = card.offsetWidth + 2 * BLEED.side;
-  const cssHeight = card.offsetHeight + BLEED.top + BLEED.bottom;
+  const cssWidth = card.offsetWidth + 2 * bleed.side;
+  const cssHeight = card.offsetHeight + bleed.top + bleed.bottom;
   const scale = window.devicePixelRatio || 1;
   canvas.width = cssWidth * scale;
   canvas.height = cssHeight * scale;
   canvas.style.width = `${cssWidth}px`;
   canvas.style.height = `${cssHeight}px`;
-  // The card's 1px border sits outside the box its absolute children are placed from.
-  canvas.style.left = `${-BLEED.side - 1}px`;
-  canvas.style.top = `${-BLEED.top - 1}px`;
+  // A border sits outside the box absolute children are placed from.
+  canvas.style.left = `${-bleed.side - options.border}px`;
+  canvas.style.top = `${-bleed.top - options.border}px`;
 
   buffer.width = Math.ceil(cssWidth / CELL_SIZE);
   buffer.height = Math.ceil(cssHeight / CELL_SIZE);
   const image = bufferContext.createImageData(buffer.width, buffer.height);
-  const cells = reachableCells(card.offsetWidth, card.offsetHeight, buffer.width, buffer.height);
+  const cells = reachableCells(
+    card.offsetWidth,
+    card.offsetHeight,
+    buffer.width,
+    buffer.height,
+    options,
+  );
   // Each burn reads another part of the noise, so no two look the same.
   const seedX = Math.random() * LATTICE_SIZE;
   const seedY = Math.random() * LATTICE_SIZE;
 
   const paint = (seconds: number) => {
-    const height = flameHeight(seconds / DURATION_SECONDS);
+    const height = options.continuous ? 1 : flameHeight(seconds / DURATION_SECONDS);
     const fade = Math.min(1, height * 4);
     const pixels = image.data;
     pixels.fill(0);
@@ -183,7 +232,7 @@ export function burnFocusFire(canvas: HTMLCanvasElement, onBurnedOut: () => void
   const step = (now: number) => {
     startedAt ??= now;
     const seconds = (now - startedAt) / 1000;
-    if (seconds >= DURATION_SECONDS) {
+    if (!options.continuous && seconds >= DURATION_SECONDS) {
       onBurnedOut();
       return;
     }
