@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-12 — Hot regroupe les conversations par projet
+
+- **Demandeur :** Raoul Barmat, conversations d'un même projet rassemblées quand hot est actif, pour une barre plus lisible.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** en hot, la liste à plat mélangeait les projets ; il fallait lire l'étiquette de chaque ligne.
+- **Effet pratique :** hot affiche un dossier par projet, seulement pour les projets qui ont une conversation hot, ouverts par défaut et repliables pour la session. Le mode normal de la barre ne change pas.
+
 ## 2026-11-12 — Bouton « hot » dans la barre latérale
 
 - **Demandeur :** Raoul Barmat, le bouton hot de T4 Mobile sur T4 Code : un bouton de feu qui filtre la barre de gauche.
