@@ -426,6 +426,11 @@ function routeThreadOnly(
 }
 
 // Separate hooks cache maps independently of later Sidebar hooks and preserve dnd-kit inputs.
+interface SidebarFolderExpansion {
+  readonly isCollapsed: (group: SidebarProjectSnapshot) => boolean;
+  readonly toggle: (group: SidebarProjectSnapshot) => void;
+}
+
 function useSidebarThreads(input: {
   readonly projectScopeKey: string | null;
   readonly scopedProjectKeys: ReadonlySet<string> | null;
@@ -439,6 +444,8 @@ function useSidebarThreads(input: {
   readonly folderGroups: readonly SidebarProjectSnapshot[] | null;
   // Keeps folders with no active threads, so a project the user filtered to or pinned can start one.
   readonly keepEmptyFolders: (group: SidebarProjectSnapshot) => boolean;
+  // Hot keeps its own folder state, open by default, apart from the boring sidebar's.
+  readonly folderExpansion?: SidebarFolderExpansion | null;
 }) {
   const {
     projectScopeKey,
@@ -451,6 +458,7 @@ function useSidebarThreads(input: {
     routeRowThreadKey,
     folderGroups,
     keepEmptyFolders: keepEmpty,
+    folderExpansion = null,
   } = input;
   // Folders already separate the work, so boring mode has no Working shelf.
   const workingShelfEnabled =
@@ -546,10 +554,12 @@ function useSidebarThreads(input: {
     folderGroups === null
       ? null
       : groupSidebarThreadsByProject(folderGroups, activeThreads, keepEmpty).map((folder) => {
-          const collapsed = !resolveProjectExpanded(
-            projectExpandedById,
-            sidebarFolderExpansionKeys(folder.group),
-          );
+          const collapsed = folderExpansion
+            ? folderExpansion.isCollapsed(folder.group)
+            : !resolveProjectExpanded(
+                projectExpandedById,
+                sidebarFolderExpansionKeys(folder.group),
+              );
           return {
             group: folder.group,
             collapsed,
@@ -609,6 +619,10 @@ function useSidebarThreads(input: {
     toggleWorkingShelf: () => toggleShelf("working"),
     projectFolders,
     toggleProjectFolder: (group: SidebarProjectSnapshot) => {
+      if (folderExpansion) {
+        folderExpansion.toggle(group);
+        return;
+      }
       const keys = sidebarFolderExpansionKeys(group);
       setProjectExpanded(keys, !resolveProjectExpanded(projectExpandedById, keys));
     },
@@ -1074,6 +1088,10 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
   const [threadSearchQuery, setThreadSearchQuery] = useState("");
   // Hot ignores and never changes the project checks; it survives a restart, as on T4 Mobile.
   const [hotOnly, setHotOnly] = useState(readSidebarHot);
+  // Hot folders start open and remember a fold only for the session.
+  const [hotCollapsedFolderKeys, setHotCollapsedFolderKeys] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
   const localLastVisitedAtById = useUiStateStore((store) => store.threadLastVisitedAtById);
   const attentionNow = `${useNowMinute()}:00.000Z`;
   const [searchHighlightKey, setSearchHighlightKey] = useState<string | null>(null);
@@ -1480,14 +1498,28 @@ export default function Sidebar({ routeReveal }: { routeReveal: SidebarRouteReve
       : threads,
     delegatedUnderParent,
     routeRowThreadKey,
-    folderGroups: boringSidebarEnabled
-      ? scopedProjectGroups.length === 0
-        ? // An archived project keeps a folder for its active threads, below the rest.
-          [...scopeGroups, ...projectGroups.filter((project) => project.archived)]
-        : scopedProjectGroups
-      : null,
+    // Hot gathers its threads by project, whatever the sidebar mode, so each project reads at once.
+    folderGroups: hotOnly
+      ? projectGroups
+      : boringSidebarEnabled
+        ? scopedProjectGroups.length === 0
+          ? // An archived project keeps a folder for its active threads, below the rest.
+            [...scopeGroups, ...projectGroups.filter((project) => project.archived)]
+          : scopedProjectGroups
+        : null,
     keepEmptyFolders: (group) =>
-      scopedProjectGroups.length > 0 || (group.pinned && !group.archived),
+      !hotOnly && (scopedProjectGroups.length > 0 || (group.pinned && !group.archived)),
+    folderExpansion: hotOnly
+      ? {
+          isCollapsed: (group) => hotCollapsedFolderKeys.has(group.projectKey),
+          toggle: (group) =>
+            setHotCollapsedFolderKeys((keys) => {
+              const next = new Set(keys);
+              if (!next.delete(group.projectKey)) next.add(group.projectKey);
+              return next;
+            }),
+        }
+      : null,
   });
 
   // Ranked across environments as the palette ranks them, so one
