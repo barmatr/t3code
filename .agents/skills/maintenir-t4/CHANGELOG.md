@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-12 — Bouton « hot » dans la barre latérale
+
+- **Demandeur :** Raoul Barmat, le bouton hot de T4 Mobile sur T4 Code : un bouton de feu qui filtre la barre de gauche.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** retrouver sur le Mac le geste du mobile ; le filtre bulle « non lues, en cours, en attente » faisait déjà ce tri, sans le repère visuel ni la règle des 5 minutes.
+- **Effet pratique :** le bouton bulle devient une pastille « hot », grisée au repos, pleine et entourée en continu de la flamme bleue de ⌥Tab quand elle filtre. Un fil ouvert depuis moins de 5 minutes reste listé, et l'état survit au redémarrage. Les projets cochés restent ignorés, comme avant. Livré le 12 novembre (tag `t4-livraison-2026-11-12-4165-bouton-hot`).
+
 ## 2026-11-09 — Feu de la carte « Project focus »
 
 - **Demandeur :** Raoul Barmat, tout le liseré enflammé au lieu de flammes qui se courent après, en mouvement pendant qu'il brûle, deux fois moins vite que la première maquette et pendant 1,4 seconde.
