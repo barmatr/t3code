@@ -4,97 +4,134 @@ import { act, useLayoutEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vite-plus/test";
 
-const focus = vi.hoisted(() => ({ current: true }));
+import {
+  NativePrimaryColumnContext,
+  NativeWorkspaceTabActivityContext,
+} from "../../native/v5-workspace-context";
+
+// The Thread in the detail column is the focused route on iPad split view.
 vi.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({ isFocused: () => focus.current }),
-  useIsFocused: () => focus.current,
+  useNavigation: () => ({ isFocused: () => false }),
 }));
 
 import {
   recordHomeFocus,
   recordHomeTransitionEnd,
-  useHomeRouteVisible,
+  recordHomeTransitionStart,
   useAtomValueWhileVisible,
+  useHomeRouteVisible,
 } from "./home-route-visibility";
 
-it("keeps a focused home subscribed after a native closing event from a tab change", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  focus.current = true;
+const shellsAtom = Atom.make(0).pipe(Atom.keepAlive);
+
+function setup() {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const registry = AtomRegistry.make();
-  const threads = Atom.make<readonly string[]>([]).pipe(Atom.keepAlive);
-  const root = createRoot(document.createElement("div"));
-  let current: readonly string[] = [];
+  let latest: number | undefined;
   function Probe() {
-    const value = useAtomValueWhileVisible(threads, useHomeRouteVisible());
+    const visible = useHomeRouteVisible();
+    const value = useAtomValueWhileVisible(shellsAtom, visible);
     useLayoutEffect(() => {
-      current = value;
+      latest = value;
     });
     return null;
   }
-  const render = () =>
-    act(async () =>
-      root.render(
-        <RegistryContext value={registry}>
-          <Probe />
-        </RegistryContext>,
-      ),
-    );
-  try {
-    await render();
-    await act(async () => recordHomeFocus());
-    await act(async () => recordHomeTransitionEnd(true));
-    await act(async () => registry.set(threads, ["created-while-home-focused"]));
-    expect(current).toEqual(["created-while-home-focused"]);
-    focus.current = false;
-    await render();
-    await act(async () => registry.set(threads, ["created-while-covered"]));
-    expect(current).toEqual(["created-while-home-focused"]);
-    focus.current = true;
-    await render();
-    expect(current).toEqual(["created-while-covered"]);
-  } finally {
-    await act(async () => root.unmount());
-    registry.dispose();
-    focus.current = true;
-    vi.unstubAllGlobals();
-  }
+  const root = createRoot(document.createElement("div"));
+  const sidebar = {
+    presented: true,
+    selectedThreadKey: "env-1:thread-1",
+    selectedPullRequestKey: null,
+  };
+  return {
+    registry,
+    get latest() {
+      return latest;
+    },
+    showHome() {
+      act(() =>
+        root.render(
+          <RegistryContext.Provider value={registry}>
+            <NativePrimaryColumnContext value={sidebar}>
+              <Probe />
+            </NativePrimaryColumnContext>
+          </RegistryContext.Provider>,
+        ),
+      );
+    },
+    /** A phone has no primary column: Home is the root page of its tab's slot. */
+    showHomeInTabSlot(active: boolean) {
+      act(() =>
+        root.render(
+          <RegistryContext.Provider value={registry}>
+            <NativeWorkspaceTabActivityContext value={{ active, isActive: () => active }}>
+              <Probe />
+            </NativeWorkspaceTabActivityContext>
+          </RegistryContext.Provider>,
+        ),
+      );
+    },
+    [Symbol.dispose]() {
+      act(() => root.unmount());
+      registry.dispose();
+    },
+  };
+}
+
+it("keeps the sidebar thread list live after switching tabs beside a focused Thread", () => {
+  using home = setup();
+  // The primary column appearing is the only navigation event Home gets on iPad.
+  recordHomeTransitionStart(false);
+  home.showHome();
+  act(() => home.registry.set(shellsAtom, 1));
+  expect(home.latest).toBe(1);
+
+  // Chats → PRs → Chats: Chats' column will-appear, then the PRs column's did-disappear.
+  act(() => {
+    recordHomeTransitionEnd(true, false);
+    recordHomeTransitionStart(false);
+    recordHomeTransitionEnd(true, false);
+  });
+  act(() => home.registry.set(shellsAtom, 2));
+
+  expect(home.latest, "new thread shells reach the sidebar list").toBe(2);
 });
 
-it("receives new threads while visible and catches up after a hidden interval", async () => {
-  vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-  const registry = AtomRegistry.make();
-  const threads = Atom.make<readonly string[]>([]).pipe(Atom.keepAlive);
-  const root = createRoot(document.createElement("div"));
-  const commits: (readonly string[])[] = [];
-  function Probe({ visible }: { visible: boolean }) {
-    const value = useAtomValueWhileVisible(threads, visible);
-    useLayoutEffect(() => {
-      commits.push(value);
+// Each phone tab slot shows its own copy of the Home route. PRs keeps Home focused; Settings
+// is a route of its own.
+it.each([
+  { tab: "PRs", homeFocusedUnderTab: true },
+  { tab: "Settings", homeFocusedUnderTab: false },
+])(
+  "keeps the phone thread list live after a round trip through $tab",
+  ({ homeFocusedUnderTab }) => {
+    using home = setup();
+    recordHomeFocus();
+    home.showHomeInTabSlot(true);
+    act(() => home.registry.set(shellsAtom, 1));
+    expect(home.latest).toBe(1);
+
+    // To the other tab: its slot will-appear, then the Chats slot's did-disappear.
+    act(() => {
+      recordHomeTransitionStart(false);
+      recordHomeTransitionEnd(true, homeFocusedUnderTab);
     });
-    return null;
-  }
-  const render = (visible: boolean) =>
-    act(async () =>
-      root.render(
-        <RegistryContext value={registry}>
-          <Probe visible={visible} />
-        </RegistryContext>,
-      ),
-    );
-  try {
-    await render(true);
-    await act(async () => registry.set(threads, ["first"]));
-    expect(commits.at(-1)).toEqual(["first"]);
-    await act(async () => registry.set(threads, ["first", "second"]));
-    expect(commits.at(-1)).toEqual(["first", "second"]);
-    await render(false);
-    await act(async () => registry.set(threads, ["first", "second", "third"]));
-    expect(commits.at(-1)).toEqual(["first", "second"]);
-    await render(true);
-    expect(commits.at(-1)).toEqual(["first", "second", "third"]);
-  } finally {
-    await act(async () => root.unmount());
-    registry.dispose();
-    vi.unstubAllGlobals();
-  }
-});
+    home.showHomeInTabSlot(false);
+    act(() => home.registry.set(shellsAtom, 2));
+    expect(home.latest, "the list under another tab holds its rows").toBe(1);
+
+    // Back to Chats: its slot will-appear, then the other slot's did-disappear comes last.
+    act(() => {
+      recordHomeFocus();
+      recordHomeTransitionStart(false);
+      recordHomeTransitionEnd(true, true);
+    });
+    home.showHomeInTabSlot(true);
+    act(() => home.registry.set(shellsAtom, 3));
+    expect(home.latest, "a server rename reaches the list").toBe(3);
+
+    // A pushed Thread takes the focus and still stops the list.
+    act(() => recordHomeTransitionEnd(true, false));
+    act(() => home.registry.set(shellsAtom, 4));
+    expect(home.latest, "the list under a Thread holds its rows").toBe(3);
+  },
+);

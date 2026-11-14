@@ -11,7 +11,10 @@ partagés. Les noms internes `@t3tools/*` restent compatibles.
 - iOS et Android : `fr.emaxconseils.t4`. Dev : suffixe `.dev`, preview : `.preview`.
 - Signature iOS : équipe `emax conseils`, `GY9P9U75F3`.
 - Première version locale : `0.1.0`, build `1` (modifiable avec `T4_IOS_BUILD_NUMBER`).
-- Sources : depuis le build 7, branche `t4-mobile-4515`, partie de T3
+- Sources courantes : branche `t4-mobile-4682`, intégration de
+  `v0.1.10-nightly.20261114.4682` ; état précédent protégé par le tag local
+  `t4-mobile-before-4682-20261114`. Cette mise à niveau reste locale (ni push ni PR).
+- Historique : à partir du build 7, branche `t4-mobile-4515`, partie de T3
   `v0.1.9-nightly.20261111.4515` avec les seules personnalisations mobiles reprises
   (commit du build 6 `7cc84fd38a`, tag `t4-mobile-build-6`). Les builds 1 à 6
   venaient du commit T4 PC `268dbc1988`, aligné sur `v0.1.8-nightly.20261104.4165`.
@@ -101,7 +104,7 @@ pas une publication publique : [documentation Apple](https://developer.apple.com
 
 ## Maintenance
 
-Branches `t4-mobile` (builds 1 à 6) et `t4-mobile-4515` (depuis le build 7), avec
+Branches `t4-mobile` (builds 1 à 6) et `t4-mobile-4515` (builds 7 à 15), avec
 les tags `t4-mobile-build-N`, poussées sur le fork `fork` (`barmatr/t3code`) depuis
 le 11 novembre 2026, à côté de la branche `t4` de T4 PC. Les remotes de lecture
 `desktop-source` et `upstream` gardent leur push neutralisé. Conserver les commits personnalisés mobile à part avant toute mise à jour,
