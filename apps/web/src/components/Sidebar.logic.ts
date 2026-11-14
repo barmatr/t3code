@@ -1146,6 +1146,8 @@ export function matchesUnreadThreadFilter(
   input: { readonly lastVisitedAt: string | undefined; readonly wokeAt: string | null },
 ): boolean {
   if (thread.archivedAt !== null) return false;
+  // A thread still setting up counts as Working here, though its row says Setting up.
+  if (resolveSidebarThreadStatus(thread) === "preparing") return true;
   return resolveThreadTopStatus(thread, input) !== null;
 }
 

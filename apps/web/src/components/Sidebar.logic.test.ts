@@ -1038,7 +1038,10 @@ describe("matchesUnreadThreadFilter", () => {
     "keeps Working threads with a %s runtime even when already visited",
     (status) => {
       const thread = completed({ status });
-      expect(resolveSidebarThreadStatus(thread)).toBe("working");
+      // Upstream shows a preparing runtime as Setting up; hot treats it as Working.
+      expect(resolveSidebarThreadStatus(thread)).toBe(
+        status === "preparing" ? "preparing" : "working",
+      );
       expect(
         matchesUnreadThreadFilter(thread, {
           lastVisitedAt: "2026-06-20T01:01:00.000Z",
