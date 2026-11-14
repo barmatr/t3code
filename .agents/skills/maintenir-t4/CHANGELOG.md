@@ -1,5 +1,12 @@
 # Changelog — maintenir-t4
 
+## 2026-11-14 — Rebase sur T3 Nightly 4682
+
+- **Demandeur :** Raoul Barmat, mise à jour complète de T4 Code sur la dernière T3 Nightly.
+- **Auteur de l'implémentation :** Claude Code (Claude Opus 5.5).
+- **Raison :** passer de la base `4165` à `v0.1.10-nightly.20261114.4682` (`820f620e3d63`), avec un serveur T3 resté en `4515` (même protocole d'orchestration 2).
+- **Effet pratique :** les personnalisations documentent le statut « Setting up » gardé par hot, la marge disque du build (8 Go) et la relance par chemin, `open -b` ayant ouvert une sauvegarde. Livraison : tag `t4-livraison-2026-11-14-4682`.
+
 ## 2026-11-12 — Hot regroupe les conversations par projet
 
 - **Demandeur :** Raoul Barmat, conversations d'un même projet rassemblées quand hot est actif, pour une barre plus lisible.
