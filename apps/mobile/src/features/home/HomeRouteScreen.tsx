@@ -7,13 +7,9 @@ import * as Order from "effect/Order";
 import { useNavigation } from "@react-navigation/native";
 import { useMemo, useState } from "react";
 import { Platform, View } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
-import {
-  pickableProjectGroups,
-  resolveScratchProjectScopeKey,
-} from "@t3tools/client-runtime/state/project-grouping";
+import { resolveScratchProjectScopeKey } from "@t3tools/client-runtime/state/project-grouping";
 
 import { useProjects } from "../../state/entities";
 import { environmentThreadShells } from "../../state/threads";
@@ -38,24 +34,27 @@ import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspace
 import { WorkspaceListEmptyDetail } from "../layout/workspace/WorkspaceListEmptyDetail";
 import { WorkspaceListHeader } from "../layout/workspace/WorkspaceListHeader";
 import { buildHomeListFilterMenuItems } from "./home-list-filter-menu";
-import { HotFilterButton } from "./ThreadListFilters";
 import { AGENTS_PROJECT, isHomeTabProject, resolveAgentsProject } from "./agents-project";
 import { scopedProjectKey } from "../../lib/scopedEntities";
+import { useHiddenProjectKeys, useProjectPickerScopes } from "../../state/project-visibility";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { ScreenContent } from "../../components/ui/ScreenContent";
-import { NATIVE_LIQUID_GLASS_SUPPORTED } from "../../native/native-glass";
 
 /** T4: `agents` renders the Agents tab, a fixed list of Direction agentique threads. */
 export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sidebar?: boolean }) {
-  const insets = useSafeAreaInsets();
   const nativePrimaryColumn = use(NativePrimaryColumnContext);
   const { layout, setPrimarySidebarSearchQuery, startNewTask } = useAdaptiveWorkspaceLayout();
   const { primarySidebarSearchQuery } = useWorkspacePaneState();
   const selectDetail = useSelectWorkspaceDetail();
   const allProjects = useProjects();
+  const hiddenProjectKeys = useHiddenProjectKeys();
   const agentsProject = resolveAgentsProject(allProjects);
-  const projects = allProjects.filter((project) =>
-    isHomeTabProject({ environmentId: project.environmentId, projectId: project.id }, props.agents),
+  const projects = allProjects.filter(
+    (project) =>
+      isHomeTabProject(
+        { environmentId: project.environmentId, projectId: project.id },
+        props.agents,
+      ) && !hiddenProjectKeys.has(scopedProjectKey(project.environmentId, project.id)),
   );
   // Stop rebuilding the streaming thread list while Thread covers Home.
   const visible = useHomeRouteVisible();
@@ -161,7 +160,7 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
       sidebarProjectGroupingOverrides: {},
     },
   );
-  const projectFilterOptions = pickableProjectGroups(
+  const projectFilterOptions = useProjectPickerScopes(
     buildHomeProjectScopes({
       projects,
       environmentId: selectedEnvironmentId,
@@ -195,6 +194,7 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
           accessibilityLabel={props.agents ? "T4 Mobile, Agents" : "T4 Mobile, Threads"}
           workspaceTab={workspaceTab}
           hot={hot}
+          onHotChange={onHotChange}
           onOpenEnvironments={() => openSettings(navigation, "SettingsEnvironments")}
           search={{
             value: searchQuery,
@@ -227,14 +227,6 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
 
         {props.agents && !agentsProject ? (
           <ScreenContent>
-            {Platform.OS === "ios" ? (
-              <View
-                className="items-end px-5"
-                style={{ paddingTop: (NATIVE_LIQUID_GLASS_SUPPORTED ? insets.top + 72 : 0) + 8 }}
-              >
-                <HotFilterButton hot={hot} onChange={onHotChange} />
-              </View>
-            ) : null}
             <View className="flex-1 justify-center px-8">
               <EmptyState
                 title="Direction agentique indisponible"

@@ -13,7 +13,7 @@ import {
   type EnvironmentProject,
   type EnvironmentThreadShell,
 } from "@t3tools/client-runtime/state/shell";
-import { pickableProjectGroups } from "@t3tools/client-runtime/state/project-grouping";
+import { useProjectPickerScopes } from "../../state/project-visibility";
 import { threadSearchMatchKey } from "@t3tools/client-runtime/state/thread-search";
 import { type EnvironmentId, type SidebarProjectGroupingMode } from "@t3tools/contracts";
 import { useAtomValue } from "@effect/atom-react";
@@ -92,7 +92,7 @@ import { createSwipeRowActivation } from "./swipe-row-activation";
 import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-swipe-actions";
 import { useFabScroll } from "./FabScrollContext";
 import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
-import { ThreadListFilters, HotFilterButton } from "./ThreadListFilters";
+import { ThreadListFilters } from "./ThreadListFilters";
 import { AppText as Text } from "../../components/ui/AppText";
 import { ThreadAgeFilterNotice } from "./ThreadAgeFilterNotice";
 import type { ThreadAge } from "../../lib/thread-age";
@@ -392,6 +392,7 @@ export function HomeScreen(props: HomeScreenProps) {
       }),
     [projects, selectedEnvironmentId, projectGroupingMode],
   );
+  const pickerScopes = useProjectPickerScopes(projectScopes);
   const hasSearchQuery = props.searchQuery.trim().length > 0;
   const projectByKey = (() => {
     const map = new Map<string, EnvironmentProject>();
@@ -403,10 +404,7 @@ export function HomeScreen(props: HomeScreenProps) {
 
   const v2ProjectScopeKey = props.selectedProjectKey;
   // An archived project's filter reads as all projects, matching the filter menu.
-  const v2ScopedProjectGroup = findHomeProjectScope(
-    pickableProjectGroups(projectScopes),
-    v2ProjectScopeKey,
-  );
+  const v2ScopedProjectGroup = findHomeProjectScope(pickerScopes, v2ProjectScopeKey);
   const threadSearch = useThreadSearch(
     searchEnvironmentIds,
     props.searchQuery,
@@ -700,22 +698,18 @@ export function HomeScreen(props: HomeScreenProps) {
         </Text>
         <Text className="text-sm text-foreground-muted">{selectedEnvironmentLabel}</Text>
       </View>
-      {Platform.OS === "ios" && props.onHotChange ? (
-        <HotFilterButton hot={props.hot ?? false} onChange={props.onHotChange} />
-      ) : null}
     </View>
   ) : Platform.OS === "ios" ? (
     <ThreadListFilters
       gutter={sidebarSurface ? 8 : 0}
       environments={props.environments}
-      projects={pickableProjectGroups(projectScopes).map((scope) => ({
+      projects={pickerScopes.map((scope) => ({
         key: scope.key,
         label: scope.title,
       }))}
       selectedEnvironmentId={props.selectedEnvironmentId}
       selectedProjectKey={props.selectedProjectKey}
       hot={props.hot}
-      onHotChange={props.onHotChange}
       selectedAge={props.selectedAge}
       onEnvironmentChange={props.onEnvironmentChange}
       onProjectChange={props.onProjectChange}

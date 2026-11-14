@@ -1,3 +1,5 @@
+import { HotFilterButton } from "../../home/ThreadListFilters";
+import { useHomeHotFilter } from "../../home/home-list-options";
 import { useActiveNewTask } from "../../../state/active-new-task";
 import { Toolbar } from "../../../components/ui/Toolbar";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
@@ -52,6 +54,7 @@ export function WorkspaceToolbar(props: {
   const settingsMenu = useSettingsEnvironmentMenu();
   // The Settings list takes the selected tab's place, so search follows it.
   const selectedTab = workspace.settingsOpen ? "settings" : workspace.state.selectedTab;
+  const hotFilter = useHomeHotFilter(selectedTab === "pullRequests");
   const tab = workspace.state.tabs[selectedTab];
   const searchLabel = SEARCH_LABELS[selectedTab === "usage" ? "threads" : selectedTab];
   const { isTabActive: isListTabActive } = workspace;
@@ -191,6 +194,11 @@ export function WorkspaceToolbar(props: {
         </Toolbar>
       ) : (
         <Toolbar placement="right">
+          {selectedTab === "threads" || selectedTab === "pullRequests" ? (
+            <Toolbar.Custom hidesSharedBackground>
+              <HotFilterButton hot={hotFilter.hot} onChange={hotFilter.onChange} />
+            </Toolbar.Custom>
+          ) : null}
           {searchButton}
           {nativeToolbarCompose && foldedSearch ? <Toolbar.Spacer width={8} /> : null}
           {composeButton}

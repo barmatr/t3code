@@ -15,6 +15,7 @@ export function BrandForegroundFire(props: {
   readonly width: number;
   readonly height: number;
   readonly continuous?: boolean | undefined;
+  readonly cornerRadius?: number | undefined;
 }) {
   const focused = useIsFocused();
   const active = useAppActive();
@@ -52,9 +53,14 @@ export function BrandForegroundFire(props: {
 
   const source = useMemo(
     () => ({
-      html: brandFocusFireHtml(props.width, props.height, continuous ? "continuous" : "burst"),
+      html: brandFocusFireHtml(
+        props.width,
+        props.height,
+        continuous ? "continuous" : "burst",
+        props.cornerRadius,
+      ),
     }),
-    [props.width, props.height, continuous],
+    [props.width, props.height, continuous, props.cornerRadius],
   );
   const stop = () => {
     setBurn(0);

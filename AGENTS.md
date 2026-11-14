@@ -17,8 +17,22 @@ T3 Nightly `v0.1.8-nightly.20261104.4165`.
 - Conserver les identifiants `@t3tools/*` des packages internes et la licence MIT.
 - Les scripts de maintenance desktop hérités visent l’application PC ; leur exécution
   se fait uniquement dans `../t4code`. Ici, utiliser les commandes `t4:ios:*`.
-- Les remotes servent à lire les sources. Aucun commit, push, upload Apple ou build
-  EAS sans demande explicite. La demande initiale autorise la préparation locale.
+- **Livraison TestFlight systématique — consigne permanente de Raoul du 11 novembre
+  2026 : tout développement de T4 Mobile doit être livré automatiquement sur
+  TestFlight.** Un signalement de bug vaut demande de correction et de livraison,
+  sauf instruction explicite contraire concernant ce bug.
+  La demande de développement autorise toute la chaîne : vérifications
+  et recette adaptées, nouveau numéro de build, compilation locale signée, export,
+  validation Apple, upload et distribution au groupe **T4 Interne**. Ne pas demander
+  une confirmation supplémentaire et ne pas s’arrêter à « validé localement ».
+  Le travail est terminé après vérification de la disponibilité effective du build
+  pour le groupe dans TestFlight ; un upload réussi ne suffit pas. Suivre
+  [T4-TESTFLIGHT-REPRISE.md](T4-TESTFLIGHT-REPRISE.md) et conserver la preuve de livraison.
+  Une instruction explicite contraire de Raoul pour la tâche prime. En cas de
+  blocage technique, le résoudre si possible ; sinon décrire précisément le blocage
+  et l’étape restante, sans annoncer une livraison accomplie.
+- Les remotes servent à lire les sources. Aucun commit, push ou build EAS sans
+  demande explicite. La livraison automatique ci-dessus utilise Xcode sur ce Mac.
 
 Les conventions techniques amont ci-dessous s’appliquent dans ce périmètre.
 

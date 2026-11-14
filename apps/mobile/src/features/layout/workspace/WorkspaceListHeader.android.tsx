@@ -57,7 +57,6 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
       title="T4 Mobile"
       titleContent={
         <WorkspaceBrandTitle
-          continuousFire={listFocused && props.hot === true}
           accessibilityLabel={props.accessibilityLabel}
           onOpenEnvironments={props.onOpenEnvironments}
         />

@@ -1804,7 +1804,7 @@ describe("Working section beta", () => {
   });
 });
 
-it("orders mobile follow-up across pins and collapsed shelves, and demotes a read Done", () => {
+it("orders mobile follow-up stably and keeps settled Done behind the shelf even when unread", () => {
   const make = (id: string, patch: Partial<EnvironmentThreadShell> = {}) =>
     makeThread({
       id: ThreadId.make(id),
@@ -1836,6 +1836,49 @@ it("orders mobile follow-up across pins and collapsed shelves, and demotes a rea
       updatedAt: NOW,
     },
   });
+  // Streaming and reordered snapshots must not shuffle the working tier.
+  const olderWorking = {
+    ...working,
+    id: ThreadId.make("older-working"),
+    runtime: { ...working.runtime!, activityStartedAt: "2026-06-01T08:00:00.000Z" },
+  };
+  const newerWorking = {
+    ...working,
+    id: ThreadId.make("newer-working"),
+    runtime: { ...working.runtime!, activityStartedAt: "2026-06-01T09:00:00.000Z" },
+  };
+  for (const hot of [false, true]) {
+    for (const rows of [
+      [newerWorking, olderWorking],
+      [
+        { ...olderWorking, updatedAt: "2026-06-01T10:00:00.000Z" },
+        { ...newerWorking, updatedAt: "2026-06-01T11:00:00.000Z" },
+      ],
+      [
+        { ...newerWorking, updatedAt: "2026-06-01T11:00:00.000Z" },
+        { ...olderWorking, updatedAt: "2026-06-01T12:00:00.000Z" },
+      ],
+    ]) {
+      const layout = buildThreadListV2Items({
+        threads: rows,
+        environmentId: null,
+        searchQuery: "",
+        now: NOW,
+        prioritizeFollowUp: true,
+        hot,
+      });
+      const expected = ["older-working", "newer-working"];
+      expect(layout.items.map(({ thread }) => thread.id)).toEqual(expected);
+      expect(
+        sortFollowUpListItems(
+          buildThreadListV2ListItems({
+            items: layout.items,
+            pendingTasks: [],
+          }),
+        ).map((item) => (item.type === "v2-thread" ? item.item.thread.id : item.type)),
+      ).toEqual(expected);
+    }
+  }
   const threads = [
     make("pinned-read", { pinnedAt: NOW, updatedAt: NOW }),
     working,
@@ -1855,15 +1898,22 @@ it("orders mobile follow-up across pins and collapsed shelves, and demotes a rea
       snoozedShelfExpanded: false,
       settledShelfExpanded: false,
     }).items.map(({ thread }) => thread.id);
-  expect(list(threads)).toEqual(["input", "approval", "unread", "working", "pinned-read"]);
+  expect(list(threads)).toEqual(["input", "approval", "working", "pinned-read"]);
+  expect(
+    list(
+      threads.map((thread) =>
+        thread.id === "unread" ? { ...thread, settledOverride: "active" } : thread,
+      ),
+    ),
+  ).toEqual(["input", "approval", "unread", "working", "pinned-read"]);
   expect(list([...threads].reverse())).toEqual(list(threads));
   const read = threads.map((thread) =>
     thread.id === "unread" ? { ...thread, lastVisitedAt: NOW } : thread,
   );
-  // A read Done leaves follow-up for the settled shelf, hidden while collapsed.
+  // Settlement wins over Done both before and after reading the completion.
   expect(list(read)).toEqual(["input", "approval", "working", "pinned-read"]);
   const expanded = buildThreadListV2Items({
-    threads: read,
+    threads,
     environmentId: null,
     searchQuery: "",
     now: NOW,
@@ -1894,13 +1944,13 @@ it("orders mobile follow-up across pins and collapsed shelves, and demotes a rea
   );
 });
 
-it("keeps threads read in the last five minutes while HOT", () => {
+it("keeps recent reads in HOT only until settled, without changing the ordinary list", () => {
   const nowMs = Date.parse(NOW);
   const make = (id: string, visitedAgoMs: number) =>
     makeThread({
       id: ThreadId.make(id),
       title: id,
-      settledOverride: "settled",
+      settledOverride: "active",
       runtime: null,
       latestRun: {
         runId: RunId.make(id),
@@ -1926,6 +1976,30 @@ it("keeps threads read in the last five minutes while HOT", () => {
     }).items.map(({ thread }) => thread.id);
   expect(hot()).toEqual([]);
   expect(hot(nowMs - HOT_RECENT_READ_MS)).toEqual(["just-read"]);
+  const settled = threads.map((thread) => ({ ...thread, settledOverride: "settled" as const }));
+  const settledInput = {
+    threads: settled,
+    environmentId: null,
+    searchQuery: "",
+    now: NOW,
+    prioritizeFollowUp: true,
+    hotReadSinceMs: nowMs - HOT_RECENT_READ_MS,
+    settledShelfExpanded: true,
+    selectedThreadKey: `${environmentId}:just-read`,
+  };
+  expect(buildThreadListV2Items({ ...settledInput, hot: true }).items).toEqual([]);
+  expect(
+    buildThreadListV2Items({
+      ...settledInput,
+      hot: true,
+      searchQuery: "just-read",
+      queuedThreadKeys: new Set([`${environmentId}:just-read`]),
+      threads: settled.map((thread) => ({ ...thread, hasPendingApprovals: true })),
+    }).items,
+  ).toEqual([]);
+  const ordinary = buildThreadListV2Items({ ...settledInput, hot: false });
+  expect(ordinary.items).toHaveLength(2);
+  expect(ordinary.settledCount).toBe(2);
   expect(nextHotRecentReadExpiry(threads, nowMs)).toBe(nowMs - 60_000 + HOT_RECENT_READ_MS);
   expect(nextHotRecentReadExpiry(threads, nowMs + HOT_RECENT_READ_MS)).toBeNull();
 });

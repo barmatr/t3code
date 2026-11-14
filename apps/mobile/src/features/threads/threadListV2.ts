@@ -340,7 +340,14 @@ export function nextHotRecentReadExpiry(
   return next;
 }
 
-function threadFollowUpTime(thread: EnvironmentThreadShell): number {
+function threadFollowUpTime(thread: EnvironmentThreadShell, queued = false): number {
+  // The working tier is FIFO. Streaming updates must never change its order.
+  // Negation keeps the common descending comparator while using oldest-first here.
+  if (threadFollowUpPriority(thread, queued) === 2) {
+    return -parseTimestampMs(
+      thread.runtime?.activityStartedAt ?? thread.latestRun?.requestedAt ?? thread.createdAt,
+    );
+  }
   return Math.max(
     ...[
       thread.updatedAt,
@@ -359,7 +366,8 @@ export function compareThreadsByFollowUp(
   return (
     threadFollowUpPriority(left, queuedKeys?.has(`${left.environmentId}:${left.id}`)) -
       threadFollowUpPriority(right, queuedKeys?.has(`${right.environmentId}:${right.id}`)) ||
-    threadFollowUpTime(right) - threadFollowUpTime(left) ||
+    threadFollowUpTime(right, queuedKeys?.has(`${right.environmentId}:${right.id}`)) -
+      threadFollowUpTime(left, queuedKeys?.has(`${left.environmentId}:${left.id}`)) ||
     compareStableKeys(`${left.environmentId}:${left.id}`, `${right.environmentId}:${right.id}`)
   );
 }
@@ -378,9 +386,9 @@ export function sortFollowUpListItems(
       : 2;
   const time = (item: ThreadListV2ListItem) =>
     item.type === "v2-thread"
-      ? threadFollowUpTime(item.item.thread)
+      ? threadFollowUpTime(item.item.thread, item.hasQueuedMessages)
       : item.type === "v2-pending"
-        ? parseTimestampMs(item.pendingTask.createdAt)
+        ? -parseTimestampMs(item.pendingTask.createdAt)
         : 0;
   // Rows from the first shelf on (the settled shelf) keep their own order.
   const shelfIndex = items.findIndex(
@@ -904,6 +912,7 @@ export function buildThreadListV2Items(input: {
   const listedThreads = input.threads.filter(
     (thread) =>
       thread.archivedAt === null &&
+      (!input.hot || thread.settledOverride !== "settled") &&
       isListedThreadLineage(thread.lineage) &&
       (input.environmentId === null || thread.environmentId === input.environmentId) &&
       (projectKeys === null || projectKeys.has(`${thread.environmentId}:${thread.projectId}`)),
@@ -941,40 +950,35 @@ export function buildThreadListV2Items(input: {
         );
       })
       .sort((left, right) => compareThreadsByFollowUp(left, right, queuedThreadKeys));
-    // Only ordinary read settled rows paginate. Follow-up must never disappear behind a shelf,
-    // a manual pin order or the settled page limit. Pin/snooze state remains on the row.
+    // Explicit settlement takes precedence over follow-up priority, including unread Done.
+    // Queued work remains active, as in the ordinary list. Pin/snooze state stays on the row.
     const isSettled = (thread: EnvironmentThreadShell) =>
       (input.settlementEnvironmentIds?.has(thread.environmentId) ?? true) &&
       thread.settledOverride === "settled" &&
       queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`) !== true;
-    const ordinarySettled = matches.filter(
-      (thread) =>
-        isSettled(thread) &&
-        threadFollowUpPriority(thread) === 3 &&
-        queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`) !== true,
-    );
-    const ordinarySet = new Set(ordinarySettled);
-    const listedSettled = ordinarySettled.filter(
+    const shelvedSettled = matches.filter(isSettled);
+    const settledSet = new Set(shelvedSettled);
+    const listedSettled = shelvedSettled.filter(
       (thread) => input.isListedSettled?.(thread) ?? true,
     );
     const visibleSettled = new Set(listedSettled.slice(0, input.settledLimit ?? Infinity));
     const isSelected = (thread: EnvironmentThreadShell) =>
       `${thread.environmentId}:${thread.id}` === input.selectedThreadKey;
     const settledTotal =
-      ordinarySettled.length + (input.hot ? 0 : (input.unloadedSettledCount ?? 0));
-    // Outside HOT, read settled rows go below the follow-up list in a collapsible shelf.
+      shelvedSettled.length + (input.hot ? 0 : (input.unloadedSettledCount ?? 0));
+    // Outside HOT, settled rows go below the follow-up list in a collapsible shelf.
     const shelved = !input.hot;
     const settledExpanded = input.settledShelfExpanded !== false;
-    const followUp = shelved ? matches.filter((thread) => !ordinarySet.has(thread)) : matches;
+    const followUp = shelved ? matches.filter((thread) => !settledSet.has(thread)) : matches;
     const visible = shelved
       ? [
           ...followUp,
-          ...ordinarySettled.filter(
+          ...shelvedSettled.filter(
             (thread) => (settledExpanded && visibleSettled.has(thread)) || isSelected(thread),
           ),
         ]
       : matches.filter(
-          (thread) => !ordinarySet.has(thread) || visibleSettled.has(thread) || isSelected(thread),
+          (thread) => !settledSet.has(thread) || visibleSettled.has(thread) || isSelected(thread),
         );
     return {
       items: visible.map((thread, index) => ({

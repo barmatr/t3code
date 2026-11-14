@@ -95,6 +95,8 @@ const isThreadProject = Schema.is(ThreadProject);
 export interface Preferences {
   readonly navigationTabOrder?: readonly string[];
   readonly hiddenNavigationTabs?: readonly string[];
+  readonly hiddenProjectKeys?: readonly string[];
+  readonly projectPickerOrder?: readonly string[];
   readonly pullRequestHideTestFiles?: boolean;
   readonly pullRequestMergeMethod?: PullRequestMergeMethod;
   readonly liveActivitiesEnabled?: boolean;
@@ -182,6 +184,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   const preferences: {
     navigationTabOrder?: readonly string[];
     hiddenNavigationTabs?: readonly string[];
+    hiddenProjectKeys?: readonly string[];
+    projectPickerOrder?: readonly string[];
     pullRequestHideTestFiles?: boolean;
     pullRequestMergeMethod?: PullRequestMergeMethod;
     liveActivitiesEnabled?: boolean;
@@ -222,6 +226,18 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   if (Array.isArray(parsed.hiddenNavigationTabs)) {
     preferences.hiddenNavigationTabs = parsed.hiddenNavigationTabs.filter(
       (tab): tab is string => typeof tab === "string",
+    );
+  }
+
+  if (Array.isArray(parsed.hiddenProjectKeys)) {
+    preferences.hiddenProjectKeys = parsed.hiddenProjectKeys.filter(
+      (key): key is string => typeof key === "string",
+    );
+  }
+
+  if (Array.isArray(parsed.projectPickerOrder)) {
+    preferences.projectPickerOrder = parsed.projectPickerOrder.filter(
+      (key): key is string => typeof key === "string",
     );
   }
 

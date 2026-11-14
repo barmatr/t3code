@@ -23,4 +23,11 @@ un serveur contre les données réelles de T3.
   `mobile:install` vise déjà `fr.emaxconseils.t4.dev` ; le script d’appairage du skill
   amont vise encore T3 : utiliser le lien T4 avec l’outil Device au lieu de ce script.
 - Les fichiers iOS générés, profils, clés privées, `.env` et archives restent ignorés.
-  Aucun envoi à TestFlight sans validation explicite de Raoul.
+- **Tout développement mobile se livre systématiquement sur TestFlight**, sans
+  redemander confirmation (consigne permanente de Raoul du 11 novembre 2026).
+  Un bug signalé déclenche par défaut sa correction et cette livraison.
+  Après les vérifications et la recette adaptées, compiler, signer, exporter,
+  valider auprès d’Apple, envoyer et distribuer le nouveau build à **T4 Interne**.
+  Vérifier sa disponibilité effective et conserver les preuves avant de conclure.
+  Procédure : [T4-TESTFLIGHT-REPRISE.md](../../T4-TESTFLIGHT-REPRISE.md) ; portée et
+  gestion des blocages : [AGENTS.md racine](../../AGENTS.md).

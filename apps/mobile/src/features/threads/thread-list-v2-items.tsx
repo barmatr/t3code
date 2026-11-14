@@ -811,6 +811,17 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   const handleDelete = useCallback(() => onDeleteThread(thread), [onDeleteThread, thread]);
   const handleRename = useCallback(() => onRenameThread(thread), [onRenameThread, thread]);
   const canOperateThread = useEnvironmentScope(thread.environmentId, AuthOrchestrationOperateScope);
+  const markUnread = useAtomCommand(threadEnvironment.markUnread, { reportFailure: false });
+  const handleMarkUnread = useCallback(async () => {
+    if (!canOperateThread) return;
+    const result = await markUnread({
+      environmentId: thread.environmentId,
+      input: { threadId: thread.id },
+    });
+    if (result._tag === "Failure") {
+      Dialog.alert("Could not mark thread unread", "Please try again.");
+    }
+  }, [canOperateThread, markUnread, thread.environmentId, thread.id]);
   const handleRegenerateTitle = useCallback(
     () => onRegenerateThreadTitle(thread),
     [onRegenerateThreadTitle, thread],
@@ -965,6 +976,16 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         : []),
       { id: "copy-thread", title: "Copy thread", image: "text.bubble" },
       { id: "copy-thread-id", title: "Copy thread ID", image: "doc.on.doc" },
+      ...(!threadHasUnseenCompletion(thread)
+        ? [
+            {
+              id: "mark-unread",
+              title: "Mark unread",
+              image: "envelope.badge",
+              attributes: { disabled: !canOperateThread },
+            } satisfies MenuAction,
+          ]
+        : []),
     ];
     if (snoozedRow) {
       return layoutThreadListV2RowMenuActions({
@@ -1026,19 +1047,21 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
   }, [
     autoSettleMenuItems,
     canUnsettle,
+    canOperateThread,
     pinMenuItems,
     props.settlementSupported,
     reorderMenuItems,
     snoozePresetActions,
     snoozedRow,
     swipeActions.secondary,
-    thread.branch,
+    thread,
     titleMenuItems,
   ]);
   const handleMenuAction = useCallback(
     ({ nativeEvent }: { readonly nativeEvent: { readonly event: string } }) => {
       if (nativeEvent.event === "new-thread-on-branch") onNewThreadOnBranch(thread);
       if (nativeEvent.event === "settle") handleSettle();
+      if (nativeEvent.event === "mark-unread") void handleMarkUnread();
       if (nativeEvent.event === "unsettle") handleUnsettle();
       if (nativeEvent.event === "unsnooze") handleUnsnooze();
       if (nativeEvent.event === "pin") handlePin();
@@ -1095,6 +1118,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       handleMoveUp,
       handlePin,
       handleSettle,
+      handleMarkUnread,
       handleSnooze,
       handleSetAutoSettle,
       handleUnpin,

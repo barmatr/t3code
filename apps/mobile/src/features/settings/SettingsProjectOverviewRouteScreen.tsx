@@ -44,11 +44,13 @@ import { leaveSettingsPage } from "./settings-navigation";
 import { workspaceHasColumns } from "../layout/workspace/workspace-selection-store";
 import { DEFAULT_SETTINGS_PAGE } from "../layout/workspace/workspace-tab-navigation";
 import { readUnloadedThreadCount } from "../../state/olderSettledShelf";
+import { SettingsProjectVisibilitySection } from "./SettingsProjectVisibilitySection";
 
 export function SettingsProjectOverviewRouteScreen() {
   const environmentMenu = useSettingsEnvironmentMenu();
   const insets = useSafeAreaInsets();
   const [isRemoving, setIsRemoving] = useState(false);
+  const [draggingProjects, setDraggingProjects] = useState(false);
   const removalPending = useRef(false);
   const startRemoval = () => {
     if (removalPending.current) return false;
@@ -86,12 +88,14 @@ export function SettingsProjectOverviewRouteScreen() {
   return (
     <SettingsScreen title="Projects" menus={[environmentMenu]}>
       <ScrollView
+        scrollEnabled={!draggingProjects}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
         className="flex-1"
         contentContainerClassName="gap-6 px-5 pt-4"
         contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 18) + 18 }}
       >
+        <SettingsProjectVisibilitySection onDraggingChange={setDraggingProjects} />
         {selectedProjectKey === null ? (
           <Text className="px-2 text-base text-foreground-muted">
             Choose a project with the filter above to manage its name, checkouts and removal.

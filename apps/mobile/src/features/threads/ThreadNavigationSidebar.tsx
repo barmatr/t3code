@@ -1,12 +1,10 @@
+import { useVisibleProjects } from "../../state/use-visible-projects";
 import { Button } from "../../components/ui/Button";
 import { ThreadAgeFilterNotice } from "../home/ThreadAgeFilterNotice";
 import { useActiveNewTask } from "../../state/active-new-task";
 import { ThreadUndoNotice } from "../home/ThreadUndoNotice";
 import { useAndroidControlSizing } from "../../components/ui/useAndroidControlSizing";
-import {
-  pickableProjectGroups,
-  resolveScratchProjectScopeKey,
-} from "@t3tools/client-runtime/state/project-grouping";
+import { resolveScratchProjectScopeKey } from "@t3tools/client-runtime/state/project-grouping";
 import {
   useAppearancePreferences,
   useAndroidFloatingTabs,
@@ -28,7 +26,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { AppText as Text } from "../../components/ui/AppText";
 import { scopedProjectKey, scopedThreadKey } from "../../lib/scopedEntities";
-import { useProjects, useNavigationThreadShells } from "../../state/entities";
+import { useNavigationThreadShells } from "../../state/entities";
+import { useProjectPickerScopes } from "../../state/project-visibility";
 import { useThreadSearch } from "../../state/queries";
 import { useThreadListV2ShelfPreferences } from "./use-thread-list-v2-shelf-preferences";
 import { useThreadListNow } from "./use-thread-list-now";
@@ -122,7 +121,7 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
 
   const insets = useSafeAreaInsets();
   const { fabClearance, fabSize } = useAndroidControlSizing();
-  const projects = useProjects();
+  const projects = useVisibleProjects();
   const threads = useNavigationThreadShells();
   const { environments: workspaceEnvironments, state: catalogState } = useWorkspaceState();
   const { savedConnectionsById } = useSavedRemoteConnections();
@@ -188,7 +187,8 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
       }),
     [projects, options.selectedEnvironmentId, options.projectGroupingMode],
   );
-  const projectFilterOptions = pickableProjectGroups(projectScopes).map((scope) => ({
+  const pickerScopes = useProjectPickerScopes(projectScopes);
+  const projectFilterOptions = pickerScopes.map((scope) => ({
     key: scope.key,
     label: scope.title,
   }));
@@ -209,7 +209,7 @@ function ThreadNavigationSidebarPane(props: ThreadNavigationSidebarProps) {
   );
   // An archived project's filter reads as all projects, matching the filter menu.
   const selectedProjectScope =
-    pickableProjectGroups(projectScopes).find((scope) => scope.key === resolvedProjectKey) ?? null;
+    pickerScopes.find((scope) => scope.key === resolvedProjectKey) ?? null;
   const threadSearch = useThreadSearch(
     searchEnvironmentIds,
     props.searchQuery,

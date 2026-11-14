@@ -9,6 +9,7 @@ export function brandFocusFireHtml(
   width: number,
   height: number,
   mode: "burst" | "continuous" = "burst",
+  cornerRadius = 12,
 ): string {
   return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
@@ -25,7 +26,7 @@ export function brandFocusFireHtml(
 
 const DURATION_SECONDS = 1.4;
 const CONTINUOUS = ${mode === "continuous"};
-const CARD_RADIUS = 12;
+const CARD_RADIUS = ${cornerRadius};
 /** One heat cell covers this many CSS pixels; drawing it larger smooths it. */
 const CELL_SIZE = 1.5;
 /** How far the flames reach from the border, in CSS pixels. */

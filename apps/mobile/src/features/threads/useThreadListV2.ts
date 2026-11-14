@@ -3,6 +3,8 @@ import type { EnvironmentId } from "@t3tools/contracts";
 import { useMemo, useSyncExternalStore } from "react";
 
 import { scopedProjectKey } from "../../lib/scopedEntities";
+import { useHiddenProjectKeys, useProjectPickerOrder } from "../../state/project-visibility";
+import { orderProjectScopes } from "../../state/project-visibility.logic";
 import { useOlderSettledShelf, useOlderSettledShelfGrowth } from "../../state/olderSettledShelf";
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import {
@@ -77,7 +79,35 @@ export function useThreadListV2(input: {
   readonly prioritizeFollowUp?: boolean;
   readonly projectGroups?: Parameters<typeof groupThreadListV2ItemsByProject>[1];
 }) {
-  const { threads } = input;
+  const hiddenProjectKeys = useHiddenProjectKeys();
+  const projectOrder = useProjectPickerOrder();
+  const projectGroups = useMemo(
+    () => orderProjectScopes(input.projectGroups ?? [], projectOrder),
+    [input.projectGroups, projectOrder],
+  );
+  const threads = useMemo(
+    () =>
+      hiddenProjectKeys.size === 0
+        ? input.threads
+        : input.threads.filter(
+            (thread) =>
+              !hiddenProjectKeys.has(scopedProjectKey(thread.environmentId, thread.projectId)),
+          ),
+    [input.threads, hiddenProjectKeys],
+  );
+  const visibleProjectRefs = useMemo(
+    () =>
+      hiddenProjectKeys.size === 0
+        ? input.projectRefs
+        : (
+            input.projectRefs ??
+            input.projectGroups?.flatMap((group) => group.projectRefs) ??
+            []
+          ).filter(
+            (ref) => !hiddenProjectKeys.has(scopedProjectKey(ref.environmentId, ref.projectId)),
+          ),
+    [input.projectRefs, input.projectGroups, hiddenProjectKeys],
+  );
   const effectiveAge = input.hot ? "all" : input.age;
   const ageFiltered = effectiveAge !== undefined && effectiveAge !== "all";
   const groupByProject =
@@ -161,10 +191,10 @@ export function useThreadListV2(input: {
     () =>
       olderSettledScopes({
         environmentId: input.environmentId,
-        projectRefs: input.projectRefs,
+        projectRefs: visibleProjectRefs,
         settlementEnvironmentIds: input.settlementEnvironmentIds,
       }),
-    [input.environmentId, input.projectRefs, input.settlementEnvironmentIds],
+    [input.environmentId, visibleProjectRefs, input.settlementEnvironmentIds],
   );
   // HOT keeps recently read threads; re-render when the next one expires.
   const minuteMs = useNowMinuteMs();
@@ -276,6 +306,9 @@ export function useThreadListV2(input: {
     const searchQuery = input.searchQuery.trim().toLocaleLowerCase();
     return input.pendingTasks.filter(
       (pendingTask) =>
+        !hiddenProjectKeys.has(
+          scopedProjectKey(pendingTask.environmentId, pendingTask.projectId),
+        ) &&
         (input.environmentId === null || pendingTask.environmentId === input.environmentId) &&
         (ageFilter.cutoff === null ||
           (ageFilter.basis === "conversation_activity" &&
@@ -287,6 +320,7 @@ export function useThreadListV2(input: {
         (searchQuery.length === 0 || pendingTask.title.toLocaleLowerCase().includes(searchQuery)),
     );
   }, [
+    hiddenProjectKeys,
     input.projectRefs,
     input.searchQuery,
     input.pendingTasks,
@@ -336,8 +370,8 @@ export function useThreadListV2(input: {
       return [
         ...groupThreadListV2ItemsByProject(
           settledIndex < 0 ? orderedItems : orderedItems.slice(0, settledIndex),
-          input.projectGroups ?? [],
-          input.prioritizeFollowUp,
+          projectGroups,
+          input.prioritizeFollowUp || projectOrder.length > 0,
         ),
         ...(settledIndex < 0 ? [] : orderedItems.slice(settledIndex)),
       ];
@@ -350,7 +384,14 @@ export function useThreadListV2(input: {
             item.type === "v2-settled-shelf",
         )
       : orderedItems;
-  }, [input.prioritizeFollowUp, ageFiltered, groupByProject, ungroupedItems, input.projectGroups]);
+  }, [
+    input.prioritizeFollowUp,
+    ageFiltered,
+    groupByProject,
+    ungroupedItems,
+    projectGroups,
+    projectOrder,
+  ]);
   return {
     layout,
     items,

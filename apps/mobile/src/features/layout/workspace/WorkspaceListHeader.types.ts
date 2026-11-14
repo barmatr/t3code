@@ -18,8 +18,9 @@ export interface WorkspaceListHeaderProps {
   };
   /** T4: the tab this list fills; the Agents list reuses the second slot. Defaults to threads. */
   readonly workspaceTab?: "threads" | "pullRequests" | undefined;
-  /** T4: hot keeps the brand fire burning while the list is shown. */
+  /** T4: hot filter state for the header control. */
   readonly hot?: boolean | undefined;
+  readonly onHotChange?: ((hot: boolean) => void) | undefined;
   /** iOS: a settings button. Android reaches Settings from the workspace navigation. */
   readonly onOpenSettings?: () => void;
   /**

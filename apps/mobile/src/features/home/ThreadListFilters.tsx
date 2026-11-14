@@ -1,3 +1,5 @@
+import { BrandForegroundFire } from "../../components/BrandForegroundFire";
+import { GlassSurface } from "../../components/ui/GlassSurface";
 import { Pressable, ScrollView, View } from "react-native";
 import { AppText as Text } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";
@@ -22,7 +24,6 @@ export function ThreadListFilters(props: {
   readonly selectedProjectKey: string | null;
   readonly selectedAge: ThreadAge;
   readonly hot?: boolean | undefined;
-  readonly onHotChange?: ((hot: boolean) => void) | undefined;
   readonly onEnvironmentChange: (environmentId: EnvironmentId | null) => void;
   readonly onProjectChange: (projectKey: string | null) => void;
   readonly onAgeChange: (age: ThreadAge) => void;
@@ -136,11 +137,6 @@ export function ThreadListFilters(props: {
           </Pressable>
         ) : null}
       </ScrollView>
-      {props.onHotChange ? (
-        <View className="pl-1 pr-4 pb-2">
-          <HotFilterButton hot={props.hot ?? false} onChange={props.onHotChange} />
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -150,27 +146,34 @@ export function HotFilterButton(props: {
   readonly onChange: (hot: boolean) => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel="Hot conversations"
-      accessibilityHint="Shows actions, unread replies and agents at work, at any age"
-      accessibilityState={{ selected: props.hot }}
-      onPress={() => props.onChange(!props.hot)}
-      className={cn(
-        "h-11 w-11 shrink-0 rounded-full items-center justify-center border",
-        props.hot ? "bg-primary border-primary" : "bg-subtle border-border",
-      )}
-      style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
-    >
-      <Text
-        maxFontSizeMultiplier={1.4}
-        className={cn(
-          "text-xs font-t3-bold",
-          props.hot ? "text-primary-foreground" : "text-foreground-muted",
-        )}
-      >
-        hot
-      </Text>
-    </Pressable>
+    <View style={{ width: 44, height: 44, overflow: "visible" }}>
+      <GlassSurface chrome="none" style={{ width: 44, height: 44, borderRadius: 22 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Hot conversations"
+          accessibilityHint="Shows actions, unread replies and agents at work, at any age"
+          accessibilityState={{ selected: props.hot }}
+          onPress={() => props.onChange(!props.hot)}
+          className={cn(
+            "h-full w-full items-center justify-center rounded-full",
+            props.hot && "bg-primary",
+          )}
+          style={({ pressed }) => ({ opacity: pressed ? 0.65 : 1 })}
+        >
+          <Text
+            maxFontSizeMultiplier={1.4}
+            className={cn(
+              "text-xs font-t3-bold",
+              props.hot ? "text-primary-foreground" : "text-foreground",
+            )}
+          >
+            hot
+          </Text>
+        </Pressable>
+      </GlassSurface>
+      {props.hot ? (
+        <BrandForegroundFire width={44} height={44} continuous cornerRadius={22} />
+      ) : null}
+    </View>
   );
 }

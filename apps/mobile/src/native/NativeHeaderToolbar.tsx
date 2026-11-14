@@ -141,7 +141,11 @@ function convertToolbarChild(
 
   const typeName = elementTypeName(child);
   if (typeName === "NativeHeaderToolbarCustom" && isValidElement(child.props.children)) {
-    return { type: "custom", element: child.props.children };
+    return {
+      type: "custom",
+      element: child.props.children,
+      hidesSharedBackground: child.props.hidesSharedBackground === true,
+    };
   }
   if (typeName === "NativeHeaderToolbarSearchBarSlot") {
     return { type: "searchBarPlacement" };
@@ -335,7 +339,10 @@ function NativeHeaderToolbarMenuAction(_props: {
 }
 NativeHeaderToolbarMenuAction.displayName = "NativeHeaderToolbarMenuAction";
 
-function NativeHeaderToolbarCustom(_props: { readonly children: ReactElement }) {
+function NativeHeaderToolbarCustom(_props: {
+  readonly children: ReactElement;
+  readonly hidesSharedBackground?: boolean;
+}) {
   return null;
 }
 NativeHeaderToolbarCustom.displayName = "NativeHeaderToolbarCustom";

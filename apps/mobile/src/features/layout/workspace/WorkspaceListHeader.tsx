@@ -1,3 +1,4 @@
+import { HotFilterButton } from "../../home/ThreadListFilters";
 import { useRef } from "react";
 import type { SearchBarCommands } from "react-native-screens";
 
@@ -42,12 +43,18 @@ function SidebarColumnHeader(
     onOpenSettings: props.onOpenSettings,
   });
 
+  if (props.onHotChange)
+    items.push({
+      type: "custom",
+      hidesSharedBackground: true,
+      element: <HotFilterButton hot={props.hot ?? false} onChange={props.onHotChange} />,
+    });
+
   return (
     <NativeStackScreenOptions
       optionsVersion={[items, sidebar.width, props.hot]}
       options={{
         ...getConnectionAwareBrandHeaderOptions({
-          continuousFire: props.hot,
           headerWidth: sidebar.width,
           trailingItemCount: items.length,
           onOpenEnvironments: props.onOpenEnvironments,

@@ -445,8 +445,15 @@ it.each(["1h", "1d"] as const)(
       );
     const initialShelf = shelf(false);
     const loadedShelf = shelf(true);
+    const emptyShelf = Atom.make<ReadonlyMap<EnvironmentId, OlderSettledShelfEnvironment>>(
+      new Map(),
+    );
     vi.mocked(olderSettledThreads.shelfAtom).mockImplementation((scopes) =>
-      scopes.some(({ pages }) => pages > 0) ? loadedShelf : initialShelf,
+      scopes.length === 0
+        ? emptyShelf
+        : scopes.some(({ pages }) => pages > 0)
+          ? loadedShelf
+          : initialShelf,
     );
     const row = (id: string, recent: boolean, olderPage = false) =>
       presentThreadShell(
@@ -577,6 +584,39 @@ it.each(["1h", "1d"] as const)(
     expect(current!.items.map((item) => item.type)).toEqual(["v2-settled-shelf", "v2-thread"]);
     expect(current!.items[0]).toMatchObject({ count: 1, expanded: true });
     expect(current!.layout.items.map(({ thread }) => thread.id)).toEqual(["recent"]);
+    await act(async () =>
+      registry.set(
+        testPreferencesAtom,
+        AsyncResult.success({
+          threadAgeBasis: "conversation_activity",
+          hiddenProjectKeys: [`${environmentId}:${projectId}`],
+        }),
+      ),
+    );
+    expect(current!.layout.items).toEqual([]);
+    expect(current!.layout.settledCount).toBe(0);
+    await act(async () =>
+      root.render(
+        <RegistryContext value={registry}>
+          <Probe input={{ ...input, age: "all" }} />
+        </RegistryContext>,
+      ),
+    );
+    expect(current!.layout.items.map(({ thread }) => thread.id)).toEqual(["recent-in-older-page"]);
+    expect(current!.layout.settledCount).toBe(1);
+    await act(async () =>
+      registry.set(
+        testPreferencesAtom,
+        AsyncResult.success({
+          hiddenProjectKeys: [
+            `${environmentId}:${projectId}`,
+            `${environmentId}:${otherProjectId}`,
+          ],
+        }),
+      ),
+    );
+    expect(current!.layout.items).toEqual([]);
+    expect(current!.layout.settledCount).toBe(0);
   },
 );
 
@@ -617,7 +657,7 @@ it("hot ignores age, preserves project/environment/search, and reacts to real Do
   const approval = { ...row("approval"), hasPendingApprovals: true };
   const unread = {
     ...row("unread"),
-    settledOverride: "settled" as const,
+    settledOverride: "active" as const,
     lastVisitedAt: "2024-01-01T00:00:00.000Z",
     latestRun: {
       runId: RunId.make("old-done"),
@@ -743,6 +783,39 @@ it("hot ignores age, preserves project/environment/search, and reacts to real Do
   expect(current!.ageFiltered).toBe(false);
   expect(current!.projectGrouped).toBe(true);
   expect(current!.items.filter((item) => item.type === "v2-project-header")).toHaveLength(3);
+  await act(async () =>
+    registry.set(
+      testPreferencesAtom,
+      AsyncResult.success({
+        projectPickerOrder: [
+          `${remote}:${projectId}`,
+          `${env}:${otherProject}`,
+          `${env}:${projectId}`,
+        ],
+      }),
+    ),
+  );
+  expect(
+    current!.items.filter((item) => item.type === "v2-project-header").map((item) => item.title),
+  ).toEqual(["Remote", "Other", "Local"]);
+  await act(async () =>
+    registry.set(
+      testPreferencesAtom,
+      AsyncResult.success({
+        hiddenProjectKeys: [`${env}:${projectId}`],
+      }),
+    ),
+  );
+  expect(new Set(ids())).toEqual(new Set(["waiting", "other-project"]));
+  await render({ ...hot, searchQuery: "unread", searchMatches: new Map([[`${env}:unread`, {}]]) });
+  expect(ids()).toEqual([]);
+  await render(hot);
+  await act(async () =>
+    registry.set(testPreferencesAtom, AsyncResult.success({ hiddenProjectKeys: [] })),
+  );
+  expect(new Set(ids())).toEqual(
+    new Set(["approval", "unread", "waiting", "other-project", "local-draft", "local-queued"]),
+  );
   await render({ ...hot, queuedThreadKeys: new Set([`${env}:empty`]) });
   expect(ids()).toContain("empty");
   await render(hot);

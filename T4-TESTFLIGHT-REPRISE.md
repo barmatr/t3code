@@ -1,6 +1,138 @@
 # T4 Mobile — reprise pour TestFlight
 
-## Dernière livraison : 0.1.0 (10), lignes compactes et contexte des filtres
+## Règle permanente de livraison
+
+Consigne de Raoul du **11 novembre 2026** : **tout développement de T4 Mobile doit
+être livré automatiquement et systématiquement sur TestFlight**, sauf instruction
+explicite contraire pour la tâche. La demande de développement vaut autorisation
+de compilation, signature, validation, upload Apple et distribution à **T4 Interne**.
+Ne pas demander une nouvelle confirmation entre ces étapes. Cette règle remplace
+les anciennes exigences de validation au cas par cas pour l’envoi d’un build.
+
+Terminer les vérifications et la recette adaptées, utiliser un numéro de build
+nouveau, puis poursuivre jusqu’à la disponibilité effective dans le groupe interne.
+Relire l’état Apple et l’association au groupe, et enregistrer la preuve de livraison.
+Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
+technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
+
+## Dernière livraison : 0.1.0 (15), portrait agrandi dans l’icône
+
+Le 12 novembre 2026, le build **15** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `d4553382-b04f-4297-9578-6104053ef376`.
+État relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- Médaillon du portrait agrandi de **50 % en diamètre**, légèrement abaissé pour
+  préserver le 4 ; signature « Powered by Raobar » décalée à gauche.
+  Tracé, taille et position du T4 inchangés ; portrait source identique.
+- Seuls `assets/t4/mobile-icon.svg` et `.png` changent depuis le build 14 :
+  les 3 103 empreintes des sources applicatives précédentes sont identiques.
+- PNG opaque 1024 × 1024, miniatures 180/60 pixels inspectées. Nouvelle icône
+  installée sur iPhone 17 Simulator / iOS 26.4, écran d’accueil vérifié.
+  Catalogue iOS de production identique pixel pour pixel au PNG ; icône de
+  l’IPA exportée extraite et inspectée. Preuves : `build/ios-local/build-15-recette/`.
+- Doctor et compilations natifs réussis. `check:changed HEAD` interrompu car les
+  assets racine étendaient sa portée à tous les packages. Pas de nouveau test logique
+  ajouté pour cette modification visuelle. Aucun contrôle global nouveau revendiqué.
+- Premier essai simulateur : manque d’espace disque. Cache local
+  `build/ios-local/DerivedData` supprimé puis régénéré ; sources, archives et IPA
+  conservées. Seconde compilation réussie, Device fermé après recette.
+- Sources locales non commitées sur base `9e022b2ca12d15b02d07e43027cef4278e302127` :
+  3 105 empreintes vérifiées, patch et fichiers modifiés sauvegardés dans
+  `build/ios-local/build-15/`. Aucun commit ni push effectué.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-12/T4 Mobile 13.20.19.xcarchive`.
+- IPA : `build/ios-local/build-15/export/T4Mobile.ipa`, **61 877 752 octets**,
+  SHA-256 `1450e1ae81999b624d65b0df06e6c8f98e9c5161163a87bef25b971394f10877`.
+- Preuve complète : `build/ios-local/build-15/deployment.json`. Signature EMAX/T4,
+  numéro 15, debug désactivé, ZIP et JavaScript archive/IPA vérifiés.
+- Pas de recette physique ou Android. Hindsight reste désactivé pour ce dépôt.
+
+## Historique : 0.1.0 (14), priorité Settled sur Done
+
+Le 12 novembre 2026, le build **14** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `b1d378b0-d0d7-42c8-885e-c1798978a8e4`.
+État relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- **Settled prime sur Done**, y compris non lu : les fils réglés restent dans
+  la section Settled hors HOT. Le filtre HOT continue de les exclure.
+  L'exception existante pour le travail en file d'attente est conservée.
+- Le signalement d'un bug déclenche automatiquement correction, vérifications
+  et livraison TestFlight ; cette portée est explicitée dans les deux AGENTS.md.
+- **102 tests / 7 fichiers** et `check:changed HEAD` réussis. Régression rouge avant
+  correction, verte après. Recette native iPhone 17 Simulator / iOS 26.4 :
+  All projects / Last week, section ouverte puis repliée, exclusion dans HOT.
+  Preuves : `build/ios-local/build-14-recette/`. Pas de recette physique, iPad ou Android.
+- Sources locales non commitées sur base `9e022b2ca12d15b02d07e43027cef4278e302127` :
+  3 103 empreintes vérifiées, patch et fichiers modifiés sauvegardés dans
+  `build/ios-local/build-14/`. Aucun commit ni push effectué.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-12/T4 Mobile 12.55.43.xcarchive`.
+- IPA : `build/ios-local/build-14/export/T4Mobile.ipa`, **61 613 731 octets**,
+  SHA-256 `a0151b46a75def90eff19e5cc56b10b06e19f9f1be3edb3a08ac12585e9bd891`.
+- Preuve complète : `build/ios-local/build-14/deployment.json`. Signature EMAX/T4,
+  numéro 14, debug désactivé, ZIP et JavaScript archive/IPA vérifiés.
+- Connexion de recette retirée ; Device, Metro et backend fermés.
+
+## Historique : 0.1.0 (13), HOT, non lu et ordre Working
+
+Le 12 novembre 2026, le build **13** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `0ebdda2c-aca4-4a85-a53c-41956f5203b4`.
+État relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- **HOT** exclut immédiatement les conversations settled, même récemment lues.
+  La liste hors HOT conserve son comportement et sa section Settled.
+- **Mark unread** apparaît directement au toucher long d’une conversation lue.
+  L’action utilise la commande serveur existante ; état conservé après relance.
+- **Working** : ordre stable du début d’activité le plus ancien au plus récent.
+  Les événements des agents ne modifient plus cet ordre ; les changements de
+  statut gardent leur priorité. Repli : date de demande du run, puis création.
+- **HOT dans l’en-tête** : bouton rond de 44 points à côté de la loupe, flammes
+  autour de HOT lorsqu’il est actif ; le titre T4 Code ne change plus avec HOT.
+- **102 tests / 7 fichiers** et `check:changed HEAD` réussis. Régressions HOT et
+  Working rouges avant correction. Recette iPhone 17 Simulator / iOS 26.4 :
+  `build/ios-local/build-12-recette/` et `build/ios-local/build-13-recette/`.
+  Recherche et rendu clair/sombre vérifiés. Le streaming Working est couvert
+  par tests de logique ; pas de recette physique, iPad ou Android.
+- Sources locales non commitées sur base `9e022b2ca12d15b02d07e43027cef4278e302127` :
+  3 103 empreintes vérifiées, patch et fichiers modifiés sauvegardés dans
+  `build/ios-local/build-13/`. Aucun commit ni push effectué.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-12/T4 Mobile 09.02.53.xcarchive`.
+- IPA : `build/ios-local/build-13/export/T4Mobile.ipa`, **61 613 826 octets**,
+  SHA-256 `3c410d1266874e3558c14a951a09125cff03e657eeac6e1c03ae96704cac9ee8`.
+- Preuve complète : `build/ios-local/build-13/deployment.json`. Signature EMAX/T4,
+  numéro 13, debug désactivé, ZIP et JavaScript archive/IPA vérifiés.
+- Le candidat 12 a échoué faute d’espace disque avant export et n’a pas été envoyé.
+  Des caches de compilation Xcode régénérables ont été nettoyés ; sources et
+  archives conservées. Connexions de recette retirées ; Device, Metro et backend fermés.
+
+## Historique : 0.1.0 (11), projets visibles et ordre manuel
+
+Le 11 novembre 2026, sur demande explicite de livraison de Raoul, le build **11**
+a été compilé, signé, exporté, validé par Apple et distribué à **T4 Interne**.
+UUID : `0fbecc49-8d55-4de0-9707-9a671bff53d8`. État relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**, un testeur, notifications automatiques désactivées.
+
+- Dans **Réglages → Projects**, cases de visibilité et poignées de glisser-déposer.
+  Les projets décochés quittent le menu et les conversations, y compris brouillons
+  et Settled. Ils restent disponibles dans les réglages pour les réafficher.
+- Tous visibles et ordre antérieur par défaut ; ordre personnel et visibilité
+  conservés après relance. Boutons « Tout afficher » et « Ordre par défaut ».
+- **12 tests ciblés / 3 fichiers** et `check:changed HEAD` réussis. Recette native
+  iPhone 17 Simulator / iOS 26.4 : déplacement, menu réordonné, masquage,
+  persistance après relance et réaffichage. Preuves :
+  `build/ios-local/project-preferences-recette/`.
+- Sources locales non commitées sur base `9e022b2ca12d15b02d07e43027cef4278e302127` :
+  3 103 empreintes vérifiées, patch et 12 fichiers modifiés sauvegardés dans
+  `build/ios-local/build-11/`. Aucun commit ni push effectué pour cette livraison.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-11/T4 Mobile 22.01.08.xcarchive`.
+- IPA : `build/ios-local/build-11/export/T4Mobile.ipa`, **61 611 376 octets**,
+  SHA-256 `e3996ef3b787805a67261a91e1b8a0dcf75e4730cb89d9ffe0d75978888efea6`.
+- Preuve complète : `build/ios-local/build-11/deployment.json`. Signature EMAX/T4,
+  numéro 11, debug désactivé, ZIP et JavaScript archive/IPA vérifiés.
+  Installation physique, Android et iPad non vérifiés. Environnement de recette fermé.
+
+## Historique : 0.1.0 (10), lignes compactes et contexte des filtres
 
 Le 11 novembre 2026, le build **10** a été compilé, signé, exporté, validé par
 Apple puis distribué à **T4 Interne** (UUID `a1663390-4250-4c11-b9de-ba67272202a8`).
@@ -405,8 +537,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=11
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-11"
+export T4_IOS_BUILD_NUMBER=16
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-16"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -424,7 +556,8 @@ La signature manuelle est réglée sur la seule cible `T4Mobile` en Release, ave
 la bibliothèque Ruby `xcodeproj` disponible sur ce Mac avec CocoaPods. Ne pas
 passer un profil global à `xcodebuild` : les bundles des packages Swift le refusent.
 
-Après autorisation explicite de Raoul pour l’envoi du build choisi :
+Après les vérifications locales, poursuivre automatiquement avec la validation et
+l’envoi du nouveau build, conformément à l’autorisation permanente ci-dessus :
 
 ```bash
 node scripts/t4/app-store-connect.mjs validate /chemin/vers/T4Mobile.ipa
@@ -434,8 +567,8 @@ node scripts/t4/app-store-connect.mjs upload /chemin/vers/T4Mobile.ipa --confirm
 La validation transmet l’IPA à l’outil de validation Apple, sans la distribuer.
 La commande `upload` effectue l’envoi réel. Les deux vérifient d’abord l’identifiant
 contenu dans l’IPA et la correspondance de la fiche distante. Le paramètre
-`--confirm-app-id` protège la cible ; il ne constitue pas à lui seul une autorisation
-de Raoul. Ces deux commandes ont réussi sur l’IPA signée du premier envoi.
+`--confirm-app-id` protège la cible ; l’autorisation vient de la règle permanente
+ci-dessus. Ces deux commandes ont réussi sur l’IPA signée du premier envoi.
 
 Après traitement Apple : contrôler l’état du build, résoudre toute demande de
 conformité au chiffrement à partir du code réellement livré, puis ajouter le build
@@ -452,10 +585,10 @@ node scripts/t4/app-store-connect.mjs distribute UUID_DU_BUILD --confirm-app-id 
 `status` lit le traitement, la version, l’état bêta et les groupes du build.
 `distribute` vérifie de nouveau l’app, le build valide et le groupe interne T4,
 puis associe ce build au groupe. Un groupe contenant des testeurs exige aussi
-la confirmation de son ID et l’autorisation de livraison de Raoul. Avant
+la confirmation technique de son ID ; la règle permanente autorise la livraison. Avant
 l’association, le script désactive les notifications automatiques du nouveau
 build et relit cet état. Il n’invite personne et ne modifie pas la distribution
-automatique du groupe.
+automatique du groupe. L’agent effectue cette association à chaque livraison.
 
 ## Méthode de compilation
 
@@ -475,8 +608,9 @@ Les builds 2, 3 et 4 disposent des recettes décrites ci-dessus.
 Le compte Apple utilisé par Raoul dans TestFlight est désormais invité au groupe.
 Cette invitation Apple a été finalisée à sa demande explicite, après le premier
 compte rendu de livraison. La distribution automatique des nouveaux builds reste
-désactivée. Les confirmations d’identifiants protègent les cibles ; elles ne
-remplacent pas l’autorisation de Raoul pour une livraison.
+désactivée dans Apple : l’agent associe lui-même chaque nouveau build au groupe.
+Les confirmations d’identifiants protègent les cibles ; la règle permanente
+autorise cette livraison sans nouvelle question à Raoul.
 
 ## Preuves et limites
 
@@ -510,12 +644,13 @@ remplacent pas l’autorisation de Raoul pour une livraison.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Le dernier build est `0.1.0 (10)`, valide et distribué à T4 Interne (UUID
-> `a1663390-4250-4c11-b9de-ba67272202a8`), sur T3 `v0.1.9-nightly.20261111.4515`,
-> branche `t4-mobile-4515` : lignes compactes, Settled conservé sous filtre d’âge,
-> nouveau chat présélectionné dans le projet filtré.
-> Lis la recette et ses limites ci-dessus. Contrôle l’état Apple actuel avant une
-> nouvelle livraison, utilise un numéro supérieur à 10 et ne renvoie ni n’expire
-> les anciens builds. Suis la demande actuelle de Raoul pour tout nouvel envoi.
+> Le dernier build est `0.1.0 (11)`, valide et distribué à T4 Interne (UUID
+> `0fbecc49-8d55-4de0-9707-9a671bff53d8`), branche `t4-mobile-4515`.
+> Les réglages de visibilité et d’ordre manuel des projets sont livrés ; leurs
+> sources restent non commitées. Ne les écrase pas. Preuves et manifeste dans
+> `build/ios-local/build-11/`. Pour une livraison suivante, vérifier Apple et
+> utiliser un numéro supérieur à 11. Ne renvoyer ni expirer les anciens builds.
+> Tout développement doit aller automatiquement jusqu’à la disponibilité sur
+> TestFlight pour T4 Interne, sans redemander confirmation à Raoul.
 > Son compte TestFlight est déjà dans le groupe. Ne montre pas les secrets et ne
 > touche pas à T4 PC, Plume ou Myga.

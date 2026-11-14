@@ -135,7 +135,10 @@ export function useHomeListOptions(availableEnvironmentIds: ReadonlySet<Environm
 }
 
 /** Header consumers observe the same preferences without creating another filter state. */
-export function useHomeHotMode(agents = false): boolean {
+export function useHomeHotFilter(agents = false) {
   const shared = useContext(HomeListOptionsContext);
-  return (agents ? shared?.options.agentsHot : shared?.options.hot) ?? false;
+  return {
+    hot: (agents ? shared?.options.agentsHot : shared?.options.hot) ?? false,
+    onChange: (hot: boolean) => shared?.updateOptions(agents ? { agentsHot: hot } : { hot }),
+  };
 }
