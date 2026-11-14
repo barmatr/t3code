@@ -15,7 +15,54 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison : 0.1.0 (15), portrait agrandi dans l’icône
+## Dernière livraison : 0.1.0 (16), base Nightly 4682
+
+Le **14 novembre 2026**, le build **16** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `a681a3ba-b4be-4d76-a2b3-777d1b82bfc3`.
+État final relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- Base : `v0.1.10-nightly.20261114.4682`, commit upstream
+  `820f620e3d63cfb03f3587aa2c6844b9c57295bb`.
+- SHA exact compilé : `fd09515d4394dce4e3e51929ab4c6e112315b61c`, branche
+  `t4-mobile-4682`. Les modifications initiales ont été sauvegardées dans le commit
+  `699003a40e`, tag de retour `t4-mobile-before-4682-20261114`, avec patch, ZIP et
+  manifeste dans `build/upgrades/4682-20261114/`. Aucun push ni PR.
+- Conservés : HOT et flammes sur son bouton, priorité Settled et section repliable,
+  lignes compactes, ordre stable Working, Mark unread, filtres d’âge, visibilité et
+  ordre manuel des projets, projet prérempli, onglet Agents, portrait T4,
+  `fr.emaxconseils.t4`, `t4code`, variantes isolées et OTA désactivées.
+  Les conflits ont été adaptés aux nouvelles sources stables de la navigation,
+  à la visibilité amont et à l’horloge serveur. Détail :
+  `build/upgrades/4682-20261114/PERSONNALISATIONS.md`.
+- Nouveautés amont : choix du français vérifié ; bouton œil conservé dans les
+  demandes de secrets ; GitHub seul hébergeur proposé par défaut (dossier local
+  et URL Git restent disponibles). Les traductions amont restent partielles.
+- Compatibilité : configuration, sonde RPC et flux shell décodés par le client 4682
+  avec le runtime Mac **4515** isolé et le serveur distant **0.1.6** en lecture seule.
+  Protocole 2. Aucun serveur réel modifié ou redémarré. Session distante temporaire
+  révoquée. Limites et preuves : `build/upgrades/4682-20261114/COMPATIBILITE.md`.
+- Tests ciblés réussis : 226 tests personnalisés / 15 fichiers, 125 tests mobiles /
+  9 fichiers (ensembles recouvrants), 103 tests compatibilité / 3 fichiers, 4 tests
+  client natif et 61 cas du compilateur React. Typecheck mobile, formatage et lint
+  ciblés réussis. Pas de suite globale. Contrôle natif statique incomplet :
+  SwiftLint, ktlint et detekt absents ; compilation iOS réussie.
+- Recette native iPhone 17 Simulator / iOS 26.4 : appairage, HOT, Settled + Done,
+  non lu, filtres, glisser-déposer et masquage des projets, projet prérempli, français,
+  onglet Agents. Pas d’essai physique, Android, iPad ni d’agents réels en streaming.
+  Rapport et captures : `build/ios-local/build-16-recette/RECETTE.md`.
+- Incident de recette résolu : ancien cache Metro mélangeant Effect 4.1.2/4.1.3.
+  Cache reconstruit, application relancée et appairage réussi avec jeton neuf ;
+  aucune modification de logique nécessaire. Connexion de test retirée, Device,
+  Metro et backend fermés.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-14/T4 Mobile 14.42.32.xcarchive`.
+- IPA : `build/ios-local/build-16/export/T4Mobile.ipa`, **62 576 853 octets**,
+  SHA-256 `8d43d3f2743e32628624a4d35dbf5dfc93f07c9a4b262ce1193360c13b044cab`.
+- Preuve de livraison : `build/ios-local/build-16/deployment.json`. Les 3 204
+  empreintes sources, la signature EMAX, le numéro 16, le debug désactivé, le ZIP,
+  le schéma, OTA et le JavaScript archive/IPA ont été vérifiés.
+
+## Historique : 0.1.0 (15), portrait agrandi dans l’icône
 
 Le 12 novembre 2026, le build **15** a été compilé, signé, validé par Apple et
 distribué à **T4 Interne**. UUID : `d4553382-b04f-4297-9578-6104053ef376`.
@@ -537,8 +584,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=16
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-16"
+export T4_IOS_BUILD_NUMBER=17
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-17"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -620,8 +667,8 @@ autorise cette livraison sans nouvelle question à Raoul.
   depuis les `AGENTS.md` et le README vers cette reprise ont été vérifiés. Ce
   contrôle porte sur ce Mac, avec le même utilisateur, pas sur une autre machine.
 - Authentification REST réussie : l’API retourne **T4 Mobile**, Apple ID
-  `6832960692`, bundle `fr.emaxconseils.t4`, le groupe **T4 Interne** et désormais
-  le build `0.1.0 (6)` valide et distribué en interne (état final ci-dessus).
+  `6832960692`, bundle `fr.emaxconseils.t4`, le groupe **T4 Interne** et le
+  build `0.1.0 (16)` valide et distribué en interne (état final ci-dessus).
 - Authentification CLI réussie avec `xcrun altool --list-apps` filtré sur cet Apple
   ID. Journal local : `build/ios-local/validation/altool-list-apps.log`.
 - `altool --list-providers` refuse l’authentification par clé API dans cette version,
@@ -644,13 +691,14 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Le dernier build est `0.1.0 (11)`, valide et distribué à T4 Interne (UUID
-> `0fbecc49-8d55-4de0-9707-9a671bff53d8`), branche `t4-mobile-4515`.
-> Les réglages de visibilité et d’ordre manuel des projets sont livrés ; leurs
-> sources restent non commitées. Ne les écrase pas. Preuves et manifeste dans
-> `build/ios-local/build-11/`. Pour une livraison suivante, vérifier Apple et
-> utiliser un numéro supérieur à 11. Ne renvoyer ni expirer les anciens builds.
-> Tout développement doit aller automatiquement jusqu’à la disponibilité sur
-> TestFlight pour T4 Interne, sans redemander confirmation à Raoul.
-> Son compte TestFlight est déjà dans le groupe. Ne montre pas les secrets et ne
-> touche pas à T4 PC, Plume ou Myga.
+> Dernier build : `0.1.0 (16)`, valide et distribué à T4 Interne, UUID
+> `a681a3ba-b4be-4d76-a2b3-777d1b82bfc3`. Branche `t4-mobile-4682`, base
+> `v0.1.10-nightly.20261114.4682`, SHA compilé `fd09515d4394dce4e3e51929ab4c6e112315b61c`.
+> Les personnalisations sont conservées et commitées localement ; aucun push ni PR.
+> Point de retour : `t4-mobile-before-4682-20261114`. Preuves dans
+> `build/ios-local/build-16/` et `build/upgrades/4682-20261114/`.
+> Pour une nouvelle livraison, vérifier Apple et prendre un numéro supérieur à 16.
+> Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
+> jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
+> Les serveurs réels n’ont pas été mis à jour. Ne pas montrer les secrets et ne pas
+> toucher à T4 PC, Plume ou Myga.

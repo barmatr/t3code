@@ -7,7 +7,7 @@ partagés. Les noms internes `@t3tools/*` restent compatibles.
 
 ## Identité et fonctionnement
 
-- Application : **T4 Mobile**, icône verte T4, schéma `t4code`.
+- Application : **T4 Mobile**, icône T4 avec portrait, schéma `t4code`.
 - iOS et Android : `fr.emaxconseils.t4`. Dev : suffixe `.dev`, preview : `.preview`.
 - Signature iOS : équipe `emax conseils`, `GY9P9U75F3`.
 - Première version locale : `0.1.0`, build `1` (modifiable avec `T4_IOS_BUILD_NUMBER`).
