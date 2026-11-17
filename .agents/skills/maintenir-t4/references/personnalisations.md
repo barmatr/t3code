@@ -90,6 +90,14 @@ Repères : [threadSettled.ts](../../../../packages/client-runtime/src/state/thre
 
 Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`hotOnly`), [HotFilterButton.tsx](../../../../apps/web/src/components/sidebar/HotFilterButton.tsx), [focusFire.ts](../../../../apps/web/src/components/projectSwitcher/focusFire.ts) (`burnFire`) et [Sidebar.logic.ts](../../../../apps/web/src/components/Sidebar.logic.ts) (`matchesUnreadThreadFilter`, `threadOpenedRecently`).
 
+## Jauge d'usage hebdomadaire
+
+- Demande de Raoul du 17 novembre 2026 : dans le pied de la barre latérale, l'icône **Usage** devient une jauge qui affiche, pour chaque compte de provider qui publie une limite hebdomadaire, l'icône du provider avec la pastille d'initiales de son instance (« EM » pour EMAX), puis « W » et le pourcentage de la semaine déjà consommé, par exemple « W 60% ». Le clic ouvre toujours la page Usage.
+- Sans couleur, par cohérence avec la barre : logos en gris, pastilles sans la couleur d'accent de l'instance. L'infobulle détaille le nom de chaque compte et son pourcentage.
+- La limite retenue est la semaine qui couvre tous les modèles ; une semaine propre à un modèle ne sert qu'à défaut. Une semaine dont la remise à zéro est passée compte 0 % jusqu'à la prochaine lecture. Sans aucune limite hebdomadaire, l'icône Usage d'origine revient.
+
+Repères : [SidebarUsageGauge.tsx](../../../../apps/web/src/components/sidebar/SidebarUsageGauge.tsx) et [sidebarUsageGauge.logic.ts](../../../../apps/web/src/components/sidebar/sidebarUsageGauge.logic.ts), alimentés par `collectLimitAccounts` comme la page Usage.
+
 ## Pièges de construction déjà rencontrés
 
 - **`node-pty`** : jusqu'à la base `3457`, la plage `^1.2.0-beta.15` pouvait résoudre une bêta plus récente que le patch local (`ERR_PNPM_UNUSED_PATCH`). Depuis la base `3754`, upstream fixe cette version dans les `overrides` de [pnpm-workspace.yaml](../../../../pnpm-workspace.yaml) (#23798) ; le correctif T4 a été retiré. Vérifier la cohérence du patch et des overrides si l'erreur réapparaît.
