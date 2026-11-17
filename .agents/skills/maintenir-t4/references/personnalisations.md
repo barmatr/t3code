@@ -92,10 +92,10 @@ Repères : [Sidebar.tsx](../../../../apps/web/src/components/Sidebar.tsx) (`hotO
 
 ## Jauge d'usage hebdomadaire
 
-- Demande de Raoul du 17 novembre 2026 : dans le pied de la barre latérale, l'icône **Usage** devient une jauge qui affiche, pour chaque compte de provider, l'icône du provider avec la pastille d'initiales de son instance (« EM » pour EMAX), puis « W » et le pourcentage de la semaine déjà consommé, par exemple « W 60% ». Le clic ouvre la page Usage.
-- La jauge occupe sa propre ligne, au-dessus de Settings et Pull requests : sur la ligne des icônes, à côté de la pastille de mise à jour, quatre comptes ne tenaient pas.
+- Demande de Raoul du 17 novembre 2026 : dans le pied de la barre latérale, l'icône **Usage** devient une jauge qui affiche, pour chaque compte de provider, l'icône du provider avec la pastille d'initiales de son instance (« EM » pour EMAX), puis le pourcentage de la semaine déjà consommé, par exemple « 60% ». Le clic ouvre la page Usage.
+- La jauge reste sur la ligne de l'engrenage et de l'icône de branche, à la place de l'icône Usage (demande de Raoul du 17 novembre 2026). Une ligne séparée a été essayée puis abandonnée ; c'est pour tenir sur cette ligne avec quatre comptes que la lettre « W » a été retirée.
 - Sans couleur, par cohérence avec la barre : logos en gris, pastilles sans la couleur d'accent de l'instance. L'infobulle nomme chaque compte par provider et instance (« Claude EMAX »).
-- La limite retenue est la semaine qui couvre tous les modèles ; une semaine propre à un modèle ne sert qu'à défaut. Une semaine dont la remise à zéro est passée compte 0 % jusqu'à la prochaine lecture. Un compte dont le serveur n'a pas pu lire les limites (`probeFailed`) garde sa pastille avec « W – », pour qu'aucun compte ne disparaisse sans explication. Sans aucune pastille, l'icône Usage d'origine revient dans la ligne des icônes.
+- La limite retenue est la semaine qui couvre tous les modèles ; une semaine propre à un modèle ne sert qu'à défaut. Une semaine dont la remise à zéro est passée compte 0 % jusqu'à la prochaine lecture. Un compte dont le serveur n'a pas pu lire les limites (`probeFailed`) garde sa pastille avec « – », pour qu'aucun compte ne disparaisse sans explication. Sans aucune pastille, l'icône Usage d'origine revient.
 
 Repères : [SidebarUsageGauge.tsx](../../../../apps/web/src/components/sidebar/SidebarUsageGauge.tsx) et [sidebarUsageGauge.logic.ts](../../../../apps/web/src/components/sidebar/sidebarUsageGauge.logic.ts), alimentés par `collectLimitAccounts` comme la page Usage.
 
