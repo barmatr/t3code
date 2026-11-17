@@ -1,4 +1,4 @@
-import { ArrowLeftIcon, ArrowRightIcon, SettingsIcon } from "lucide-react";
+import { ArrowLeftIcon, ArrowRightIcon, ChartNoAxesColumnIcon, SettingsIcon } from "lucide-react";
 import type { ReactNode } from "react";
 import { memo } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
@@ -35,7 +35,7 @@ import { Tooltip, TooltipPopup, TooltipTrigger } from "../ui/tooltip";
 import { readPullRequestListPreferences } from "../pullRequest/pullRequestListPreferences";
 import { isSidebarUtilityPage, useNavigateToMainApp } from "./mainAppLocation";
 import { SidebarThreadUndoNotice } from "./SidebarThreadUndoNotice";
-import { SidebarUsageGauge } from "./SidebarUsageGauge";
+import { SidebarUsageGauge, useWeeklyUsageChips } from "./SidebarUsageGauge";
 import { SidebarProviderUpdatePill } from "./SidebarProviderUpdatePill";
 import { SidebarUpdateArchitectureWarning, SidebarUpdatePill } from "./SidebarUpdatePill";
 import { PullRequestGlyph } from "~/components/pullRequest/pullRequestIcons";
@@ -227,6 +227,7 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
     select: (location) => isSidebarUtilityPage(location.pathname),
   });
   const pullRequestsSupported = usePullRequestsSupported();
+  const hasUsageGauge = useWeeklyUsageChips().length > 0;
   const closeMobileSidebar = () => {
     if (isMobile) {
       setOpenMobile(false);
@@ -279,7 +280,13 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
               onClick={handlePullRequestsClick}
             />
           ) : null}
-          <SidebarUsageGauge onClick={handleUsageClick} />
+          {hasUsageGauge ? null : (
+            <SidebarUtilityItem
+              icon={<ChartNoAxesColumnIcon />}
+              label="Usage"
+              onClick={handleUsageClick}
+            />
+          )}
         </>
       )}
       <SidebarThreadUndoNotice />
@@ -288,11 +295,26 @@ const SidebarUtilityMenu = memo(function SidebarUtilityMenu() {
   );
 });
 
+// T4: the weekly usage gauge gets its own row so every account fits beside the update pill.
+function SidebarUsageGaugeRow() {
+  const navigate = useNavigate();
+  const { isMobile, setOpenMobile } = useSidebar();
+  return (
+    <SidebarUsageGauge
+      onClick={() => {
+        if (isMobile) setOpenMobile(false);
+        void navigate({ to: "/usage" });
+      }}
+    />
+  );
+}
+
 export const SidebarChromeFooter = memo(function SidebarChromeFooter() {
   return (
     <SidebarFooter>
       <SidebarProviderUpdatePill />
       <SidebarUpdateArchitectureWarning />
+      <SidebarUsageGaugeRow />
       <SidebarUtilityMenu />
     </SidebarFooter>
   );
