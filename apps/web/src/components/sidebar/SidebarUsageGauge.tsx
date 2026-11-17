@@ -58,9 +58,9 @@ export const SidebarUsageGauge = memo(function SidebarUsageGauge({
               aria-label={`Usage: ${named.map((chip) => `${chip.name} ${chip.usedPercent}% of the week used`).join(", ")}`}
               onClick={onClick}
             >
-              <span className="flex min-w-0 items-center gap-2.5 overflow-hidden">
+              <span className="flex min-w-0 items-center gap-1.5 overflow-hidden">
                 {named.map((chip) => (
-                  <span key={chip.key} className="inline-flex shrink-0 items-center gap-1">
+                  <span key={chip.key} className="inline-flex shrink-0 items-center gap-0.5">
                     <ProviderInstanceIcon
                       driverKind={chip.account.driver}
                       displayName={chip.name}
