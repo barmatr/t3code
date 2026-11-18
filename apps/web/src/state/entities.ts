@@ -9,6 +9,7 @@ import type {
 } from "@t3tools/client-runtime/state/shell";
 import {
   EMPTY_THREAD_HISTORY_META,
+  isShownUnderParent,
   type EnvironmentThreadStatus,
   type ThreadHistoryMeta,
 } from "@t3tools/client-runtime/state/threads";
@@ -383,6 +384,21 @@ export function readEnvironmentThreadRefs(
 
 export function readThreadShells(): ReadonlyArray<EnvironmentThreadShell> {
   return appAtomRegistry.get(environmentThreadShells.threadShellsAtom);
+}
+
+/** The shells thread lists show: no subagent, side chat or delegated task shown under its parent. */
+export function readListedThreadShells(): ReadonlyArray<EnvironmentThreadShell> {
+  const delegatedUnderParent = appAtomRegistry.get(
+    environmentThreadShells.delegatedUnderParentAtom,
+  );
+  return readThreadShells().filter(
+    (thread) =>
+      !isShownUnderParent(
+        { environmentId: thread.environmentId, threadId: thread.id },
+        thread.lineage,
+        delegatedUnderParent,
+      ),
+  );
 }
 
 function shellParentThreadId(

@@ -19,7 +19,7 @@ vi.mock("../../hooks/useRecentProjectKeys", () => ({ useRecentProjectKeys: () =>
 vi.mock("../../hooks/useThreadRouteTarget", () => ({ useThreadRouteTarget: () => null }));
 vi.mock("../../state/entities", () => ({
   useQuietThreadShell: () => null,
-  readThreadShells: () =>
+  readListedThreadShells: () =>
     [
       // Waiting on another thread or a background task still counts as Working.
       {

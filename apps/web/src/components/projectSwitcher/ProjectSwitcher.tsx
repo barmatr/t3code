@@ -7,7 +7,7 @@ import {
 import { threadWokeAt } from "@t3tools/client-runtime/state/thread-settled";
 import { useNewThreadHandler } from "../../hooks/useHandleNewThread";
 import { useThreadRouteTarget } from "../../hooks/useThreadRouteTarget";
-import { readThreadShells, useQuietThreadShell } from "../../state/entities";
+import { readListedThreadShells, useQuietThreadShell } from "../../state/entities";
 import { useComposerDraftStore } from "../../composerDraftStore";
 import { buildThreadRouteParams } from "../../threadRoutes";
 import {
@@ -71,7 +71,7 @@ const THREAD_COUNT_ROWS = [
 function readThreadCounts(projects: readonly SidebarProjectSnapshot[]) {
   const localLastVisitedAtById = useUiStateStore.getState().threadLastVisitedAtById;
   const now = new Date().toISOString();
-  return countProjectThreads(readThreadShells(), projects, (thread) =>
+  return countProjectThreads(readListedThreadShells(), projects, (thread) =>
     resolveThreadTopStatus(thread, {
       lastVisitedAt: resolveThreadLastVisitedAt(
         thread.lastVisitedAt,
@@ -175,7 +175,7 @@ export function ProjectSwitcher() {
     resetSidebarShelves();
     setOpen(true);
     if (!project) return;
-    const latest = latestProjectThread(readThreadShells(), project.memberProjectRefs);
+    const latest = latestProjectThread(readListedThreadShells(), project.memberProjectRefs);
     const opening = latest
       ? navigate({
           to: "/$environmentId/$threadId",
