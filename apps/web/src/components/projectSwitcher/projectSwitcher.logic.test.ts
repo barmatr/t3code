@@ -154,10 +154,12 @@ describe("thread counts per project", () => {
       thread("done", "elsewhere", "app"),
       { ...thread("input", "local", "app"), archivedAt: "2026-10-26T11:00:00Z" },
       { ...thread("working", "local", "app"), lineage: { relationshipToParent: "subagent" } },
+      { ...thread("done", "local", "app"), settledOverride: "settled" },
+      { ...thread("input", "remote", "app"), settledOverride: "settled" },
     ];
     const counts = countProjectThreads(threads, projects, (t) => statusById[t.id] ?? null);
-    expect(counts.get("grouped")).toEqual({ input: 3, working: 3, done: 1 });
+    expect(counts.get("grouped")).toEqual({ input: 4, working: 3, done: 1 });
     expect(counts.get("quiet")).toEqual({ input: 0, working: 0, done: 0 });
-    expect(sumThreadCounts(counts.values())).toEqual({ input: 3, working: 3, done: 1 });
+    expect(sumThreadCounts(counts.values())).toEqual({ input: 4, working: 3, done: 1 });
   });
 });

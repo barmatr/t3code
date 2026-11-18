@@ -58,6 +58,7 @@ type ProjectThread = {
   archivedAt: string | null;
   deletedAt: string | null;
   lineage: { relationshipToParent: string | null };
+  settledOverride?: string | null;
 };
 
 type ProjectRef = { environmentId: string; projectId: string };
@@ -87,7 +88,8 @@ export function latestProjectThread<T extends ProjectThread>(
 export type ThreadCounts = { input: number; working: number; done: number };
 
 // Grouped as the sidebar rows read: anything waiting on the user, anything still busy, and
-// finished turns not yet opened. Failed, limited and woke threads stay out of the counts.
+// finished turns not yet opened. Failed, limited and woke threads stay out of the counts, and so
+// does Done on a settled thread: settling it already said the user is finished with it.
 const COUNTED_STATUS: Partial<Record<SidebarV2TopStatusKind, keyof ThreadCounts>> = {
   input: "input",
   approval: "input",
@@ -115,6 +117,7 @@ export function countProjectThreads<T extends ProjectThread>(
     if (projectKey === undefined || !isListedThread(thread)) continue;
     const status = topStatusOf(thread);
     const counted = status === null ? undefined : COUNTED_STATUS[status];
+    if (counted === "done" && thread.settledOverride === "settled") continue;
     if (counted !== undefined) counts.get(projectKey)![counted] += 1;
   }
   return counts;
