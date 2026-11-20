@@ -2,12 +2,12 @@ import type { ModelSelection, ProviderDriverKind } from "@t3tools/contracts";
 import {
   buildTraitsTriggerDisplay,
   getPromptControlledTraits,
+  isReasoningControl,
 } from "@t3tools/client-runtime/model-traits";
 import type { ModelOption } from "../lib/modelOptions";
 import { resolveProviderOptionDescriptors } from "../lib/providerOptions";
-import { AppText as Text } from "./ui/AppText";
 import { ComposerInlineControl } from "./ComposerToolbar";
-import { ProviderIcon, ProviderInstanceIcon, providerInstanceNameLabel } from "./ProviderIcon";
+import { ProviderIcon, ProviderInstanceIcon } from "./ProviderIcon";
 
 export function ComposerModelControl(props: {
   readonly modelOption: ModelOption | null;
@@ -18,7 +18,6 @@ export function ComposerModelControl(props: {
   readonly surfaceColor: string;
   readonly disabled?: boolean;
   readonly size?: "regular" | "large";
-  readonly iconOnly?: boolean;
   readonly onPress: () => void;
 }) {
   const descriptors = resolveProviderOptionDescriptors({
@@ -28,7 +27,7 @@ export function ComposerModelControl(props: {
   const promptTraits = getPromptControlledTraits(descriptors, props.prompt);
   const summary = props.provider
     ? buildTraitsTriggerDisplay({
-        descriptors,
+        descriptors: descriptors.filter(isReasoningControl),
         primarySelectDescriptorId: promptTraits.primarySelectDescriptor?.id ?? null,
         ultrathinkPromptControlled: promptTraits.ultrathinkPromptControlled,
         modelSelection: props.selection,
@@ -37,15 +36,8 @@ export function ComposerModelControl(props: {
     : "";
   const badge = props.modelOption?.providerBadge;
   const label = props.modelOption?.label ?? props.selection?.model ?? "Choose model";
-  const providerNameLabel = badge
-    ? providerInstanceNameLabel({
-        provider: props.modelOption?.providerDriver,
-        iconUrl: props.modelOption?.providerIconUrl,
-        displayName: badge.displayName,
-        showBadge: badge.showBadge,
-      })
-    : null;
   const shortLabel = props.modelOption?.shortName ?? label;
+  const compactReasoning = summary.toLowerCase().replace(/\b(?:extra[ -]high|xhigh)\b/g, "extra-h");
   return (
     <ComposerInlineControl
       accessibilityLabel={[
@@ -78,37 +70,13 @@ export function ComposerModelControl(props: {
           />
         )
       }
-      label={providerNameLabel ?? shortLabel}
-      labelEllipsizeMode={providerNameLabel ? "middle" : undefined}
-      iconOnly={props.iconOnly}
-      suffixWidth={providerNameLabel ? 96 : undefined}
-      suffix={
-        providerNameLabel ? (
-          <Text
-            className={
-              props.size === "large"
-                ? "text-sm text-foreground-muted"
-                : "text-xs text-foreground-muted"
-            }
-            numberOfLines={1}
-          >
-            {shortLabel}
-            {summary ? ` · ${summary}` : ""}
-          </Text>
-        ) : summary ? (
-          <Text
-            className={
-              props.size === "large"
-                ? "text-sm text-foreground-muted"
-                : "text-xs text-foreground-muted"
-            }
-            numberOfLines={1}
-          >
-            {summary}
-          </Text>
-        ) : undefined
+      label={shortLabel}
+      subtitle={
+        compactReasoning.length > 10
+          ? `${compactReasoning.slice(0, 9)}…`
+          : compactReasoning || "n/a"
       }
-      maxWidth="100%"
+      maxWidth={150}
       onPress={props.onPress}
     />
   );

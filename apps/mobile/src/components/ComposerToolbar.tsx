@@ -32,6 +32,7 @@ export function ComposerInlineControl(props: {
   readonly icon?: ComponentProps<typeof SymbolView>["name"];
   readonly renderIcon?: (size: number) => ReactNode;
   readonly label: string;
+  readonly subtitle?: string;
   readonly labelEllipsizeMode?: ComponentProps<typeof Text>["ellipsizeMode"];
   readonly suffix?: ReactNode;
   readonly suffixWidth?: number;
@@ -92,7 +93,11 @@ export function ComposerInlineControl(props: {
           >
             <Text
               className={cn(
-                props.size === "large" ? "text-base font-t3-medium" : "text-sm font-t3-medium",
+                props.subtitle
+                  ? "text-xs font-t3-medium"
+                  : props.size === "large"
+                    ? "text-base font-t3-medium"
+                    : "text-sm font-t3-medium",
                 props.emphasized || props.selected ? "text-foreground" : "text-foreground-muted",
               )}
               numberOfLines={1}
@@ -100,6 +105,11 @@ export function ComposerInlineControl(props: {
             >
               {props.label}
             </Text>
+            {props.subtitle ? (
+              <Text className="text-2xs text-foreground-muted" numberOfLines={1}>
+                {props.subtitle}
+              </Text>
+            ) : null}
           </Animated.View>
         )}
         {!props.iconOnly && props.suffix ? (

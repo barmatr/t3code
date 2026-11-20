@@ -309,31 +309,34 @@ export function threadIsHot(thread: EnvironmentThreadShell, queued = false): boo
   return queued || threadFollowUpPriority(thread) < 3;
 }
 
-/** HOT keeps a thread read in the last five minutes, so opening it does not drop it at once. */
-export const HOT_RECENT_READ_MS = 5 * 60_000;
+/** HOT keeps threads opened or active in the last twenty minutes. */
+export const HOT_RECENT_MS = 20 * 60_000;
 
-// `lastVisitedAt` holds the thread's update time at the visit, not the visit
-// itself; the server's open record carries the real opening time (epoch ms).
-function threadOpenedAtMs(thread: Pick<EnvironmentThreadShell, "opens">): number {
-  return thread.opens?.openedAt ?? 0;
+type HotRecentThread = Pick<
+  EnvironmentThreadShell,
+  "opens" | "latestUserMessageAt" | "latestRun" | "updatedAt"
+>;
+
+function threadRecentAtMs(thread: HotRecentThread): number {
+  return Math.max(
+    thread.opens?.openedAt ?? 0,
+    parseTimestampMs(resolveThreadActivityTimestamp(thread) ?? ""),
+  );
 }
 
-export function threadReadSince(
-  thread: Pick<EnvironmentThreadShell, "opens">,
-  sinceMs: number,
-): boolean {
-  return threadOpenedAtMs(thread) > sinceMs;
+export function threadRecentlyActiveSince(thread: HotRecentThread, sinceMs: number): boolean {
+  return threadRecentAtMs(thread) > sinceMs;
 }
 
-/** When the next recently read thread leaves HOT, or null when none is pending. */
-export function nextHotRecentReadExpiry(
-  threads: ReadonlyArray<Pick<EnvironmentThreadShell, "opens">>,
+/** When the next thread's HOT recency expires, or null when none is pending. */
+export function nextHotRecentExpiry(
+  threads: ReadonlyArray<HotRecentThread>,
   nowMs: number,
 ): number | null {
   let next: number | null = null;
   for (const thread of threads) {
-    const openedAt = threadOpenedAtMs(thread);
-    const expiresAt = openedAt > 0 ? openedAt + HOT_RECENT_READ_MS : Number.NaN;
+    const recentAt = threadRecentAtMs(thread);
+    const expiresAt = recentAt > 0 ? recentAt + HOT_RECENT_MS : Number.NaN;
     if (Number.isFinite(expiresAt) && expiresAt > nowMs && (next === null || expiresAt < next))
       next = expiresAt;
   }
@@ -855,8 +858,8 @@ function sortSettledThreadsReusingLast(
 export function buildThreadListV2Items(input: {
   readonly prioritizeFollowUp?: boolean;
   readonly hot?: boolean;
-  /** In HOT, also keep threads read after this instant (epoch ms). */
-  readonly hotReadSinceMs?: number;
+  /** In HOT, also keep threads opened or active after this instant (epoch ms). */
+  readonly hotRecentSinceMs?: number;
   readonly pendingOrder?: PendingThreadOrder | null;
   readonly threads: ReadonlyArray<EnvironmentThreadShell>;
   readonly environmentId: EnvironmentId | null;
@@ -946,7 +949,8 @@ export function buildThreadListV2Items(input: {
         return (
           !input.hot ||
           threadIsHot(thread, queuedThreadKeys?.has(`${thread.environmentId}:${thread.id}`)) ||
-          (input.hotReadSinceMs !== undefined && threadReadSince(thread, input.hotReadSinceMs))
+          (input.hotRecentSinceMs !== undefined &&
+            threadRecentlyActiveSince(thread, input.hotRecentSinceMs))
         );
       })
       .sort((left, right) => compareThreadsByFollowUp(left, right, queuedThreadKeys));

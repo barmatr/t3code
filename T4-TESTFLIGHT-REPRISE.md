@@ -15,7 +15,166 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison : 0.1.0 (16), base Nightly 4682
+## Dernière livraison : 0.1.0 (23), recompilation Xcode 27.2 pour l’iPhone Duo
+
+Le **20 novembre 2026**, le build **23** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `953c8611-97ee-464a-9a3d-ce94f605037b`.
+État final relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- Signalement de Raoul du 20 novembre 2026 : l’app n’est pas adaptée à son iPhone Duo.
+  Cause : la détection de charnière (`UIHingeInteraction`,
+  `modules/t3-native-controls/ios/T3LayoutMetricsView.swift`) n’est compilée qu’avec
+  le SDK iOS 27.1 ou plus (`#if canImport(UIKit, _version: 9127.0.85)`). Les builds
+  1 à 22 venaient de Xcode 26.4.1 (SDK 26.4) : l’app traitait le Duo comme un iPhone
+  ordinaire. **Toute compilation de T4 Mobile doit désormais utiliser Xcode 27.1 ou
+  plus récent**, sans quoi l’adaptation Duo disparaît sans erreur.
+- Sources : identiques au build 22 (`build/ios-local/build-23/source.patch`), seul
+  l’outil de compilation change : Xcode 27.2 (27B52), SDK `iphoneos27.2`, UIKit 9127.1.13.
+  Le binaire référence bien `UIHingeInteraction`.
+- Le `node_modules` racine avait disparu (nettoyage disque) : réinstallé par
+  `vp install --frozen-lockfile`.
+- Contrôles : typecheck mobile réussi ; tests `apps/mobile` 309 fichiers sur 310,
+  même échec préexistant de `app.config.test.ts`. Aucune recette visuelle : le
+  simulateur iOS 27 n’était pas encore installé. Rendu Duo plié/déplié à confirmer
+  sur l’iPhone Duo de Raoul.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-20/T4 Mobile 14.17.17.xcarchive`.
+- IPA : `build/ios-local/build-23/export/T4Mobile.ipa`, **62 685 815 octets**,
+  SHA-256 `5730f5c3c725fd09d173cc9796adba04f46927c23b4b717977c529114b9b3cd4`.
+- Preuve de livraison : `build/ios-local/build-23/deployment.json`.
+
+## Historique : 0.1.0 (22), Settle selection par projet
+
+Le **18 novembre 2026**, le build **22** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `2a6a544a-86c5-4272-8f34-a7edf9c4b8f9`.
+État final relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- Demande de Raoul du 18 novembre 2026, d’après une maquette validée : la sélection
+  se fait **projet par projet**. Un rond de sélection est placé à côté du nom de chaque
+  projet ; un toucher le change en **Settle selection (N)** suivi d’une croix ✕. Seuls les
+  fils affichés sous ce projet ont une case, cochée par défaut. Les autres projets
+  sont grisés et inertes pendant la sélection. Le bouton global « Select » du
+  build 21 est retiré.
+- Sources : modifications non commitées sur `6529f21a53` (builds 17 à 22 cumulés),
+  `build/ios-local/build-22/source.patch` et `source-status.txt`.
+- Contrôles :
+  - tests `apps/mobile` : 309 fichiers sur 310 passent ; l’échec de
+    `app.config.test.ts`, test amont qui attend les identifiants T3 et non
+    `fr.emaxconseils.t4`, est préexistant ;
+  - `packages/client-runtime` : 163 fichiers, 2 043 tests réussis ;
+  - typecheck mobile, formatage et lint réussis.
+- Recette iPhone 17 Simulator / iOS 26.4, serveur isolé : cinq points vérifiés,
+  dont le contrôle en base qui confirme que seuls les fils cochés sont classés.
+  Rapport : `build/ios-local/build-22-recette/RECETTE.md`. La hauteur de l’en-tête
+  a ensuite été fixée à 28 pt dans les deux états ; ce correctif n’a pas été
+  recetté à nouveau.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-18/T4 Mobile 15.31.02.xcarchive`.
+- IPA : `build/ios-local/build-22/export/T4Mobile.ipa`, **62 586 057 octets**,
+  SHA-256 `2de09507e4a724165b53d335c5fcee8234279ab04a3c363699ae70cf7b12d12a`.
+- Preuve de livraison : `build/ios-local/build-22/deployment.json`.
+
+## Historique : 0.1.0 (21), filtres d’âge, HOT 20 min, glissements et Settle selection
+
+Le **18 novembre 2026**, le build **21** a été compilé, signé, validé par Apple et
+distribué à **T4 Interne**. UUID : `32abb0a5-1b09-4384-af94-700fd876f6ea`.
+État final relu : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**, un testeur,
+notifications automatiques désactivées.
+
+- Demandes de Raoul du 18 novembre 2026, en plus du build 20 :
+  - filtre d’âge : « Last week » remplacé par **Last 5 days**, nouvelle option
+    **> 5 days** (fils plus anciens que 5 jours, âge calculé comme les autres
+    options ; fils classés dans leur section Settled). Un filtre « Last week »
+    enregistré migre vers « Last 5 days » ;
+  - **HOT** : délai d’ouverture ou d’activité récente porté de 5 à **20 minutes**
+    (`HOT_RECENT_MS`) ;
+  - **glissement de gauche à droite** : sur un fil lu, « Unread » le repasse en
+    _Done_ ; sur un fil non lu, « Read » le marque lu. Le glissement complet agit
+    tout de suite. Proposé seulement sur les fils ayant un tour terminé ;
+  - **vue par projet** (HOT ou filtre d’âge, sans projet choisi) : bouton
+    **Select**, cases toutes cochées par défaut, **Settle selection (N)** classe
+    les fils cochés, y compris ceux qui travaillent encore.
+  - Actions de glissement compactes sur les lignes compactes : libellés et ronds
+    ne sont plus rognés.
+- Sources : modifications **non commitées** sur `6529f21a53`, branche
+  `t4-mobile-4682` (builds 17 à 21 cumulés). État et patch exacts :
+  `build/ios-local/build-21/source-status.txt` et `source.patch`.
+- Contrôles : `vp test` 373 fichiers / 4 513 tests, typecheck mobile, formatage
+  et lint réussis.
+- Recette iPhone 17 Simulator / iOS 26.4, serveur isolé, puis contre-recette des
+  actions compactes : `build/ios-local/build-20b-recette/RECETTE.md`.
+- Non vérifié : expiration HOT à 20 minutes (seule la conservation à 10 minutes est
+  observée) et « Undo » après un classement multiple. Remarques ouvertes : toast
+  « Settled thread » au singulier après un classement multiple ; un fil marqué lu
+  par glissement quitte aussitôt HOT.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-18/T4 Mobile 11.32.04.xcarchive`.
+- IPA : `build/ios-local/build-21/export/T4Mobile.ipa`, **62 584 888 octets**,
+  SHA-256 `b5afa4d6767994b07af23f2e03f6ec2fcf56da877184b7377946d516fc988356`.
+- Preuve de livraison : `build/ios-local/build-21/deployment.json`.
+
+## Historique : 0.1.0 (20), fil délégué en attente de réponse visible
+
+Le 18 novembre 2026, build **20** validé et distribué à **T4 Interne**. UUID :
+`af662a79-cc58-453c-b9ae-44307a43cf9a`. État relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**.
+
+- Un fil délégué qui attend une réponse ou une approbation de l’utilisateur
+  (`pendingRuntimeRequest` autre que `auth_refresh`) reste listé à côté de son
+  parent, même après la fin de son tour : `isWaitingOnUser` dans
+  `packages/client-runtime/src/state/threadShell.ts`. Cas d’origine : question
+  asynchrone d’un fil délégué au Mac par le T3 distant, notifiée mais invisible.
+- Contrôles : `vp test` 115 fichiers / 1 392 tests, typecheck client-runtime et
+  mobile, formatage, lint. Pas de recette simulateur pour ce build.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-18/T4 Mobile 10.31.56.xcarchive`.
+- IPA : `build/ios-local/build-20/export/T4Mobile.ipa`, **62 577 188 octets**,
+  SHA-256 `06941d317a54249ff8678ee966a339e6865d11b812a4d8af1a4f32f598ad69d9`.
+  Preuve : `build/ios-local/build-20/deployment.json`.
+
+## Historique : 0.1.0 (19), cohérence de HOT
+
+Le 15 novembre 2026, build **19** validé et distribué à **T4 Interne**. UUID :
+`66bc0246-a76f-449c-846f-53fabb74de56`. État relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**.
+
+- HOT retient la plus récente de l’ouverture et de l’activité : un fil dont la
+  réponse est toute récente reste dans HOT même déjà lu. Délai alors de 5 minutes,
+  sans réglage dans les paramètres. Fils classés exclus.
+- 71 tests de `threadListV2`, `check:changed` réussi hors échec knip préexistant
+  (`useOpenWorkspaceDetail.ts`). Recette simulateur avec expiration observée.
+  Rapport : `build/ios-local/build-19/RECETTE.md`.
+- IPA : **62 577 098 octets**, SHA-256
+  `33fa6ce88881e1e87eb03b7c10786926d9c48868fd6d2bae5df3aa6099af7921`.
+  Archive `2026-11-15/T4 Mobile 21.18.50.xcarchive`.
+
+## Historique : 0.1.0 (18), barre de saisie
+
+Le 15 novembre 2026, build **18** validé et distribué à **T4 Interne**. UUID :
+`5149b61c-5490-406f-9a7a-edbba41dcbcb`. État relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**.
+
+- Bouton micro retiré du compositeur. Le sélecteur affiche le nom court du modèle
+  et la réflexion sur deux lignes ; « Extra High » devient « extra-h ».
+- 36 tests ciblés et `check:changed` réussis hors échec knip préexistant. Recette
+  simulateur claire et sombre. Rapport : `build/ios-local/build-18/RECETTE.md`.
+- IPA : **62 574 595 octets**, SHA-256
+  `08c27a458910e31a2f0c2ad9ceb44e30a617ce98c26d8ce84e76fa0ad7875241`.
+  Archive `2026-11-15/T4 Mobile 20.43.16.xcarchive`.
+
+## Historique : 0.1.0 (17), lignes compactes multi-environnements
+
+Le 15 novembre 2026, build **17** validé et distribué à **T4 Interne**. UUID :
+`88a32241-bc8f-4c89-a6f1-3dd9247d7680`. État relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**.
+
+- Présentation compacte aussi avec plusieurs environnements ; leur symbole
+  (ordinateur, nuage) s’affiche entre l’icône de projet et le titre.
+- 8 tests ciblés et `check:changed` réussis hors échec knip préexistant. Recette
+  avec deux serveurs isolés. Rapport : `build/ios-local/build-17/RECETTE.md`.
+- IPA : **62 577 018 octets**, SHA-256
+  `02fbcc0d7e2f23785c3b474b44ddd037bae4177240ca38785d7b75d9a5b51aca`.
+  Archive `2026-11-15/T4 Mobile 20.17.12.xcarchive`.
+
+## Historique : 0.1.0 (16), base Nightly 4682
 
 Le **14 novembre 2026**, le build **16** a été compilé, signé, validé par Apple et
 distribué à **T4 Interne**. UUID : `a681a3ba-b4be-4d76-a2b3-777d1b82bfc3`.
@@ -691,13 +850,17 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build : `0.1.0 (16)`, valide et distribué à T4 Interne, UUID
-> `a681a3ba-b4be-4d76-a2b3-777d1b82bfc3`. Branche `t4-mobile-4682`, base
-> `v0.1.10-nightly.20261114.4682`, SHA compilé `fd09515d4394dce4e3e51929ab4c6e112315b61c`.
-> Les personnalisations sont conservées et commitées localement ; aucun push ni PR.
+> Dernier build : `0.1.0 (23)`, valide et distribué à T4 Interne, UUID
+> `953c8611-97ee-464a-9a3d-ce94f605037b`. Branche `t4-mobile-4682`, base
+> `v0.1.10-nightly.20261114.4682`, dernier commit `6529f21a53`. Les modifications
+> des builds 17 à 23 ne sont **pas commitées** : patch exact dans
+> `build/ios-local/build-23/source.patch`. Aucun push ni PR.
+> Compiler uniquement avec **Xcode 27.1 ou plus** (27.2 installé) : sinon l’adaptation
+> iPhone Duo disparaît sans erreur.
 > Point de retour : `t4-mobile-before-4682-20261114`. Preuves dans
-> `build/ios-local/build-16/` et `build/upgrades/4682-20261114/`.
-> Pour une nouvelle livraison, vérifier Apple et prendre un numéro supérieur à 16.
+> `build/ios-local/build-23/`, `build/ios-local/build-22-recette/` et
+> `build/upgrades/4682-20261114/`.
+> Pour une nouvelle livraison, vérifier Apple et prendre un numéro supérieur à 23.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
 > Les serveurs réels n’ont pas été mis à jour. Ne pas montrer les secrets et ne pas

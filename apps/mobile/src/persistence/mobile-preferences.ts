@@ -44,7 +44,8 @@ const ThreadListFilters = Schema.Struct({
   agentsHot: Schema.optional(Schema.Boolean),
   environmentId: Schema.NullOr(EnvironmentId),
   projectKey: Schema.NullOr(Schema.String),
-  age: Schema.optional(Schema.Literals(["all", "10m", "1h", "1d", "1w"])),
+  // "1w" stays readable for saved filters; migrateThreadAge maps it to "5d".
+  age: Schema.optional(Schema.Literals(["all", "10m", "1h", "1d", "1w", "5d", "older5d"])),
 });
 export type ThreadListFilters = typeof ThreadListFilters.Type;
 

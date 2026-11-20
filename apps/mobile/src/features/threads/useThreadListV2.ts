@@ -15,8 +15,8 @@ import {
   threadListInboxReturns,
   threadListV2LayoutTime,
   sortFollowUpListItems,
-  HOT_RECENT_READ_MS,
-  nextHotRecentReadExpiry,
+  HOT_RECENT_MS,
+  nextHotRecentExpiry,
 } from "./threadListV2";
 import { useNowAfter, useNowMinuteMs } from "../../lib/clock";
 import { computeThreadMoveAvailability } from "./threadOrder";
@@ -196,13 +196,13 @@ export function useThreadListV2(input: {
       }),
     [input.environmentId, visibleProjectRefs, input.settlementEnvironmentIds],
   );
-  // HOT keeps recently read threads; re-render when the next one expires.
+  // HOT keeps recently opened or active threads; re-render when the next one expires.
   const minuteMs = useNowMinuteMs();
   const hotExpiryMs = useNowAfter(
-    input.hot === true ? nextHotRecentReadExpiry(threads, minuteMs) : null,
+    input.hot === true ? nextHotRecentExpiry(threads, minuteMs) : null,
   );
-  const hotReadSinceMs =
-    input.hot === true ? Math.max(minuteMs, hotExpiryMs) - HOT_RECENT_READ_MS : undefined;
+  const hotRecentSinceMs =
+    input.hot === true ? Math.max(minuteMs, hotExpiryMs) - HOT_RECENT_MS : undefined;
   const olderSettledShelf = useOlderSettledShelf({
     scopes,
     expanded: ageFiltered || input.hot === true || input.settledShelfExpanded,
@@ -214,7 +214,7 @@ export function useThreadListV2(input: {
     () => ({
       prioritizeFollowUp: input.prioritizeFollowUp,
       hot: input.hot,
-      hotReadSinceMs,
+      hotRecentSinceMs,
       pendingOrder: input.pendingOrder,
       threads: threads.filter((thread) => thread.archivedAt === null),
       environmentId: input.environmentId,
@@ -249,7 +249,7 @@ export function useThreadListV2(input: {
     [
       input.prioritizeFollowUp,
       input.hot,
-      hotReadSinceMs,
+      hotRecentSinceMs,
       input.pendingOrder,
       threads,
       input.environmentId,
@@ -311,7 +311,8 @@ export function useThreadListV2(input: {
         ) &&
         (input.environmentId === null || pendingTask.environmentId === input.environmentId) &&
         (ageFilter.cutoff === null ||
-          (ageFilter.basis === "conversation_activity" &&
+          (!ageFilter.older &&
+            ageFilter.basis === "conversation_activity" &&
             Date.parse(pendingTask.createdAt) > ageFilter.cutoff)) &&
         (scopedProjectKeys === null ||
           scopedProjectKeys.has(
@@ -327,6 +328,7 @@ export function useThreadListV2(input: {
     input.environmentId,
     ageFilter.cutoff,
     ageFilter.basis,
+    ageFilter.older,
   ]);
   const ungroupedItems = useMemo(
     () =>

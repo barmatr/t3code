@@ -36,7 +36,7 @@ import type { SnoozePresetSetting } from "@t3tools/contracts/settings";
 import { canSnooze } from "@t3tools/client-runtime/state/thread-settled";
 import { threadChipCopyTarget } from "@t3tools/client-runtime/thread-reference";
 import type { MenuAction } from "@react-native-menu/menu";
-import { memo, useCallback, useMemo, useState, type ComponentProps } from "react";
+import { memo, useCallback, useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { Platform, Pressable, Text as RNText, useWindowDimensions, View } from "react-native";
 import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 
@@ -93,12 +93,22 @@ import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import { PullRequestGlyph } from "../pull-requests/pullRequestGlyphs";
 import { pullRequestStatus } from "../pull-requests/pullRequestStatus";
 
-export function ThreadListV2ProjectHeader(props: { readonly title: string }) {
+export function ThreadListV2ProjectHeader(props: {
+  readonly title: string;
+  /** T4 : the project's settle-selection control, beside its name. */
+  readonly trailing?: ReactNode;
+  readonly dimmed?: boolean;
+}) {
   return (
-    <View className="flex-row items-center gap-3 px-5 pb-2 pt-4" accessibilityRole="header">
+    <View
+      className="flex-row items-center gap-3 px-5 pb-2 pt-4"
+      style={props.dimmed ? { opacity: 0.4 } : undefined}
+      accessibilityRole="header"
+    >
       <Text className="min-w-0 shrink text-sm font-t3-bold text-foreground-muted">
         {props.title}
       </Text>
+      {props.trailing}
       <View className="h-px min-w-6 flex-1 bg-border" />
     </View>
   );
@@ -1190,6 +1200,46 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         : null,
     [handleMenuAction, snoozePresetActions, swipeActions.secondary, thread.title],
   );
+  // T4 : a left-to-right swipe toggles read state; a thread with a finished run
+  // can show Done, so only those rows offer it.
+  const completedAt = thread.latestRun?.completedAt ?? null;
+  const handleMarkRead = useCallback((): void => {
+    if (!canOperateThread || completedAt === null) return;
+    const visitedAtMs = Math.max(Date.now(), Date.parse(completedAt) + 1);
+    void visitThread({
+      environmentId: thread.environmentId,
+      input: { threadId: thread.id, visitedAt: new Date(visitedAtMs).toISOString() },
+    });
+  }, [canOperateThread, completedAt, thread.environmentId, thread.id, visitThread]);
+  const unseenCompletion = threadHasUnseenCompletion(thread);
+  const leadingAction = useMemo(
+    (): ComponentProps<typeof ThreadSwipeable>["leadingAction"] =>
+      !canOperateThread || completedAt === null
+        ? null
+        : unseenCompletion
+          ? {
+              accessibilityLabel: `Mark ${thread.title} read`,
+              icon: "checkmark.circle" as const,
+              label: "Read",
+              onPress: handleMarkRead,
+            }
+          : {
+              accessibilityLabel: `Mark ${thread.title} unread`,
+              icon: "circle.fill" as const,
+              label: "Unread",
+              onPress: (): void => {
+                void handleMarkUnread();
+              },
+            },
+    [
+      canOperateThread,
+      completedAt,
+      unseenCompletion,
+      thread.title,
+      handleMarkRead,
+      handleMarkUnread,
+    ],
+  );
   const swipeAccessibilityHint = !canOperateThread
     ? "Opens the thread"
     : secondaryAction === null
@@ -1197,6 +1247,19 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
       : `Opens the thread. Swipe left for ${primaryAction.label.toLowerCase()} and snooze actions.`;
 
   const compactRow = props.inlineProviderWithStatus === true && fontScale <= 1.3;
+  const inlineEnvironmentIcon =
+    props.inlineProviderWithStatus && props.environmentLabel && props.environmentMachine ? (
+      <EnvironmentMachineSymbol
+        kind={props.environmentMachine}
+        size={machineIconSize}
+        tintColorClassName={
+          selected
+            ? selectedThreadRowColors.mutedIconTintClassName
+            : rowAppearance.tertiaryIconTintClassName
+        }
+      />
+    ) : null;
+  const environmentMetadataLabel = props.inlineProviderWithStatus ? null : props.environmentLabel;
   const titleTextInset = props.project ? projectIconSize + 8 : 0;
   const providerMark = providerInstance ? (
     <View className="flex-row items-center">
@@ -1340,6 +1403,11 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
             />
           </View>
         ) : null}
+        {inlineEnvironmentIcon ? (
+          <View className="justify-center" style={{ height: titleLineHeight }}>
+            {inlineEnvironmentIcon}
+          </View>
+        ) : null}
         <Text
           className={cn(
             "flex-1 text-base",
@@ -1390,7 +1458,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         </View>
       ) : null}
       {((status === "failed" || status === "limited") && thread.runtime?.lastError) ||
-      props.environmentLabel ||
+      environmentMetadataLabel ||
       pr ||
       !props.inlineProviderWithStatus ? (
         <View className="mt-1 flex-row items-center gap-2" style={{ paddingLeft: titleTextInset }}>
@@ -1409,7 +1477,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               {thread.runtime.lastError}
             </Text>
           ) : null}
-          {props.environmentLabel ? (
+          {environmentMetadataLabel ? (
             <View className="min-w-0 flex-1 flex-row items-center gap-1">
               {props.environmentMachine ? (
                 <EnvironmentMachineSymbol
@@ -1431,7 +1499,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                 )}
                 numberOfLines={1}
               >
-                {props.environmentLabel}
+                {environmentMetadataLabel}
               </Text>
             </View>
           ) : (
@@ -1557,6 +1625,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
               />
             </View>
           ) : null}
+          {inlineEnvironmentIcon}
           <View className="min-w-0 flex-1">
             <View className={cn(compactRow && "flex-row items-center gap-2")}>
               <Text
@@ -1606,7 +1675,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                   ) : null}
                   {providerMark}
                 </View>
-              ) : providerNameLabel || props.environmentLabel ? (
+              ) : providerNameLabel || environmentMetadataLabel ? (
                 <Text
                   className={cn(
                     "text-xs",
@@ -1617,7 +1686,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
                   ellipsizeMode="middle"
                   numberOfLines={1}
                 >
-                  {[props.environmentLabel, providerNameLabel].filter(Boolean).join(" · ")}
+                  {[environmentMetadataLabel, providerNameLabel].filter(Boolean).join(" · ")}
                 </Text>
               ) : null}
             </View>
@@ -1666,7 +1735,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         dormant={dormant}
         threadKey={`${thread.environmentId}:${thread.id}`}
         backgroundColor={rowAppearance.swipeBackgroundColor}
-        compactActions={variant === "slim"}
+        compactActions={variant === "slim" || compactRow}
         containerStyle={rowAppearance.swipeContainerStyle}
         enableTrackpadSwipe
         fullSwipeAction="primary"
@@ -1676,6 +1745,7 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
         onSwipeableWillOpen={props.onSwipeableWillOpen}
         primaryAction={primaryAction}
         secondaryAction={secondaryAction}
+        leadingAction={leadingAction}
         resetKey={`${thread.environmentId}:${thread.id}:${variant}:${snoozedRow}:${thread.settledAt}:${thread.unsettledAt}:${thread.snoozedUntil}:${thread.pinnedAt}`}
         simultaneousWith={props.simultaneousSwipeGesture}
         threadTitle={thread.title}

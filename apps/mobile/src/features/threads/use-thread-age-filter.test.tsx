@@ -306,8 +306,14 @@ it("filters the four rolling windows, changes the reference, and expires replies
   expect(ids()).toEqual(["recent", "hour", "shell-without-message"]);
   await render("1d");
   expect(ids()).toEqual(["recent", "hour", "day", "recent-user", "shell-without-message"]);
-  await render("1w");
+  await render("5d");
   expect(ids()).toEqual(["recent", "hour", "day", "week", "recent-user", "shell-without-message"]);
+  // T4: "> 5 days" keeps the reverse side of the same cutoff.
+  await render("older5d");
+  expect(ids()).toContain("old");
+  for (const id of ["recent", "hour", "day", "week", "recent-user", "shell-without-message"]) {
+    expect(ids()).not.toContain(id);
+  }
   const setBasis = async (basis: ThreadAgeBasis) =>
     act(async () => registry.set(preferencesAtom, AsyncResult.success({ threadAgeBasis: basis })));
   await setBasis("conversation_activity");

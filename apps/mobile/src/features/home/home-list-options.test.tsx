@@ -106,17 +106,18 @@ it("restores hot independently per tab and keeps the selected age when hot is to
       </HomeListOptionsProvider>,
     ),
   );
-  expect(controls!.options).toMatchObject({ hot: true, agentsHot: false, selectedAge: "1w" });
+  // T4: a saved "Last week" reads as "Last 5 days".
+  expect(controls!.options).toMatchObject({ hot: true, agentsHot: false, selectedAge: "5d" });
   act(() => {
     controls!.setHot(false);
     controls!.setAgentsHot(true);
   });
-  expect(controls!.options).toMatchObject({ hot: false, agentsHot: true, selectedAge: "1w" });
+  expect(controls!.options).toMatchObject({ hot: false, agentsHot: true, selectedAge: "5d" });
   expect(harness.saved.at(-1)).toEqual({
     threadListFilters: {
       environmentId: ENVIRONMENT,
       projectKey: "project",
-      age: "1w",
+      age: "5d",
       hot: false,
       agentsHot: true,
     },

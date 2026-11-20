@@ -6,7 +6,7 @@ import { AsyncResult, Atom } from "effect/reactivity";
 import { useContext, useMemo, useState } from "react";
 
 import { useNowAfter, useNowMinuteMs } from "../../lib/clock";
-import { threadAgeOption, type ThreadAge } from "../../lib/thread-age";
+import { isOlderThreadAge, threadAgeOption, type ThreadAge } from "../../lib/thread-age";
 import { mobilePreferencesAtom } from "../../state/preferences";
 import { latestThreadMessageAtom } from "../../state/thread-age-filter";
 
@@ -23,6 +23,7 @@ export function useThreadAgeFilter(
   );
   const afterMs = Math.max(latestMs, minuteMs);
   const durationMs = threadAgeOption(age).durationMs;
+  const older = isOlderThreadAge(age);
   const readAtom = useMemo(
     () =>
       Atom.make((get) => {
@@ -72,7 +73,9 @@ export function useThreadAgeFilter(
               if (AsyncResult.isSuccess(result)) {
                 const timestamp =
                   result.value ??
-                  (basis === "conversation_activity" ? Date.parse(thread.createdAt) : null);
+                  (basis === "conversation_activity" || older
+                    ? Date.parse(thread.createdAt)
+                    : null);
                 times.set(thread, timestamp);
               } else if (AsyncResult.isFailure(result)) {
                 failed = true;
@@ -88,13 +91,22 @@ export function useThreadAgeFilter(
             } else if (basis === "conversation_activity" && message === null) {
               times.set(thread, Date.parse(thread.createdAt));
             } else {
-              times.set(thread, null);
+              // T4 : for "> 5 days", a thread with no reply in range is old; date it by
+              // its last message or its creation.
+              times.set(
+                thread,
+                older
+                  ? message !== null
+                    ? DateTime.toEpochMillis(message.updatedAt)
+                    : Date.parse(thread.createdAt)
+                  : null,
+              );
             }
           }
         }
         return { times, previousTimes, reads, pendingThreads, pending, failed, basis };
       }),
-    [threads, durationMs, afterMs],
+    [threads, durationMs, older, afterMs],
   );
   const state = useAtomValue(readAtom);
   const resolved = useMemo(() => {
@@ -147,9 +159,10 @@ export function useThreadAgeFilter(
         ? threads
         : threads.filter((thread) => {
             const timestamp = resolved.times.get(thread);
-            return timestamp !== undefined && timestamp > nowMs - durationMs;
+            if (timestamp === undefined) return false;
+            return older ? timestamp <= nowMs - durationMs : timestamp > nowMs - durationMs;
           }),
-    [threads, durationMs, resolved.times, nowMs],
+    [threads, durationMs, older, resolved.times, nowMs],
   );
 
   return {
@@ -158,6 +171,7 @@ export function useThreadAgeFilter(
     checking: resolved.checking,
     failed: state.failed,
     basis: state.basis,
+    older,
     cutoff: durationMs === null ? null : nowMs - durationMs,
     retry: () => {
       for (const atom of state.reads) registry.refresh(atom);

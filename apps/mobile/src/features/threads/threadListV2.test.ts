@@ -45,8 +45,8 @@ import {
   threadListV2ListItemsAreEqual,
   threadHasUnseenCompletion,
   threadIsHot,
-  HOT_RECENT_READ_MS,
-  nextHotRecentReadExpiry,
+  HOT_RECENT_MS,
+  nextHotRecentExpiry,
   threadListShowsMultipleEnvironments,
   sortFollowUpListItems,
   groupThreadListV2ItemsByProject,
@@ -1951,8 +1951,8 @@ it("keeps recent reads in HOT only until settled, without changing the ordinary 
       lastVisitedAt: "2026-01-01T00:00:00.000Z",
       opens: { openedAt: nowMs - visitedAgoMs, score: 1, picks: [] },
     });
-  const threads = [make("just-read", 60_000), make("read-earlier", 6 * 60_000)];
-  const hot = (hotReadSinceMs?: number) =>
+  const threads = [make("just-read", 60_000), make("read-earlier", 21 * 60_000)];
+  const hot = (hotRecentSinceMs?: number) =>
     buildThreadListV2Items({
       threads,
       environmentId: null,
@@ -1960,10 +1960,12 @@ it("keeps recent reads in HOT only until settled, without changing the ordinary 
       now: NOW,
       prioritizeFollowUp: true,
       hot: true,
-      ...(hotReadSinceMs === undefined ? {} : { hotReadSinceMs }),
+      ...(hotRecentSinceMs === undefined ? {} : { hotRecentSinceMs }),
     }).items.map(({ thread }) => thread.id);
   expect(hot()).toEqual([]);
-  expect(hot(nowMs - HOT_RECENT_READ_MS)).toEqual(["just-read"]);
+  // T4: HOT keeps recent threads for twenty minutes.
+  expect(HOT_RECENT_MS).toBe(20 * 60_000);
+  expect(hot(nowMs - HOT_RECENT_MS)).toEqual(["just-read"]);
   const settled = threads.map((thread) => ({ ...thread, settledOverride: "settled" as const }));
   const settledInput = {
     threads: settled,
@@ -1971,7 +1973,7 @@ it("keeps recent reads in HOT only until settled, without changing the ordinary 
     searchQuery: "",
     now: NOW,
     prioritizeFollowUp: true,
-    hotReadSinceMs: nowMs - HOT_RECENT_READ_MS,
+    hotRecentSinceMs: nowMs - HOT_RECENT_MS,
     settledShelfExpanded: true,
     selectedThreadKey: `${environmentId}:just-read`,
   };
@@ -1988,8 +1990,73 @@ it("keeps recent reads in HOT only until settled, without changing the ordinary 
   const ordinary = buildThreadListV2Items({ ...settledInput, hot: false });
   expect(ordinary.items).toHaveLength(2);
   expect(ordinary.settledCount).toBe(2);
-  expect(nextHotRecentReadExpiry(threads, nowMs)).toBe(nowMs - 60_000 + HOT_RECENT_READ_MS);
-  expect(nextHotRecentReadExpiry(threads, nowMs + HOT_RECENT_READ_MS)).toBeNull();
+  expect(nextHotRecentExpiry(threads, nowMs)).toBe(nowMs - 60_000 + HOT_RECENT_MS);
+  expect(nextHotRecentExpiry(threads, nowMs + HOT_RECENT_MS)).toBeNull();
+});
+
+it("keeps a newly completed and read response in HOT after an older opening, then expires it", () => {
+  const nowMs = Date.parse(NOW);
+  const completedAt = new Date(nowMs - 30_000).toISOString();
+  const thread = makeThread({
+    id: ThreadId.make("read-after-long-conversation"),
+    title: "Read after a long conversation",
+    runtime: null,
+    opens: { openedAt: nowMs - 13 * 60_000, score: 1, picks: [] },
+    lastVisitedAt: completedAt,
+    latestRun: {
+      runId: RunId.make("recent-response"),
+      status: "completed",
+      requestedAt: new Date(nowMs - 90_000).toISOString(),
+      startedAt: new Date(nowMs - 90_000).toISOString(),
+      completedAt,
+      assistantMessageId: null,
+    },
+  });
+  const list = (atMs: number, candidate = thread, hot = true) =>
+    buildThreadListV2Items({
+      threads: [candidate],
+      environmentId: null,
+      searchQuery: "",
+      now: new Date(atMs).toISOString(),
+      hot,
+      hotRecentSinceMs: atMs - HOT_RECENT_MS,
+    }).items.map(({ thread }) => thread.id);
+  const expiresAt = Date.parse(completedAt) + HOT_RECENT_MS;
+  expect(threadHasUnseenCompletion(thread)).toBe(false);
+  expect(threadIsHot(thread)).toBe(false);
+  expect(list(nowMs)).toEqual([thread.id]);
+  expect(nextHotRecentExpiry([thread], nowMs)).toBe(expiresAt);
+  expect(list(expiresAt - 1)).toEqual([thread.id]);
+  expect(list(expiresAt)).toEqual([]);
+  expect(nextHotRecentExpiry([thread], expiresAt)).toBeNull();
+  expect(list(expiresAt, thread, false)).toEqual([thread.id]);
+  expect(list(nowMs, { ...thread, settledOverride: "settled" })).toEqual([]);
+  expect(list(expiresAt, { ...thread, lastVisitedAt: "2026-01-01T00:00:00.000Z" })).toEqual([
+    thread.id,
+  ]);
+  const newMessage = { ...thread, latestUserMessageAt: NOW };
+  expect(nextHotRecentExpiry([newMessage], nowMs)).toBe(nowMs + HOT_RECENT_MS);
+  expect(list(expiresAt, newMessage)).toEqual([thread.id]);
+});
+
+it("uses the same activity as the row age without treating metadata updates as recent work", () => {
+  const nowMs = Date.parse(NOW);
+  const oldMessage = "2026-01-01T00:00:00.000Z";
+  const thread = makeThread({
+    id: ThreadId.make("metadata-only"),
+    title: "Metadata only",
+    updatedAt: NOW,
+    latestUserMessageAt: oldMessage,
+    latestRun: null,
+    opens: { openedAt: nowMs - 21 * 60_000, score: 1, picks: [] },
+  });
+  expect(nextHotRecentExpiry([thread], nowMs)).toBeNull();
+  expect(
+    nextHotRecentExpiry([{ ...thread, opens: { openedAt: nowMs, score: 1, picks: [] } }], nowMs),
+  ).toBe(nowMs + HOT_RECENT_MS);
+  expect(nextHotRecentExpiry([{ ...thread, latestUserMessageAt: null }], nowMs)).toBe(
+    nowMs + HOT_RECENT_MS,
+  );
 });
 
 it("includes each hot status, excludes read and empty ready rows, and keeps real unread semantics", () => {

@@ -98,6 +98,13 @@ import {
 } from "./homeThreadList";
 import { createSwipeRowActivation } from "./swipe-row-activation";
 import { SwipeableScrollGateProvider, useSwipeableScrollGate } from "./thread-swipe-actions";
+import {
+  ProjectSettleSelectionControl,
+  ThreadSettleInactiveRow,
+  ThreadSettleSelectionRow,
+} from "./ThreadSettleSelectionBar";
+import { checkedThreadsForSettle, settleGroupsByProjectHeader } from "./threadSettleSelection";
+import * as Dialog from "../../components/ui/Dialog";
 import { useFabScroll } from "./FabScrollContext";
 import { holdLaunchSplashForHomeRows, settleLaunchSplashHomeRows } from "./home-launch-splash";
 import { useWorkspaceTabs } from "../layout/workspace/WorkspaceTabsContext";
@@ -421,6 +428,7 @@ export function HomeScreen(props: HomeScreenProps) {
     olderSettledShelf,
     ageFilter,
     hasUncheckedOlderThreads,
+    projectGrouped,
   } = useThreadListV2({
     threads: props.threads,
     age: props.selectedAge,
@@ -469,8 +477,96 @@ export function HomeScreen(props: HomeScreenProps) {
   }, [activateVisibleRows, swipeEnabled, threadListV2Items]);
 
   const multipleEnvironments = threadListShowsMultipleEnvironments(threadListV2Items);
+  // T4 : in the project view, each project heading can settle its listed threads at
+  // once; every row starts checked and the user unchecks the ones to keep. One
+  // project selects at a time.
+  const [settleProjectKey, setSettleProjectKey] = useState<string | null>(null);
+  const [uncheckedForSettle, setUncheckedForSettle] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  const [settlingSelection, setSettlingSelection] = useState(false);
+  const settleGroups = projectGrouped
+    ? settleGroupsByProjectHeader(threadListV2Items, settlementEnvironmentIds)
+    : new Map<string, never>();
+  const settleGroup = settleProjectKey === null ? undefined : settleGroups.get(settleProjectKey);
+  if (settleProjectKey !== null && settleGroup === undefined && !settlingSelection) {
+    setSettleProjectKey(null);
+  }
+  const selectableForSettle = settleGroup?.threads ?? [];
+  const selectableKeysForSettle = new Set(
+    selectableForSettle.map((thread) => scopedThreadKey(thread.environmentId, thread.id)),
+  );
+  const checkedForSettle = checkedThreadsForSettle(selectableForSettle, uncheckedForSettle);
+  const startSettleSelection = (projectKey: string) => {
+    setUncheckedForSettle(new Set());
+    setSettleProjectKey(projectKey);
+  };
+  const toggleSettleSelection = (key: string) =>
+    setUncheckedForSettle((current) => {
+      const next = new Set(current);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
+  const settleSelection = async () => {
+    setSettlingSelection(true);
+    const results = await Promise.all(
+      checkedForSettle.map((thread) => handleSettleThread(thread).catch(() => false)),
+    );
+    setSettlingSelection(false);
+    setSettleProjectKey(null);
+    const failed = results.filter((settled) => !settled).length;
+    if (failed > 0) {
+      Dialog.alert(
+        failed === 1 ? "1 thread was not settled" : `${failed} threads were not settled`,
+        "Please try again.",
+      );
+    }
+  };
   const renderV2Item = ({ item }: { readonly item: ThreadListV2ListItem }) => {
-    if (item.type === "v2-project-header") return <ThreadListV2ProjectHeader title={item.title} />;
+    if (settleGroup !== undefined && item.type === "v2-thread") {
+      const selectionKey = scopedThreadKey(item.item.thread.environmentId, item.item.thread.id);
+      if (!settleGroup.rowKeys.has(selectionKey)) {
+        return <ThreadSettleInactiveRow>{renderV2ThreadRow(item)}</ThreadSettleInactiveRow>;
+      }
+      if (selectableKeysForSettle.has(selectionKey)) {
+        return (
+          <ThreadSettleSelectionRow
+            checked={!uncheckedForSettle.has(selectionKey)}
+            title={item.item.thread.title}
+            onToggle={() => toggleSettleSelection(selectionKey)}
+          >
+            {renderV2ThreadRow(item)}
+          </ThreadSettleSelectionRow>
+        );
+      }
+    }
+    return renderV2ItemContent(item);
+  };
+  const renderV2ItemContent = (item: ThreadListV2ListItem) => {
+    if (item.type === "v2-project-header") {
+      const selecting = settleProjectKey === item.key;
+      const canSettle = (settleGroups.get(item.key)?.threads.length ?? 0) > 0;
+      return (
+        <ThreadListV2ProjectHeader
+          title={item.title}
+          dimmed={settleGroup !== undefined && !selecting}
+          trailing={
+            canSettle || selecting ? (
+              <ProjectSettleSelectionControl
+                projectTitle={item.title}
+                selecting={selecting}
+                disabled={settleGroup !== undefined && !selecting}
+                checkedCount={selecting ? checkedForSettle.length : 0}
+                settling={selecting && settlingSelection}
+                onStart={() => startSettleSelection(item.key)}
+                onCancel={() => setSettleProjectKey(null)}
+                onSettle={() => void settleSelection()}
+              />
+            ) : null
+          }
+        />
+      );
+    }
     if (item.type === "v2-pending") {
       const pendingScopeKey = scopedProjectKey(
         item.pendingTask.environmentId,
@@ -537,11 +633,14 @@ export function HomeScreen(props: HomeScreenProps) {
         />
       );
     }
+    return renderV2ThreadRow(item);
+  };
+  const renderV2ThreadRow = (item: Extract<ThreadListV2ListItem, { type: "v2-thread" }>) => {
     const thread = item.item.thread;
     return (
       <ThreadListV2Row
         pane={sidebarSurface ? "sidebar" : "screen"}
-        inlineProviderWithStatus={!multipleEnvironments}
+        inlineProviderWithStatus
         selected={scopedThreadKey(thread.environmentId, thread.id) === selectedThreadKey}
         fullSwipeWidth={fullSwipeWidth}
         onNewThreadOnBranch={props.onNewThreadOnBranch}
@@ -619,6 +718,9 @@ export function HomeScreen(props: HomeScreenProps) {
     threadSearchMatchByKey,
     workingShelfEnabled,
     multipleEnvironments,
+    settleProjectKey,
+    uncheckedForSettle,
+    settlingSelection,
   };
 
   const hasAnyThreads =
@@ -744,6 +846,12 @@ export function HomeScreen(props: HomeScreenProps) {
       <EmptyState
         title="Nothing hot"
         detail="No actions, unread replies or agents at work in this scope."
+        variant={Platform.OS === "android" ? "plain" : undefined}
+      />
+    ) : props.selectedAge === "older5d" ? (
+      <EmptyState
+        title="No older conversations"
+        detail="No conversation in this scope is older than 5 days."
         variant={Platform.OS === "android" ? "plain" : undefined}
       />
     ) : props.selectedAge !== "all" ? (

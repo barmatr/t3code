@@ -230,6 +230,8 @@ interface ThreadSwipeableProps {
   readonly onSwipeableClose?: (methods: SwipeableMethods) => void;
   readonly onSwipeableWillOpen?: (methods: SwipeableMethods) => void;
   readonly primaryAction: ThreadSwipeAction;
+  /** T4 : one action revealed by a left-to-right swipe; a full swipe commits it. */
+  readonly leadingAction?: ThreadSwipeAction | null;
   readonly threadKey: string;
   /** Omitted defaults to Delete; null removes it so gated Snooze cannot fall back to Delete. */
   readonly secondaryAction?: ThreadSwipeAction | null;
@@ -266,6 +268,9 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
   const fallbackTranslation = useSharedValue(0);
   const actionOpacity = useSharedValue(1);
   const primaryAction = props.primaryAction;
+  const leadingAction = props.leadingAction ?? null;
+  const hasLeadingAction = leadingAction !== null;
+  const leadingFullSwipeThreshold = Math.max(ACTION_ITEM_WIDTH + 44, props.fullSwipeWidth * 0.45);
   const onDelete = props.onDelete;
   const onSwipeableClose = props.onSwipeableClose;
 
@@ -393,6 +398,11 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
       onDelete();
     }
   }, [commitPrimaryAction, content, fullSwipeAction, onDelete]);
+  const commitLeadingAction = useCallback(() => {
+    if (!mountedRef.current || contentRef.current !== content) return;
+    swipeableRef.current?.close();
+    leadingAction?.onPress();
+  }, [content, leadingAction]);
   const handleRelease = useCallback(
     (translation: SharedValue<number>, canceled: boolean) => {
       "worklet";
@@ -401,9 +411,20 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
         runOnJS(commitFullSwipe)();
         return true;
       }
+      if (!canceled && hasLeadingAction && translation.value >= leadingFullSwipeThreshold) {
+        runOnJS(commitLeadingAction)();
+        return true;
+      }
       return false;
     },
-    [commitFullSwipe, dismissing, fullSwipeThreshold],
+    [
+      commitFullSwipe,
+      commitLeadingAction,
+      dismissing,
+      fullSwipeThreshold,
+      hasLeadingAction,
+      leadingFullSwipeThreshold,
+    ],
   );
   const handleFullSwipeArmedChange = useCallback(
     (armed: boolean) => {
@@ -479,6 +500,39 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
     rightActions.current = { deps, element };
     return element;
   };
+  const leftActions = useRef<{ deps: readonly unknown[]; element: ReactNode } | null>(null);
+  const renderLeftActions = (_progress: SharedValue<number>, translation: SharedValue<number>) => {
+    const deps = [
+      dormant,
+      translation,
+      actionStyle,
+      backgroundColor,
+      compactActions,
+      leadingFullSwipeThreshold,
+      handleFullSwipeArmedChange,
+      leadingAction,
+      commitLeadingAction,
+    ];
+    const cached = leftActions.current;
+    if (cached && deps.every((dep, index) => Object.is(dep, cached.deps[index]))) {
+      return cached.element;
+    }
+    const element =
+      dormant || leadingAction === null ? null : (
+        <Animated.View style={actionStyle}>
+          <LeadingSwipeAction
+            action={{ ...leadingAction, onPress: commitLeadingAction }}
+            backgroundColor={backgroundColor}
+            compact={compactActions}
+            fullSwipeThreshold={leadingFullSwipeThreshold}
+            onFullSwipeArmedChange={handleFullSwipeArmedChange}
+            translation={translation}
+          />
+        </Animated.View>
+      );
+    leftActions.current = { deps, element };
+    return element;
+  };
   const childrenContainerStyle = useMemo(() => ({ backgroundColor }), [backgroundColor]);
   const swipeableContainerStyle = useMemo(
     () => [{ backgroundColor }, containerStyle],
@@ -499,6 +553,7 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
           childrenContainerStyle={childrenContainerStyle}
           containerStyle={swipeableContainerStyle}
           dragOffsetFromRight={-8}
+          dragOffsetFromLeft={8}
           enabled={!props.dormant && !isDismissing && props.enabled !== false && gateEnabled}
           enableTrackpadTwoFingerGesture={props.enableTrackpadSwipe ?? true}
           // Reject vertical pans via patched RNGH failOffsetY; simultaneous trackpad scrolls otherwise open rows on horizontal drift.
@@ -509,7 +564,10 @@ export function ThreadSwipeable(props: ThreadSwipeableProps) {
           onSwipeableOpenStartDrag={handleWillOpen}
           onSwipeableWillOpen={handleWillOpen}
           overshootFriction={1}
+          overshootLeft={hasLeadingAction}
           overshootRight
+          leftThreshold={ACTION_ITEM_WIDTH * 0.42}
+          renderLeftActions={hasLeadingAction ? renderLeftActions : undefined}
           renderRightActions={renderRightActions}
           rightThreshold={actionsWidth * 0.42}
           simultaneousWith={props.simultaneousWith}
@@ -799,6 +857,114 @@ function ThreadSwipeActions(props: {
           translation={props.translation}
         />
       )}
+    </View>
+  );
+}
+
+/** T4 : the single action a left-to-right swipe reveals; it grows into a full swipe. */
+function LeadingSwipeAction(props: {
+  readonly action: ThreadSwipeAction;
+  readonly backgroundColor: ColorValue;
+  readonly compact: boolean;
+  readonly fullSwipeThreshold: number;
+  readonly onFullSwipeArmedChange: (armed: boolean) => void;
+  readonly translation: SharedValue<number>;
+}) {
+  const { fullSwipeThreshold, onFullSwipeArmedChange, translation } = props;
+  const circleSize = props.compact ? COMPACT_ACTION_CIRCLE_SIZE : ACTION_CIRCLE_SIZE;
+  const iconSize = props.compact ? COMPACT_ACTION_ICON_SIZE : ACTION_ICON_SIZE;
+  useAnimatedReaction(
+    () => translation.value >= fullSwipeThreshold,
+    (armed, previous) => {
+      if (armed !== previous && previous !== null) runOnJS(onFullSwipeArmedChange)(armed);
+    },
+    [fullSwipeThreshold, onFullSwipeArmedChange, translation],
+  );
+  const actionStyle = useAnimatedStyle(() => {
+    const reveal = Math.max(translation.value, 0);
+    const entry = interpolate(reveal, [8, ACTION_ITEM_WIDTH * 0.72], [0, 1], Extrapolation.CLAMP);
+    return {
+      opacity: entry,
+      transform: [{ scale: interpolate(entry, [0, 1], [0.78, 1]) }],
+    };
+  });
+  const circleStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: interpolate(
+          translation.value,
+          [fullSwipeThreshold - 20, fullSwipeThreshold],
+          [1, 1.18],
+          Extrapolation.CLAMP,
+        ),
+      },
+    ],
+  }));
+  return (
+    <View
+      style={{
+        backgroundColor: props.backgroundColor,
+        height: "100%",
+        width: ACTION_ITEM_WIDTH,
+      }}
+    >
+      <Animated.View
+        style={[
+          { alignItems: "center", height: "100%", justifyContent: "center", width: "100%" },
+          actionStyle,
+        ]}
+      >
+        <Pressable
+          accessibilityLabel={props.action.accessibilityLabel}
+          accessibilityRole="button"
+          onPress={props.action.onPress}
+          style={({ pressed }) => ({
+            alignItems: "center",
+            height: "100%",
+            justifyContent: "center",
+            opacity: pressed ? 0.72 : 1,
+            width: "100%",
+          })}
+        >
+          <Animated.View
+            className="bg-primary"
+            style={[
+              {
+                alignItems: "center",
+                borderRadius: 999,
+                height: circleSize,
+                justifyContent: "center",
+                width: circleSize,
+              },
+              circleStyle,
+            ]}
+          >
+            <View
+              style={{
+                alignItems: "center",
+                height: circleSize,
+                justifyContent: "center",
+                width: circleSize,
+              }}
+            >
+              <SymbolView
+                name={props.action.icon}
+                size={iconSize}
+                tintColorClassName="accent-primary-foreground"
+                type="monochrome"
+              />
+            </View>
+          </Animated.View>
+          <Text
+            className="text-3xs font-t3-medium text-foreground-muted"
+            maxFontSizeMultiplier={ACTION_LABEL_MAX_FONT_SCALE}
+            numberOfLines={1}
+            style={{ top: props.compact ? 0 : 2 }}
+          >
+            {props.action.label}
+          </Text>
+        </Pressable>
+      </Animated.View>
     </View>
   );
 }

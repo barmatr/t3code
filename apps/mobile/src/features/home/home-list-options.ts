@@ -9,7 +9,7 @@ import { updateMobilePreferencesAtom } from "../../state/preferences";
 import type { HomeProjectSortOrder } from "./homeThreadList";
 import { AGENTS_PROJECT } from "./agents-project";
 import { scopedProjectKey } from "../../lib/scopedEntities";
-import type { ThreadAge } from "../../lib/thread-age";
+import { migrateThreadAge, type ThreadAge } from "../../lib/thread-age";
 
 export interface HomeListOptions {
   readonly selectedEnvironmentId: EnvironmentId | null;
@@ -32,7 +32,7 @@ function defaultHomeListOptions(filters?: ThreadListFilters): HomeListOptions {
       scopedProjectKey(AGENTS_PROJECT.environmentId, AGENTS_PROJECT.projectId)
         ? null
         : (filters?.projectKey ?? null),
-    selectedAge: filters?.age ?? "all",
+    selectedAge: migrateThreadAge(filters?.age) ?? "all",
     hot: filters?.hot ?? false,
     agentsHot: filters?.agentsHot ?? false,
     projectSortOrder:

@@ -425,6 +425,39 @@ describe("v2 thread shell lists", () => {
       "user_input",
     );
 
+    // T4: while the task itself waits on the user, even after its run ends, it is listed beside its parent.
+    registry.set(snapshotAtom(remoteEnvironmentId), {
+      ...v2ShellSnapshot,
+      threads: [
+        { ...task, pendingRuntimeRequest: { ...approval, kind: "user_input" as const } },
+        helper,
+      ],
+    });
+    expect(listed()).toEqual([
+      `${environmentId}/${parent.id}`,
+      `${remoteEnvironmentId}/${task.id}`,
+    ]);
+    registry.set(snapshotAtom(remoteEnvironmentId), {
+      ...v2ShellSnapshot,
+      threads: [
+        {
+          ...task,
+          activityRunStatus: null,
+          pendingRuntimeRequest: { ...approval, kind: "user_input" as const },
+        },
+        helper,
+      ],
+    });
+    expect(listed()).toEqual([
+      `${environmentId}/${parent.id}`,
+      `${remoteEnvironmentId}/${task.id}`,
+    ]);
+    registry.set(snapshotAtom(remoteEnvironmentId), {
+      ...v2ShellSnapshot,
+      threads: [task, helper],
+    });
+    expect(listed()).toEqual([`${environmentId}/${parent.id}`]);
+
     // A task whose parent is gone there is listed on its own, as is one whose
     // parent's environment is switched off.
     registry.set(snapshotAtom(environmentId), { ...v2ShellSnapshot, threads: [] });

@@ -55,6 +55,10 @@ const isChildRunLive = (
       thread.status === "running" ||
       thread.status === "waiting";
 
+/** T4 : the thread holds an open question or approval for the user. */
+const isWaitingOnUser = (thread: Pick<OrchestrationV2ThreadShell, "pendingRuntimeRequest">) =>
+  thread.pendingRuntimeRequest != null && thread.pendingRuntimeRequest.kind !== "auth_refresh";
+
 /**
  * Whether a thread shows under its parent rather than in thread lists: a
  * subagent, a side chat, or a task a linked environment delegated here whose parent the
@@ -684,6 +688,10 @@ export function createEnvironmentThreadShellAtoms(input: {
         if (
           parent !== undefined &&
           environmentIds.has(parent.environmentId) &&
+          // T4 : un fil délégué qui attend une réponse ou une approbation reste dans les
+          // listes, même après la fin de son run (question asynchrone), pour qu'on le
+          // retrouve depuis sa notification.
+          !isWaitingOnUser(thread) &&
           // An archived parent leaves navigation; its task there stays listed on its own.
           get(environmentThreadIndexAtom(parent.environmentId)).get(parent.threadId)?.archivedAt ===
             null
