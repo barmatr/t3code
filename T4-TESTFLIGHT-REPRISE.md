@@ -15,7 +15,37 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison : 0.1.0 (23), recompilation Xcode 27.2 pour l’iPhone Duo
+## Dernière livraison : 0.1.0 (24), base Nightly 4994
+
+Le **20 novembre 2026**, le build **24** a été compilé avec Xcode 27.2
+(27B52, SDK iOS 27.2), signé puis distribué à **T4 Interne**.
+UUID du build `4c448edc-ed92-4aac-ad3d-a13fad71fa02`. État final relu **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**, association au groupe interne vérifiée, notifications
+automatiques désactivées.
+
+- Sources de l’IPA : commit de fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`,
+  étiquette `t4-mobile-nightly-4994-20261120`, branche `t4-mobile-4682`,
+  base `v0.1.12-nightly.20261120.4994`. Point de retour
+  `t4-mobile-before-upgrade-20261120`.
+- La fusion conserve les personnalisations T4. Issues partage l’emplacement
+  d’Agents, les actions de glissement utilisent la mesure de hauteur amont
+  et le menu Non lu et le glissement partagent la même commande.
+- Contrôles : 329/330 fichiers mobiles et 3 735 tests réussis. Les quatre
+  échecs de `app.config.test.ts` attendent l’identité T3. Les 1 312 tests
+  ciblés passent, couverture React Compiler comprise. Runtime client :
+  177 fichiers et 2 246 tests réussis. Typechecks, format et lint réussis.
+  Seul Knip signale le fichier inutilisé préexistant `useOpenWorkspaceDetail.ts`.
+  Vérification native du projet et de l’IPA réussie, symbole `UIHingeInteraction`
+  présent. Recette simulateur différée à la demande de Raoul.
+- Compatibilité : descripteurs Mac et distant 4682 décodés. Configuration RPC
+  et instantané shell décodés sur une instance 4682 isolée sur le Mac.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-20/T4 Mobile 14.47.11.xcarchive`.
+- IPA : `build/ios-local/build-24/export/T4Mobile.ipa` (64 334 272 octets),
+  SHA-256 `1d5995ec098f7d0f68847efaf5213a5a86ecd59fb114b5ec47d75410005d0e9e`.
+- Preuve : `build/ios-local/build-24/deployment.json`. Inventaire et compatibilité dans
+  `build/upgrades/4994-20261120/PERSONNALISATIONS.md` et `COMPATIBILITE.md`.
+
+## Historique : 0.1.0 (23), recompilation Xcode 27.2 pour l’iPhone Duo
 
 Le **20 novembre 2026**, le build **23** a été compilé, signé, validé par Apple et
 distribué à **T4 Interne**. UUID : `953c8611-97ee-464a-9a3d-ce94f605037b`.
@@ -29,6 +59,7 @@ notifications automatiques désactivées.
   1 à 22 venaient de Xcode 26.4.1 (SDK 26.4) : l’app traitait le Duo comme un iPhone
   ordinaire. **Toute compilation de T4 Mobile doit désormais utiliser Xcode 27.1 ou
   plus récent**, sans quoi l’adaptation Duo disparaît sans erreur.
+- Cette recompilation utilise la base Nightly 4682 et précède la fusion 4994.
 - Sources : identiques au build 22 (`build/ios-local/build-23/source.patch`), seul
   l’outil de compilation change : Xcode 27.2 (27B52), SDK `iphoneos27.2`, UIKit 9127.1.13.
   Le binaire référence bien `UIHingeInteraction`.
@@ -743,8 +774,8 @@ Une fois les modifications mobiles terminées et vérifiées, produire une nouve
 archive signée et l’IPA locale :
 
 ```bash
-export T4_IOS_BUILD_NUMBER=17
-export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-17"
+export T4_IOS_BUILD_NUMBER=25
+export T4_IOS_BUILD_DIR="$PWD/build/ios-local/build-25"
 export T4_IOS_DERIVED_DATA_PATH="$PWD/build/ios-local/DerivedData"
 vp run t4:ios:archive
 vp run t4:ios:export
@@ -850,18 +881,16 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build : `0.1.0 (23)`, valide et distribué à T4 Interne, UUID
-> `953c8611-97ee-464a-9a3d-ce94f605037b`. Branche `t4-mobile-4682`, base
-> `v0.1.10-nightly.20261114.4682`, dernier commit `6529f21a53`. Les modifications
-> des builds 17 à 23 ne sont **pas commitées** : patch exact dans
-> `build/ios-local/build-23/source.patch`. Aucun push ni PR.
-> Compiler uniquement avec **Xcode 27.1 ou plus** (27.2 installé) : sinon l’adaptation
-> iPhone Duo disparaît sans erreur.
-> Point de retour : `t4-mobile-before-4682-20261114`. Preuves dans
-> `build/ios-local/build-23/`, `build/ios-local/build-22-recette/` et
-> `build/upgrades/4682-20261114/`.
-> Pour une nouvelle livraison, vérifier Apple et prendre un numéro supérieur à 23.
+> Dernier build : `0.1.0 (24)`, valide et distribué à T4 Interne, UUID
+> `4c448edc-ed92-4aac-ad3d-a13fad71fa02`. Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
+> fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`, étiquette `t4-mobile-nightly-4994-20261120`.
+> Pour toute compilation, utiliser **Xcode 27.1 ou plus** pour l’adaptation iPhone
+> Duo. Le build 23 est l’ancienne recompilation du Duo sur Nightly 4682.
+> Point de retour : `t4-mobile-before-upgrade-20261120`. Preuves : `build/ios-local/build-24/`
+> et `build/upgrades/4994-20261120/`.
+> Avant la prochaine livraison, vérifier Apple et choisir un numéro supérieur à
+> 24 et à tout numéro déjà pris, à partir de 25.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
-> Les serveurs réels n’ont pas été mis à jour. Ne pas montrer les secrets et ne pas
-> toucher à T4 PC, Plume ou Myga.
+> Garder les serveurs réels en lecture seule et protéger les secrets. Ne pas toucher
+> à T4 PC, Plume ou Myga.
