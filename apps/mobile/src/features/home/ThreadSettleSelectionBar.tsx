@@ -1,3 +1,4 @@
+import { useGT } from "gt-react-native";
 import type { ReactNode } from "react";
 import { Pressable, View } from "react-native";
 
@@ -24,12 +25,16 @@ export function ProjectSettleSelectionControl(props: {
   readonly onCancel: () => void;
   readonly onSettle: () => void;
 }) {
+  const gt = useGT();
+  const label = gt("Settle selection ({count})", { count: props.checkedCount });
   if (!props.selecting) {
     return (
       <View style={CONTROL_ROW_STYLE} className="justify-center">
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`Select threads to settle in ${props.projectTitle}`}
+          accessibilityLabel={gt("Select threads to settle in {project}", {
+            project: props.projectTitle,
+          })}
           accessibilityState={{ disabled: props.disabled }}
           disabled={props.disabled}
           hitSlop={10}
@@ -46,7 +51,7 @@ export function ProjectSettleSelectionControl(props: {
     <View style={CONTROL_ROW_STYLE} className="flex-row items-center gap-1">
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Settle selection (${props.checkedCount})`}
+        accessibilityLabel={label}
         accessibilityState={{ disabled: settleDisabled, busy: props.settling }}
         disabled={settleDisabled}
         hitSlop={8}
@@ -67,12 +72,12 @@ export function ProjectSettleSelectionControl(props: {
             settleDisabled && !props.settling ? "text-foreground-muted" : "text-primary-foreground",
           )}
         >
-          {`Settle selection (${props.checkedCount})`}
+          {label}
         </AppText>
       </Pressable>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Cancel selection"
+        accessibilityLabel={gt("Cancel selection")}
         disabled={props.settling}
         hitSlop={10}
         onPress={props.onCancel}

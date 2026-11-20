@@ -1,3 +1,4 @@
+import { useGT } from "gt-react-native";
 import { useAndroidFloatingTabs } from "../../settings/appearance/AppearancePreferencesProvider";
 import { WorkspaceNoTabs } from "./WorkspaceNoTabs";
 import { useEnabledNavigationTabs } from "./navigation-tabs";
@@ -11,6 +12,9 @@ import { AppBar } from "../../../components/ui/AppBar";
 import { WorkspaceEmptyDetail } from "../WorkspaceEmptyDetail";
 import { useAndroidControlSizing } from "../../../components/ui/useAndroidControlSizing";
 import { HomeRouteScreen } from "../../home/HomeRouteScreen";
+import { ScreenContent } from "../../../components/ui/ScreenContent";
+import { ListSearchToolbar } from "./ListSearchToolbar.android";
+import { IssuesScreen } from "../../issues/IssuesScreen";
 import { useAdaptiveWorkspaceLayout } from "../AdaptiveWorkspaceLayout";
 import { WorkspaceSettledContentWidthContext } from "../workspace-content-width";
 import { AndroidWorkspaceNavigation, FloatingWorkspaceTabs } from "./AndroidWorkspaceNavigation";
@@ -31,6 +35,7 @@ export function WorkspaceRootScreen() {
 }
 
 function WorkspaceRoot() {
+  const gt = useGT();
   const floatingTabsEnabled = useAndroidFloatingTabs();
   const { layout, startNewTask, workspacePageWidth } = useAdaptiveWorkspaceLayout();
   const workspace = useWorkspaceTabs()!;
@@ -92,16 +97,32 @@ function WorkspaceRoot() {
                 renderTab={(tab) =>
                   tab === "threads" ? (
                     <HomeRouteScreen />
-                  ) : tab !== "pullRequests" ? (
+                  ) : tab === "usage" ? (
                     <WorkspacePageFrame width={workspacePageWidth ?? null}>
                       <WorkspaceExtraTab tab={tab} />
                     </WorkspacePageFrame>
                   ) : layout.usesSplitView ? (
                     <>
                       <NativeStackScreenOptions options={{ headerShown: false }} />
-                      <AppBar embedded title="Agents" />
-                      <WorkspaceEmptyDetail tab="pullRequests" />
+                      <AppBar
+                        embedded
+                        title={
+                          tab === "issues"
+                            ? gt("Issues", { $context: "screen title, list of issues" })
+                            : gt("Agents")
+                        }
+                      />
+                      <WorkspaceEmptyDetail tab={tab} />
                     </>
+                  ) : tab === "issues" ? (
+                    <IssuesScreen
+                      renderFrame={(filters, list) => (
+                        <>
+                          <ListSearchToolbar tab="issues" filters={filters} />
+                          <ScreenContent>{list}</ScreenContent>
+                        </>
+                      )}
+                    />
                   ) : (
                     <HomeRouteScreen agents />
                   )

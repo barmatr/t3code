@@ -1,10 +1,13 @@
+import { useGT } from "gt-react-native";
 import { useEffect, useState } from "react";
 import { useNavigation, useNavigationState } from "@react-navigation/native";
 import { BackHandler, Keyboard } from "react-native";
 
+import { T4_MOBILE_NAME } from "../../../components/brandAssets";
 import { AppBar } from "../../../components/ui/AppBar";
 import { useWorkspaceConnectionState } from "../../../state/workspace";
 import { useHardwareKeyboardCommand } from "../../keyboard/hardwareKeyboardCommands";
+import { SharedSlotTitle } from "./SharedSlotTitle";
 import { WorkspaceBrandTitle } from "./WorkspaceBrandTitle";
 import { useWorkspaceTabs } from "./WorkspaceTabsContext";
 import {
@@ -13,6 +16,7 @@ import {
 } from "./WorkspaceListHeader.types";
 
 export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
+  const gt = useGT();
   const navigation = useNavigation();
   const workspace = useWorkspaceTabs();
   const isTabActive = workspace?.isTabActive;
@@ -54,12 +58,16 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
 
   return (
     <AppBar
-      title="T4 Mobile"
+      title={tab === "pullRequests" ? gt("Agents") : T4_MOBILE_NAME}
       titleContent={
-        <WorkspaceBrandTitle
-          accessibilityLabel={props.accessibilityLabel}
-          onOpenEnvironments={props.onOpenEnvironments}
-        />
+        tab === "pullRequests" ? (
+          <SharedSlotTitle tab={tab} />
+        ) : (
+          <WorkspaceBrandTitle
+            accessibilityLabel={props.accessibilityLabel}
+            onOpenEnvironments={props.onOpenEnvironments}
+          />
+        )
       }
       search={{
         value: search.value,
@@ -74,7 +82,7 @@ export function WorkspaceListHeader(props: WorkspaceListHeaderProps) {
         connectionState.hasConnections && props.filter.items.length > 0
           ? [
               {
-                title: "Filter threads",
+                title: gt("Filter threads"),
                 icon: workspaceListFilterIcon(props.filter.customized),
                 items: props.filter.items,
               },

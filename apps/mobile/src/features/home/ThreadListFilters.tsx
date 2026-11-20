@@ -3,6 +3,7 @@ import { GlassSurface } from "../../components/ui/GlassSurface";
 import { Pressable, ScrollView, View } from "react-native";
 import { AppText as Text } from "../../components/ui/AppText";
 import { cn } from "../../lib/cn";
+import { useGT, useMessages } from "gt-react-native";
 import { SymbolView } from "../../components/ui/AppSymbol";
 import { ListFilterMenu } from "../layout/workspace/ListFilterMenu";
 import type { EnvironmentId } from "@t3tools/contracts";
@@ -30,6 +31,9 @@ export function ThreadListFilters(props: {
   /** List padding the scroller bleeds through so pills start where row content does. */
   readonly gutter: number;
 }) {
+  const gt = useGT();
+  const m = useMessages();
+  const ageLabel = m(threadAgeOption(props.selectedAge).label);
   const selectedEnvironment = props.environments.find(
     (environment) => environment.environmentId === props.selectedEnvironmentId,
   );
@@ -45,13 +49,13 @@ export function ThreadListFilters(props: {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 10, gap: 8 }}
       >
         <ListFilterMenu
-          label={selectedEnvironment?.label ?? "All env"}
-          accessibilityLabel="Filter threads by environment"
+          label={selectedEnvironment?.label ?? gt("All env")}
+          accessibilityLabel={gt("Filter threads by environment")}
           active={selectedEnvironment !== undefined}
           actions={[
             {
               id: "all",
-              title: "All env",
+              title: gt("All env"),
               state: props.selectedEnvironmentId === null ? "on" : "off",
             },
             ...props.environments.map((environment) => ({
@@ -74,13 +78,13 @@ export function ThreadListFilters(props: {
           }}
         />
         <ListFilterMenu
-          label={selectedProject?.label ?? "All projects"}
-          accessibilityLabel="Filter threads by project"
+          label={selectedProject?.label ?? gt("All projects")}
+          accessibilityLabel={gt("Filter threads by project")}
           active={selectedProject !== undefined}
           actions={[
             {
               id: "all",
-              title: "All projects",
+              title: gt("All projects"),
               state: props.selectedProjectKey === null ? "on" : "off",
             },
             ...props.projects.map((project) => ({
@@ -100,18 +104,18 @@ export function ThreadListFilters(props: {
           }}
         />
         <ListFilterMenu
-          label={props.hot ? "All Ages · hot" : threadAgeOption(props.selectedAge).label}
+          label={props.hot ? gt("All Ages · hot") : ageLabel}
           disabled={props.hot}
           accessibilityHint={
             props.hot
-              ? `Hot ignores age. ${threadAgeOption(props.selectedAge).label} will return when hot is off.`
+              ? gt("Hot ignores age. {age} will return when hot is off.", { age: ageLabel })
               : undefined
           }
-          accessibilityLabel="Filter threads by age"
+          accessibilityLabel={gt("Filter threads by age")}
           active={!props.hot && props.selectedAge !== "all"}
           actions={THREAD_AGE_OPTIONS.map((option) => ({
             id: option.id,
-            title: option.label,
+            title: m(option.label),
             state: option.id === props.selectedAge ? "on" : "off",
           }))}
           onSelect={(id) => {
@@ -124,7 +128,7 @@ export function ThreadListFilters(props: {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              props.hot ? "Reset environment and project filters" : "Reset thread filters"
+              props.hot ? gt("Reset environment and project filters") : gt("Reset thread filters")
             }
             className="h-8 w-8 items-center justify-center"
             onPress={() => {
@@ -145,13 +149,14 @@ export function HotFilterButton(props: {
   readonly hot: boolean;
   readonly onChange: (hot: boolean) => void;
 }) {
+  const gt = useGT();
   return (
     <View style={{ width: 44, height: 44, overflow: "visible" }}>
       <GlassSurface chrome="none" style={{ width: 44, height: 44, borderRadius: 22 }}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Hot conversations"
-          accessibilityHint="Shows actions, unread replies and agents at work, at any age"
+          accessibilityLabel={gt("Hot conversations")}
+          accessibilityHint={gt("Shows actions, unread replies and agents at work, at any age")}
           accessibilityState={{ selected: props.hot }}
           onPress={() => props.onChange(!props.hot)}
           className={cn(

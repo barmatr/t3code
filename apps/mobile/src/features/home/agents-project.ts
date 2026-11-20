@@ -4,6 +4,7 @@ import { EnvironmentId, ProjectId } from "@t3tools/contracts";
 export const AGENTS_PROJECT = {
   environmentId: EnvironmentId.make("0a16ae11-4b0b-47f1-851d-5c4272f6f64f"),
   projectId: ProjectId.make("mcp:849be1d4-c343-428a-946d-a411d3f33a54"),
+  // oxlint-disable-next-line t3code/no-untranslated-copy -- Proper name of the user’s project.
   title: "Direction agentique",
 };
 

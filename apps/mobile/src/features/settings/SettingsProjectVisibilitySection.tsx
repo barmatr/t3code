@@ -1,4 +1,5 @@
-import { useAtomSet, useAtomValue } from "@effect/atom-react";
+import { T, useGT, useMessages } from "gt-react-native";
+import { useAtomValue } from "@effect/atom-react";
 import { AsyncResult } from "effect/reactivity";
 import { useState } from "react";
 import { Pressable, View } from "react-native";
@@ -9,7 +10,8 @@ import { SymbolView } from "../../components/ui/AppSymbol";
 import { Button } from "../../components/ui/Button";
 import { scopedProjectKey } from "../../lib/scopedEntities";
 import { useProjects } from "../../state/entities";
-import { mobilePreferencesAtom, updateMobilePreferencesAtom } from "../../state/preferences";
+import { mobilePreferencesAtom, saveMobilePreferences } from "../../state/preferences";
+import { useAtomCommand } from "../../state/use-atom-command";
 import { useMobileProjectGroupingSettings } from "../../state/project-grouping";
 import { useHiddenProjectKeys, useProjectPickerScopes } from "../../state/project-visibility";
 import { moveProjectScope, projectVisibilityPatch } from "../../state/project-visibility.logic";
@@ -20,19 +22,24 @@ import { SettingsDragHandle } from "./components/SettingsDragHandle";
 export function SettingsProjectVisibilitySection(props: {
   readonly onDraggingChange: (dragging: boolean) => void;
 }) {
+  const gt = useGT();
+  const messages = useMessages();
   const projects = useProjects();
   const grouping = useMobileProjectGroupingSettings();
   const scopes = useProjectPickerScopes(
-    buildHomeProjectScopes({
-      projects,
-      environmentId: null,
-      projectGroupingMode: grouping.sidebarProjectGroupingMode,
-    }),
+    buildHomeProjectScopes(
+      {
+        projects,
+        environmentId: null,
+        projectGroupingMode: grouping.sidebarProjectGroupingMode,
+      },
+      messages,
+    ),
   );
   const hidden = useHiddenProjectKeys();
   const preferences = useAtomValue(mobilePreferencesAtom);
   const ready = AsyncResult.isSuccess(preferences) && !preferences.waiting;
-  const save = useAtomSet(updateMobilePreferencesAtom);
+  const save = useAtomCommand(saveMobilePreferences);
   const [drag, setDrag] = useState<{ key: string; translation: number } | null>(null);
   const [heights, setHeights] = useState<ReadonlyMap<string, number>>(() => new Map());
   const [drops, setDrops] = useState(0);
@@ -58,8 +65,10 @@ export function SettingsProjectVisibilitySection(props: {
   const to = drag === null ? -1 : dropIndex(from, drag.translation);
   return (
     <SettingsSection
-      title="Projets visibles et ordre"
-      footer="Décochez un projet pour le masquer du menu et des conversations sur ce mobile. Faites glisser sa poignée pour changer l’ordre. Les nouveaux projets restent visibles."
+      title={gt("Project visibility and order")}
+      footer={gt(
+        "Uncheck a project to hide it from menus and conversations on this device. Drag its handle to reorder it. New projects remain visible.",
+      )}
     >
       {scopes.map((scope, index) => {
         const checked = scope.projectRefs.some(
@@ -116,17 +125,19 @@ export function SettingsProjectVisibilitySection(props: {
         );
       })}
       {scopes.length === 0 ? (
-        <Text className="px-4 py-3 text-foreground-muted">Aucun projet disponible.</Text>
+        <Text className="px-4 py-3 text-foreground-muted">
+          <T>No projects available.</T>
+        </Text>
       ) : null}
       <View className="flex-row flex-wrap gap-2 px-3 py-2">
         <Button
-          label="Tout afficher"
+          label={gt("Show all projects")}
           tone="text"
           disabled={!ready || hidden.size === 0}
           onPress={() => save({ hiddenProjectKeys: [] })}
         />
         <Button
-          label="Ordre par défaut"
+          label={gt("Default order")}
           tone="text"
           disabled={!ready}
           onPress={() => save({ projectPickerOrder: [] })}

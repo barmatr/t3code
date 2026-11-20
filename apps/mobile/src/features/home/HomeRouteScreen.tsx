@@ -2,11 +2,10 @@ import { uuidv4 } from "../../lib/uuid";
 import { ThreadUndoNotice } from "./ThreadUndoNotice";
 import { use } from "react";
 import { NativePrimaryColumnContext } from "../../native/v5-workspace-context";
-import * as Arr from "effect/Array";
-import * as Order from "effect/Order";
 import { useNavigation } from "@react-navigation/native";
 import { useMemo, useState } from "react";
 import { Platform, View } from "react-native";
+import { useGT, useMessages } from "gt-react-native";
 
 import type { EnvironmentThreadShell } from "@t3tools/client-runtime/state/shell";
 import { resolveScratchProjectScopeKey } from "@t3tools/client-runtime/state/project-grouping";
@@ -37,7 +36,7 @@ import { useSelectWorkspaceTab } from "../layout/workspace/useSelectWorkspaceTab
 import { useSelectWorkspaceDetail } from "../layout/workspace/useSelectWorkspaceDetail";
 import { WorkspaceListEmptyDetail } from "../layout/workspace/WorkspaceListEmptyDetail";
 import { WorkspaceListHeader } from "../layout/workspace/WorkspaceListHeader";
-import { buildHomeListFilterMenuItems } from "./home-list-filter-menu";
+import { buildHomeListFilterMenuItems, homeListFilterEnvironments } from "./home-list-filter-menu";
 import { AGENTS_PROJECT, isHomeTabProject, resolveAgentsProject } from "./agents-project";
 import { scopedProjectKey } from "../../lib/scopedEntities";
 import { useHiddenProjectKeys, useProjectPickerScopes } from "../../state/project-visibility";
@@ -46,6 +45,8 @@ import { ScreenContent } from "../../components/ui/ScreenContent";
 
 /** T4: `agents` renders the Agents tab, a fixed list of Direction agentique threads. */
 export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sidebar?: boolean }) {
+  const gt = useGT();
+  const m = useMessages();
   const nativePrimaryColumn = use(NativePrimaryColumnContext);
   const { layout, setPrimarySidebarSearchQuery, startNewTask } = useAdaptiveWorkspaceLayout();
   const { primarySidebarSearchQuery } = useWorkspacePaneState();
@@ -120,23 +121,8 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
   const pendingTasks = usePendingNewTasks().filter((task) => isHomeTabProject(task, props.agents));
   const { openPendingTask, confirmDeletePendingTask } =
     usePendingTaskListActions(selectThreadRoute);
-  const connectionStateByEnvironmentId = new Map(
-    workspaceEnvironments.map(
-      (environment) => [environment.environmentId, environment.connectionState] as const,
-    ),
-  );
-  const environments = Arr.sort(
-    Object.values(savedConnectionsById)
-      .filter(
-        (connection) => !props.agents || connection.environmentId === AGENTS_PROJECT.environmentId,
-      )
-      .map((connection) => ({
-        environmentId: connection.environmentId,
-        label: connection.environmentLabel,
-        connectionState:
-          connectionStateByEnvironmentId.get(connection.environmentId) ?? "available",
-      })),
-    Order.mapInput(Order.String, (environment: { readonly label: string }) => environment.label),
+  const environments = homeListFilterEnvironments(workspaceEnvironments).filter(
+    (environment) => !props.agents || environment.environmentId === AGENTS_PROJECT.environmentId,
   );
   const availableEnvironmentIds = useMemo(
     () => new Set(environments.map((environment) => environment.environmentId)),
@@ -168,11 +154,14 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
     },
   );
   const projectFilterOptions = useProjectPickerScopes(
-    buildHomeProjectScopes({
-      projects,
-      environmentId: selectedEnvironmentId,
-      projectGroupingMode,
-    }),
+    buildHomeProjectScopes(
+      {
+        projects,
+        environmentId: selectedEnvironmentId,
+        projectGroupingMode,
+      },
+      m,
+    ),
   ).map((scope) => ({
     key: scope.key,
     label: scope.title,
@@ -198,7 +187,11 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
     <AndroidHomeFabLayout onStartNewTask={startNewTask}>
       <>
         <WorkspaceListHeader
-          accessibilityLabel={props.agents ? "T4 Mobile, Agents" : "T4 Mobile, Threads"}
+          accessibilityLabel={
+            props.agents
+              ? gt("{product}, Agents", { product: "T4 Mobile" })
+              : gt("{product}, Threads", { product: "T4 Mobile" })
+          }
           workspaceTab={workspaceTab}
           hot={hot}
           onHotChange={onHotChange}
@@ -206,8 +199,10 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
           search={{
             value: searchQuery,
             onChangeText: setSearchQuery,
-            placeholder: props.agents ? "Rechercher un agent" : "Search",
-            accessibilityLabel: props.agents ? "Rechercher un agent" : "Search threads",
+            placeholder: props.agents
+              ? gt("Search agents")
+              : gt("Search", { $context: "search field placeholder" }),
+            accessibilityLabel: props.agents ? gt("Search agents") : gt("Search threads"),
           }}
           filter={{
             customized:
@@ -218,17 +213,20 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
             // The Agents list has a fixed scope: no environment, project or age filter.
             items: props.agents
               ? []
-              : buildHomeListFilterMenuItems({
-                  environments,
-                  projects: projectFilterOptions,
-                  selectedEnvironmentId,
-                  selectedProjectKey,
-                  selectedAge,
-                  hot,
-                  onEnvironmentChange: setSelectedEnvironmentId,
-                  onProjectChange: setSelectedProjectKey,
-                  onAgeChange: setSelectedAge,
-                }),
+              : buildHomeListFilterMenuItems(
+                  {
+                    environments,
+                    projects: projectFilterOptions,
+                    selectedEnvironmentId,
+                    selectedProjectKey,
+                    selectedAge,
+                    hot,
+                    onEnvironmentChange: setSelectedEnvironmentId,
+                    onProjectChange: setSelectedProjectKey,
+                    onAgeChange: setSelectedAge,
+                  },
+                  m,
+                ),
           }}
         />
 
@@ -236,9 +234,11 @@ export function HomeRouteScreen(props: { readonly agents?: boolean; readonly sid
           <ScreenContent>
             <View className="flex-1 justify-center px-8">
               <EmptyState
-                title="Direction agentique indisponible"
-                detail="Connecte le MacBook qui héberge Direction agentique pour retrouver tes agents."
-                actionLabel="Connexions"
+                title={gt("{project} is unavailable", { project: AGENTS_PROJECT.title })}
+                detail={gt("Connect the MacBook hosting {project} to find your agents.", {
+                  project: AGENTS_PROJECT.title,
+                })}
+                actionLabel={gt("Connections")}
                 onAction={() => openSettings(navigation, "SettingsEnvironments")}
               />
             </View>

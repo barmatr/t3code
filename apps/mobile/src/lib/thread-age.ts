@@ -1,11 +1,13 @@
+import { msg } from "gt-react-native";
+
 export const THREAD_AGE_OPTIONS = [
-  { id: "all", label: "All Ages", durationMs: null },
-  { id: "10m", label: "Last 10 minutes", durationMs: 10 * 60_000 },
-  { id: "1h", label: "Last hour", durationMs: 60 * 60_000 },
-  { id: "1d", label: "Last day", durationMs: 24 * 60 * 60_000 },
-  { id: "5d", label: "Last 5 days", durationMs: 5 * 24 * 60 * 60_000 },
+  { id: "all", label: msg("All Ages"), durationMs: null },
+  { id: "10m", label: msg("Last 10 minutes"), durationMs: 10 * 60_000 },
+  { id: "1h", label: msg("Last hour"), durationMs: 60 * 60_000 },
+  { id: "1d", label: msg("Last day"), durationMs: 24 * 60 * 60_000 },
+  { id: "5d", label: msg("Last 5 days"), durationMs: 5 * 24 * 60 * 60_000 },
   // T4 : the reverse filter, threads older than 5 days.
-  { id: "older5d", label: "> 5 days", durationMs: 5 * 24 * 60 * 60_000, older: true },
+  { id: "older5d", label: msg("> 5 days"), durationMs: 5 * 24 * 60 * 60_000, older: true },
 ] as const;
 
 export type ThreadAge = (typeof THREAD_AGE_OPTIONS)[number]["id"];

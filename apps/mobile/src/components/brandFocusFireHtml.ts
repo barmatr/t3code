@@ -11,6 +11,7 @@ export function brandFocusFireHtml(
   mode: "burst" | "continuous" = "burst",
   cornerRadius = 12,
 ): string {
+  // oxlint-disable-next-line t3code/no-untranslated-copy -- The string is executable HTML and has no visible copy.
   return `<!doctype html>
 <html><head><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'">

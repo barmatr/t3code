@@ -6,6 +6,7 @@ import {
   workspaceSelectionsIn,
   workspaceTabColumns,
   workspaceTabNavigationState,
+  workspaceTabPage,
 } from "./workspace-tab-navigation";
 
 const home = { key: "home", name: "Home" };
@@ -31,7 +32,7 @@ const { StackRouter } = NodeModule.createRequire(
 )("@react-navigation/routers") as {
   readonly StackRouter: typeof import("@react-navigation/native").StackRouter;
 };
-const available = { thread: () => true, pullRequest: () => true };
+const available = { thread: () => true, pullRequest: () => true, issue: () => true };
 const names = (state: { routes: readonly { name: string }[] }) =>
   state.routes.map((route) => route.name);
 
@@ -117,6 +118,10 @@ describe("opening a workspace tab", () => {
         workspaceTabNavigationState(state, "settings", { settings: "SettingsMicrophone" }, columns),
       ),
     ).toEqual(["Home", "Settings", "SettingsVoice"]);
+    expect(workspaceTabPage(state, "pullRequests", selections, columns)).toBeUndefined();
+    expect(
+      workspaceTabNavigationState(state, "settings", selections, columns).routes.at(-1)?.key,
+    ).toBe(workspaceTabPage(state, "settings", selections, columns)?.key);
   });
 
   it("keeps the route that is already open, so re-selecting a tab doesn't rebuild it", () => {
@@ -171,7 +176,7 @@ describe("opening a workspace tab", () => {
   });
 
   it("falls back to the list for a chat that no longer exists, or an unknown Settings page", () => {
-    const missing = { thread: () => false, pullRequest: () => true };
+    const missing = { thread: () => false, pullRequest: () => true, issue: () => true };
     expect(
       names(
         workspaceTabNavigationState(
