@@ -58,6 +58,7 @@ import { cn } from "../../lib/cn";
 import { copyTextWithHaptic } from "../../lib/copyTextWithHaptic";
 import { copyThreadReference } from "../../lib/copyThreadReference";
 import { useUniwindTheme } from "../../lib/useUniwindTheme";
+import { useFormattingLocale } from "../../i18n/I18nProvider";
 import { useEnvironmentScope } from "../../state/session";
 import type { PendingNewTask } from "../../state/use-pending-new-tasks";
 import {
@@ -1012,11 +1013,13 @@ export const ThreadListV2Row = memo(function ThreadListV2Row(props: {
     snoozable: canSnooze(thread, { now: snoozeGateNow }),
     snoozed: snoozedRow,
   });
+  const locale = useFormattingLocale();
   const snoozePresets = resolveThreadListV2SnoozePresets(
     {
       secondary: swipeActions.secondary,
       now: props.snoozePresetMinute || snoozeGateNow,
       presets: props.snoozePresets,
+      locale,
     },
     m,
   );

@@ -219,10 +219,11 @@ export interface SnoozePreset {
 export interface SnoozePresetOptions {
   readonly presets?: ReadonlyArray<SnoozePresetSetting>;
   readonly formatTime?: (date: Date) => string;
+  readonly locale?: string;
 }
 
-function snoozeTimeOfDayLabel(date: Date): string {
-  return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+function snoozeTimeOfDayLabel(date: Date, locale?: string): string {
+  return date.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 }
 
 // Calendar-day advance instead of adding DAY_MS: fixed millisecond offsets
@@ -314,8 +315,9 @@ export function snoozePresetId(setting: SnoozePresetSetting): string {
 export function resolveSnoozePreset(
   setting: SnoozePresetSetting,
   now: Date,
-  formatTime: (date: Date) => string = snoozeTimeOfDayLabel,
+  formatTime?: (date: Date) => string,
   resolve: MFunctionType = mFallback,
+  locale?: string,
 ): SnoozePreset | null {
   let wake: Date;
   let daysAhead = 0;
@@ -331,14 +333,14 @@ export function resolveSnoozePreset(
   const label = snoozePresetLabel(setting, daysAhead, resolve);
   // Durations and "Next week" don't name the wake day, so a wake on another day shows it.
   const labelNamesDay = setting.kind === "at" && !(daysAhead > 1 && setting.day === "monday");
-  const time = formatTime(wake);
+  const time = formatTime ? formatTime(wake) : snoozeTimeOfDayLabel(wake, locale);
   return {
     id: snoozePresetId(setting),
     label,
     whenLabel:
       labelNamesDay || wake.toDateString() === now.toDateString()
         ? time
-        : `${wake.toLocaleDateString(undefined, { weekday: "short" })} ${time}`,
+        : `${wake.toLocaleDateString(locale, { weekday: "short" })} ${time}`,
     snoozedUntil: wake.toISOString(),
   };
 }
@@ -355,7 +357,10 @@ export function resolveSnoozePresets(
   const seen = new Set<number>();
   return (
     (options.presets ?? DEFAULT_SNOOZE_PRESETS)
-      .flatMap((setting) => resolveSnoozePreset(setting, now, options.formatTime, resolve) ?? [])
+      .flatMap(
+        (setting) =>
+          resolveSnoozePreset(setting, now, options.formatTime, resolve, options.locale) ?? [],
+      )
       // flatMap returned a new array; Hermes has no `toSorted`.
       .sort((a, b) => wakeMinute(a) - wakeMinute(b))
       .filter((preset) => {

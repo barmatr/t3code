@@ -91,6 +91,18 @@ describe("resolveThreadListV2SnoozeMenuSelection", () => {
 });
 
 describe("resolveThreadListV2SnoozePresets", () => {
+  it("uses the app's formatting locale for the snooze weekday and time", () => {
+    const [preset] = resolveThreadListV2SnoozePresets({
+      secondary: "snooze",
+      now: new Date(2026, 10, 20, 15).toISOString(),
+      presets: [{ kind: "at", day: "monday", time: "09:00" }],
+      locale: "fr-FR",
+    });
+
+    expect(preset?.whenLabel).toMatch(/^lun\. 0?9:00$/);
+    expect(preset?.snoozedUntil).toBe(new Date(2026, 10, 23, 9).toISOString());
+  });
+
   it("reads preset times from the list minute, not the clock at first render", () => {
     using _timers = { [Symbol.dispose]: () => vi.useRealTimers() };
     vi.useFakeTimers({ now: new Date(2026, 4, 8, 10) });
