@@ -125,23 +125,45 @@ PLIST
   echo "IPA exportée localement ; aucun envoi effectué."
 }
 
+# One t4:ios command at a time: a cleanup must never run under a build.
+lock() {
+  local lock_dir="${ROOT}/build/ios-local/.ios-local.lock"
+  mkdir -p "$(dirname "${lock_dir}")"
+  if ! mkdir "${lock_dir}" 2>/dev/null; then
+    local owner
+    owner="$(cat "${lock_dir}/pid" 2>/dev/null || true)"
+    if [[ -n "${owner}" ]] && kill -0 "${owner}" 2>/dev/null; then
+      echo "Une autre commande t4:ios est en cours (processus ${owner}) : attendre sa fin." >&2
+      return 1
+    fi
+    rm -rf "${lock_dir}"
+    mkdir "${lock_dir}"
+  fi
+  echo "$$" > "${lock_dir}/pid"
+  trap "rm -rf '${lock_dir}'" EXIT
+}
+
 # Frees the disk once a build is confirmed available in TestFlight: compilation
-# products are temporary. The newest archive and the newest IPA stay, so the live
-# build can be sent again and its crash reports symbolicated.
+# products are temporary. T4_IOS_DELIVERED_BUILD names that build. Its archive and
+# its IPA stay, for a resend and for crash symbolication; so does anything newer or
+# unidentified, so an unconfirmed build never replaces the live one.
 clean() {
   local dry_run="no"
   [[ "${1:-}" == "--dry-run" ]] && dry_run="yes"
-  local local_root="${ROOT}/build/ios-local"
-  local derived="${T4_IOS_DERIVED_DATA_PATH:-${local_root}/DerivedData}"
-  local archives="${T4_IOS_ARCHIVES_DIR:-${HOME}/Library/Developer/Xcode/Archives}"
-  [[ "$(basename "${derived}")" == "DerivedData" ]] || {
-    echo "Dossier de compilation inattendu : ${derived}" >&2; return 1;
+  local delivered="${T4_IOS_DELIVERED_BUILD:-}"
+  [[ "${delivered}" =~ ^[0-9]+$ ]] || {
+    echo "Indiquer le build confirmé dans TestFlight : T4_IOS_DELIVERED_BUILD=26 vp run t4:ios:clean" >&2
+    return 2
   }
+  local local_root="${ROOT}/build/ios-local"
+  local archives="${T4_IOS_ARCHIVES_DIR:-${HOME}/Library/Developer/Xcode/Archives}"
   if pgrep -x xcodebuild >/dev/null; then
     echo "Un build Xcode est en cours : relancer le nettoyage une fois ce build terminé." >&2
     return 1
   fi
 
+  archive_value() { /usr/libexec/PlistBuddy -c "Print :ApplicationProperties:$2" "$1/Info.plist" 2>/dev/null || true; }
+  ipa_value() { unzip -p "$1" 'Payload/*.app/Info.plist' 2>/dev/null | plutil -extract "$2" raw -o - - 2>/dev/null || true; }
   remove() {
     [[ -e "$1" ]] || return 0
     local size
@@ -155,37 +177,55 @@ clean() {
   }
   free_gb() { df -k "${ROOT}" | awk 'NR==2 { printf "%.1f", $4 / 1048576 }'; }
 
-  local before item
+  # Sort every T4 archive and IPA before deleting anything: without the delivered
+  # pair on disk, nothing is removed.
+  local item version old_archives=() kept_archives=() old_ipas=() kept_ipas=()
+  for item in "${archives}"/*/*.xcarchive; do
+    [[ -d "${item}" && ! -L "${item}" ]] || continue
+    [[ "$(archive_value "${item}" CFBundleIdentifier)" == "${BUNDLE}" ]] || continue
+    version="$(archive_value "${item}" CFBundleVersion)"
+    if [[ "${version}" =~ ^[0-9]+$ ]] && ((version < delivered)); then
+      old_archives+=("${item}")
+    elif [[ "${version}" == "${delivered}" ]]; then
+      kept_archives+=("${item}")
+    fi
+  done
+  for item in "${local_root}"/export/*.ipa "${local_root}"/*/export/*.ipa; do
+    [[ -f "${item}" && ! -L "${item}" ]] || continue
+    [[ "$(ipa_value "${item}" CFBundleIdentifier)" == "${BUNDLE}" ]] || continue
+    version="$(ipa_value "${item}" CFBundleVersion)"
+    if [[ "${version}" =~ ^[0-9]+$ ]] && ((version < delivered)); then
+      old_ipas+=("${item}")
+    elif [[ "${version}" == "${delivered}" ]]; then
+      kept_ipas+=("${item}")
+    fi
+  done
+  ((${#kept_archives[@]} > 0 && ${#kept_ipas[@]} > 0)) || {
+    echo "Archive ou IPA du build ${delivered} introuvable : rien n’a été supprimé." >&2
+    return 1
+  }
+
+  local before
   before="$(free_gb)"
-  remove "${derived}"
-  remove "${MOBILE}/ios/Pods"
-  remove "${MOBILE}/ios/build"
-
-  # Archive names carry their date and time, so the sorted glob ends on the newest.
-  local t4_archives=()
-  for item in "${archives}"/*/"T4 Mobile "*.xcarchive; do
-    [[ -d "${item}" ]] || continue
-    [[ "$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' \
-      "${item}/Info.plist" 2>/dev/null)" == "${BUNDLE}" ]] || continue
-    t4_archives+=("${item}")
-  done
-  local count="${#t4_archives[@]}" index
-  for ((index = 0; index < count - 1; index++)); do
-    remove "${t4_archives[index]}"
-    [[ "${dry_run}" == "yes" ]] || rmdir "$(dirname "${t4_archives[index]}")" 2>/dev/null || true
-  done
-  ((count == 0)) || echo "Archive gardée : ${t4_archives[count - 1]}"
-
-  local newest_ipa=""
-  for item in "${local_root}"/export/*.ipa "${local_root}"/*/export/*.ipa; do
-    [[ -f "${item}" ]] || continue
-    [[ -z "${newest_ipa}" || "${item}" -nt "${newest_ipa}" ]] && newest_ipa="${item}"
-  done
-  for item in "${local_root}"/export/*.ipa "${local_root}"/*/export/*.ipa; do
-    [[ -f "${item}" && "${item}" != "${newest_ipa}" ]] || continue
+  for item in "${local_root}/DerivedData" "${local_root}"/*/DerivedData; do
+    [[ -d "${item}" && ! -L "${item}" ]] || continue
     remove "${item}"
   done
-  [[ -z "${newest_ipa}" ]] || echo "IPA gardée : ${newest_ipa}"
+  remove "${MOBILE}/ios/Pods"
+  remove "${MOBILE}/ios/build"
+  for item in ${old_archives[@]+"${old_archives[@]}"}; do
+    remove "${item}"
+    [[ "${dry_run}" == "yes" ]] || rmdir "$(dirname "${item}")" 2>/dev/null || true
+  done
+  for item in ${old_ipas[@]+"${old_ipas[@]}"}; do
+    remove "${item}"
+  done
+  for item in "${kept_archives[@]}" "${kept_ipas[@]}"; do
+    echo "Gardé (build ${delivered}) : ${item}"
+  done
+  if [[ -n "${T4_IOS_DERIVED_DATA_PATH:-}" && "${T4_IOS_DERIVED_DATA_PATH}" != "${local_root}/"* ]]; then
+    echo "Hors de build/ios-local, laissé en place : ${T4_IOS_DERIVED_DATA_PATH}"
+  fi
 
   if [[ "${dry_run}" == "yes" ]]; then
     echo "Simulation : rien n’a été supprimé. Espace libre : ${before} Go."
@@ -196,10 +236,13 @@ clean() {
 
 case "${ACTION}" in
   doctor) doctor ;;
-  prebuild) prebuild ;;
-  archive) archive yes ;;
-  archive-unsigned) archive no ;;
-  export) export_ipa ;;
-  clean) clean "${2:-}" ;;
+  prebuild) lock; prebuild ;;
+  archive) lock; archive yes ;;
+  archive-unsigned) lock; archive no ;;
+  export) lock; export_ipa ;;
+  clean)
+    [[ "${2:-}" == "--dry-run" ]] || lock
+    clean "${2:-}"
+    ;;
   *) echo "Usage : $0 {doctor|prebuild|archive|archive-unsigned|export|clean [--dry-run]}" >&2; exit 2 ;;
 esac

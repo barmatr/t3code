@@ -8,8 +8,8 @@ un serveur contre les données réelles de T3.
   EMAX `GY9P9U75F3`. Dev et preview ont des identifiants et schémas suffixés.
 - Racine : `vp run t4:ios:doctor`, `vp run t4:ios:prebuild`,
   `vp run t4:ios:archive`, `vp run t4:ios:export`. L’export reste local.
-  `vp run t4:ios:clean` après chaque livraison confirmée : règle dans
-  [AGENTS.md racine](../../AGENTS.md).
+  `T4_IOS_DELIVERED_BUILD=<numéro> vp run t4:ios:clean` après chaque livraison
+  confirmée : règle dans [AGENTS.md racine](../../AGENTS.md).
 - `vp run t4:ios:archive:unsigned` valide seulement la compilation, sans produire
   une app distribuable. Prérequis et blocages : [T4-MOBILE.md](../../T4-MOBILE.md).
 - Accès Apple, signature et déploiement : lire

@@ -828,18 +828,25 @@ build et relit cet état. Il n’invite personne et ne modifie pas la distributi
 automatique du groupe. L’agent effectue cette association à chaque livraison.
 
 Une fois le build confirmé disponible pour **T4 Interne**, libérer le disque
-(consigne de Raoul du 21 novembre 2026) :
+(consigne de Raoul du 21 novembre 2026), en donnant le numéro de ce build :
 
 ```bash
-bash scripts/t4/ios-local.sh clean --dry-run   # liste sans rien supprimer
-vp run t4:ios:clean
+T4_IOS_DELIVERED_BUILD=26 bash scripts/t4/ios-local.sh clean --dry-run   # liste sans rien supprimer
+T4_IOS_DELIVERED_BUILD=26 vp run t4:ios:clean
 ```
 
-La suppression est définitive. Elle porte sur les fichiers de compilation
-(`build/ios-local/DerivedData`, Pods, `ios/build`), les anciennes archives Xcode de
-T4 et les anciens `.ipa`. La dernière archive et le dernier `.ipa` restent, avec
-les journaux et les preuves de chaque dossier `build-N`. La commande s’arrête si
-un build Xcode tourne. Le build suivant repart d’un dossier vide : environ
+La suppression est définitive. Elle porte sur les fichiers de compilation de
+`build/ios-local` (`DerivedData`), les Pods, `ios/build`, et sur les archives Xcode
+et les `.ipa` des builds **antérieurs** au numéro donné : leurs binaires et leurs
+symboles de débogage disparaissent, et les chemins cités dans les historiques
+ci-dessus deviennent de simples références. L’archive et le `.ipa` du build donné
+restent, comme tout build plus récent, avec les journaux et les preuves de chaque
+dossier `build-N`. Sans cette archive et ce `.ipa` sur le disque, la commande ne
+supprime rien.
+
+Les commandes `t4:ios:*` se verrouillent entre elles, et le nettoyage s’arrête si
+un `xcodebuild` tourne. Un build lancé depuis la fenêtre Xcode n’est pas détecté :
+le fermer avant de nettoyer. Le build suivant repart d’un dossier vide : environ
 8 min 30, contre 5 à 8 min avec les fichiers en place (builds 23 à 26).
 
 ## Méthode de compilation
