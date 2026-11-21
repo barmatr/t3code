@@ -15,7 +15,55 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison : 0.1.0 (24), base Nightly 4994
+## Dernière livraison : 0.1.0 (26), recette de la Nightly 4994
+
+Le **20 novembre 2026**, le build **26** a été compilé avec Xcode 27.2, signé,
+validé par Apple et distribué à **T4 Interne**. UUID
+`25a31abc-e23e-49a6-be6d-38f79e60a439`. État final relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**, un testeur, notifications automatiques désactivées.
+
+- Contenu : build 25 plus le correctif de la recette du build 24, commit local
+  `91d9f1c87b`. Le menu Snooze suit la langue de l’app (« lun. 09:00 » au lieu de
+  « Mon 09:00 »). La barre latérale du Duo élargie, livrée non commitée, a été
+  commitée le 21 novembre 2026 (copie d’origine : `build/ios-local/build-26/source.patch`).
+- Recette du build 24 (Nightly 4994), iPhone 17 Simulator : aucune régression
+  fonctionnelle de la fusion. Certains libellés d’accessibilité natifs restent en
+  anglais. Duo non testable au simulateur. Rapport :
+  `build/ios-local/build-24-recette/RECETTE.md`.
+- Contrôles : 3 736 tests mobiles (quatre échecs connus dans
+  `app.config.test.ts`), 2 246 tests client-runtime, `layout.test.ts` 27 tests.
+  La constante 1,33 du Duo est présente dans le bundle Hermes de l’IPA. Arbre de
+  travail inchangé pendant la compilation.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-20/T4 Mobile 15.34.29.xcarchive`.
+- IPA : `build/ios-local/build-26/export/T4Mobile.ipa`, **64 336 199 octets**,
+  SHA-256 `9f065c52696e5fcb3edcb96918eaa27e171afb3852a5d5ad3da06291ee8bc2b4`.
+- Preuve de livraison : `build/ios-local/build-26/deployment.json`.
+
+## Historique : 0.1.0 (25), barre latérale du Duo élargie
+
+Le **20 novembre 2026**, le build **25** a été compilé avec Xcode 27.2, signé,
+validé par Apple et distribué à **T4 Interne**. UUID
+`5fa2cf4c-cfc0-45c7-9576-3c204b247be0`. État final relu : **VALID / INTERNAL_ONLY /
+IN_BETA_TESTING**, un testeur, notifications automatiques désactivées.
+
+- Demande de Raoul du 20 novembre 2026 : sur l’iPhone Duo en paysage, la barre
+  latérale qui se déploie est **33 % plus large**, soit 404 points au lieu de 304
+  sur l’écran déplié de 951 points. Elle laisse toujours au moins 320 points à la
+  page. Le Duo en portrait, l’iPad et l’iPhone gardent leur largeur actuelle.
+  Code : `deriveLayout` dans `apps/mobile/src/lib/layout.ts`, constante
+  `DUO_LANDSCAPE_SIDEBAR_SCALE`.
+- Sources : build 24 (`3328f81f9e`) plus cette modification **non commitée**,
+  enregistrée dans `build/ios-local/build-25/source.patch`. Arbre de travail
+  identique avant et après la compilation.
+- Contrôles : `layout.test.ts` (27 tests, dont deux nouveaux pour le Duo),
+  typecheck mobile et lint réussis. Pas d’essai simulateur ; la vérification se fait
+  sur le Duo de Raoul.
+- Archive : `~/Library/Developer/Xcode/Archives/2026-11-20/T4 Mobile 15.06.50.xcarchive`.
+- IPA : `build/ios-local/build-25/export/T4Mobile.ipa`, **64 649 948 octets**,
+  SHA-256 `c562c8f74dd387f3606e0d5de81827592b49d489e1ddbc8e12957ad8a297ed49`.
+- Preuve de livraison : `build/ios-local/build-25/deployment.json`.
+
+## Historique : 0.1.0 (24), base Nightly 4994
 
 Le **20 novembre 2026**, le build **24** a été compilé avec Xcode 27.2
 (27B52, SDK iOS 27.2), signé puis distribué à **T4 Interne**.
@@ -903,15 +951,16 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build : `0.1.0 (24)`, valide et distribué à T4 Interne, UUID
-> `4c448edc-ed92-4aac-ad3d-a13fad71fa02`. Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
+> Dernier build : `0.1.0 (26)`, valide et distribué à T4 Interne, UUID
+> `25a31abc-e23e-49a6-be6d-38f79e60a439` : commit `91d9f1c87b` plus la barre
+> latérale du Duo en paysage élargie de 33 %, non commitée (`build/ios-local/build-26/source.patch`). Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
 > fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`, étiquette `t4-mobile-nightly-4994-20261120`.
 > Pour toute compilation, utiliser **Xcode 27.1 ou plus** pour l’adaptation iPhone
 > Duo. Le build 23 est l’ancienne recompilation du Duo sur Nightly 4682.
 > Point de retour : `t4-mobile-before-upgrade-20261120`. Preuves : `build/ios-local/build-24/`
 > et `build/upgrades/4994-20261120/`.
 > Avant la prochaine livraison, vérifier Apple et choisir un numéro supérieur à
-> 24 et à tout numéro déjà pris, à partir de 25.
+> 26 et à tout numéro déjà pris, à partir de 27.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
 > Garder les serveurs réels en lecture seule et protéger les secrets. Ne pas toucher

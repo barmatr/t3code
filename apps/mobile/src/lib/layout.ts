@@ -12,6 +12,9 @@ const SPLIT_LAYOUT_MIN_HEIGHT = 600;
 
 const SPLIT_SIDEBAR_MIN_WIDTH = 280;
 const SPLIT_SIDEBAR_DEFAULT_MAX_WIDTH = 380;
+// T4 : the iPhone Duo's landscape sidebar is a third wider than the default split sidebar.
+const DUO_LANDSCAPE_SIDEBAR_SCALE = 1.33;
+const SPLIT_DETAIL_MIN_WIDTH = 320;
 
 export const CHAT_CONTENT_MAX_WIDTH = 960;
 // Limit Android reading width for wide foldables and keyboard-open split views.
@@ -146,18 +149,26 @@ export function deriveLayout(input: {
       region.x - metrics.safeArea.left >= SPLIT_SIDEBAR_MIN_WIDTH &&
       width - region.x - region.width - metrics.safeArea.right >= 320,
   );
+  const defaultSidebarWidth = clamp(
+    Math.round(width * 0.32),
+    SPLIT_SIDEBAR_MIN_WIDTH,
+    SPLIT_SIDEBAR_DEFAULT_MAX_WIDTH,
+  );
+  const sidebarWidth =
+    hasDuoGeometry && width > height
+      ? Math.max(
+          defaultSidebarWidth,
+          Math.min(
+            Math.round(defaultSidebarWidth * DUO_LANDSCAPE_SIDEBAR_SCALE),
+            usableWidth - SPLIT_DETAIL_MIN_WIDTH,
+          ),
+        )
+      : defaultSidebarWidth;
   return {
     variant,
     usesSplitView: true,
     listPaneWidth:
-      division?.x ??
-      (input.nativeWorkspace === true && variant === "medium"
-        ? 350
-        : clamp(
-            Math.round(width * 0.32),
-            SPLIT_SIDEBAR_MIN_WIDTH,
-            SPLIT_SIDEBAR_DEFAULT_MAX_WIDTH,
-          )),
+      division?.x ?? (input.nativeWorkspace === true && variant === "medium" ? 350 : sidebarWidth),
     ...(division ? { listPaneGap: division.width } : {}),
     shellPadding: 0,
   };

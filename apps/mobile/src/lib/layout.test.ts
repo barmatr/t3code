@@ -67,7 +67,8 @@ describe("native workspace sizing", () => {
       };
       const layout = deriveLayout({ ...size, nativeMetrics, nativeWorkspace });
       expect(layout.variant === "medium").toBe(overlay);
-      expect(layout.listPaneWidth).toBe(overlay ? 350 : size.width === 951 ? 304 : 280);
+      // T4 : 304 widened by a third in landscape on the Duo.
+      expect(layout.listPaneWidth).toBe(overlay ? 350 : size.width === 951 ? 404 : 280);
       for (const primarySidebarPreferredVisible of [true, false]) {
         expect(
           deriveWorkspacePaneLayout({
@@ -116,6 +117,36 @@ describe("native workspace sizing", () => {
     expect(
       deriveLayout({ ...nativeMetrics, nativeMetrics, nativeWorkspace: true }).usesSplitView,
     ).toBe(split);
+  });
+});
+
+describe("T4 : iPhone Duo landscape sidebar", () => {
+  const metricsFor = (width: number, height: number, hasHinge: boolean) => ({
+    width,
+    height,
+    hasHinge,
+    horizontalSizeClass: "regular" as const,
+    verticalBarEdge: "none" as const,
+    safeArea: { top: 24, bottom: 20, left: 0, right: 0 },
+    reservedRegions: [],
+  });
+
+  it("widens the Duo's landscape sidebar by a third, not other devices'", () => {
+    const duo = metricsFor(951, 669, true);
+    expect(deriveLayout({ ...duo, nativeMetrics: duo, nativeWorkspace: true }).listPaneWidth).toBe(
+      404,
+    );
+    const ipad = metricsFor(1180, 820, false);
+    expect(
+      deriveLayout({ ...ipad, nativeMetrics: ipad, nativeWorkspace: true }).listPaneWidth,
+    ).toBe(378);
+  });
+
+  it("keeps room for the page beside a widened sidebar", () => {
+    // 280 widened to 372 would leave the page under 320 points: the sidebar stops at 320.
+    const duo = metricsFor(640, 560, true);
+    const layout = deriveLayout({ ...duo, nativeMetrics: duo, nativeWorkspace: true });
+    expect(layout.listPaneWidth).toBe(320);
   });
 });
 
