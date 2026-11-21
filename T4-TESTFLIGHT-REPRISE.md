@@ -827,6 +827,21 @@ l’association, le script désactive les notifications automatiques du nouveau
 build et relit cet état. Il n’invite personne et ne modifie pas la distribution
 automatique du groupe. L’agent effectue cette association à chaque livraison.
 
+Une fois le build confirmé disponible pour **T4 Interne**, libérer le disque
+(consigne de Raoul du 21 novembre 2026) :
+
+```bash
+bash scripts/t4/ios-local.sh clean --dry-run   # liste sans rien supprimer
+vp run t4:ios:clean
+```
+
+La suppression est définitive. Elle porte sur les fichiers de compilation
+(`build/ios-local/DerivedData`, Pods, `ios/build`), les anciennes archives Xcode de
+T4 et les anciens `.ipa`. La dernière archive et le dernier `.ipa` restent, avec
+les journaux et les preuves de chaque dossier `build-N`. La commande s’arrête si
+un build Xcode tourne. Le build suivant repart d’un dossier vide : environ
+8 min 30, contre 5 à 8 min avec les fichiers en place (builds 23 à 26).
+
 ## Méthode de compilation
 
 Le parcours préparé compile avec Xcode sur ce Mac, puis envoie l’IPA à TestFlight.

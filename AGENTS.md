@@ -31,6 +31,15 @@ T3 Nightly `v0.1.8-nightly.20261104.4165`.
   Une instruction explicite contraire de Raoul pour la tâche prime. En cas de
   blocage technique, le résoudre si possible ; sinon décrire précisément le blocage
   et l’étape restante, sans annoncer une livraison accomplie.
+- **Nettoyage après chaque livraison — consigne de Raoul du 21 novembre 2026 :** les
+  fichiers de compilation sont temporaires et occupaient 17 Go. Dès que le build est
+  confirmé disponible pour **T4 Interne**, lancer `vp run t4:ios:clean` et donner
+  dans le compte rendu l’espace libre avant et après. La commande garde la dernière
+  archive et le dernier `.ipa`, qui servent à renvoyer le build et à lire ses rapports
+  de plantage. `node_modules` reste en place : il partage ses fichiers avec le
+  magasin pnpm, et sa suppression ne libère que 0,4 Go. Une copie de recette
+  (`../t4mobile-recette-*`) se retire en entier à la fin de la recette, une fois ses
+  modifications enregistrées ailleurs.
 - Les remotes servent à lire les sources. Aucun commit, push ou build EAS sans
   demande explicite. La livraison automatique ci-dessus utilise Xcode sur ce Mac.
 

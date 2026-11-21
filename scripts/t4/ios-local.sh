@@ -125,11 +125,81 @@ PLIST
   echo "IPA exportée localement ; aucun envoi effectué."
 }
 
+# Frees the disk once a build is confirmed available in TestFlight: compilation
+# products are temporary. The newest archive and the newest IPA stay, so the live
+# build can be sent again and its crash reports symbolicated.
+clean() {
+  local dry_run="no"
+  [[ "${1:-}" == "--dry-run" ]] && dry_run="yes"
+  local local_root="${ROOT}/build/ios-local"
+  local derived="${T4_IOS_DERIVED_DATA_PATH:-${local_root}/DerivedData}"
+  local archives="${T4_IOS_ARCHIVES_DIR:-${HOME}/Library/Developer/Xcode/Archives}"
+  [[ "$(basename "${derived}")" == "DerivedData" ]] || {
+    echo "Dossier de compilation inattendu : ${derived}" >&2; return 1;
+  }
+  if pgrep -x xcodebuild >/dev/null; then
+    echo "Un build Xcode est en cours : relancer le nettoyage une fois ce build terminé." >&2
+    return 1
+  fi
+
+  remove() {
+    [[ -e "$1" ]] || return 0
+    local size
+    size="$(du -sh "$1" | cut -f1 | tr -d ' ')"
+    if [[ "${dry_run}" == "yes" ]]; then
+      echo "À supprimer (${size}) : $1"
+    else
+      rm -rf -- "$1"
+      echo "Supprimé (${size}) : $1"
+    fi
+  }
+  free_gb() { df -k "${ROOT}" | awk 'NR==2 { printf "%.1f", $4 / 1048576 }'; }
+
+  local before item
+  before="$(free_gb)"
+  remove "${derived}"
+  remove "${MOBILE}/ios/Pods"
+  remove "${MOBILE}/ios/build"
+
+  # Archive names carry their date and time, so the sorted glob ends on the newest.
+  local t4_archives=()
+  for item in "${archives}"/*/"T4 Mobile "*.xcarchive; do
+    [[ -d "${item}" ]] || continue
+    [[ "$(/usr/libexec/PlistBuddy -c 'Print :ApplicationProperties:CFBundleIdentifier' \
+      "${item}/Info.plist" 2>/dev/null)" == "${BUNDLE}" ]] || continue
+    t4_archives+=("${item}")
+  done
+  local count="${#t4_archives[@]}" index
+  for ((index = 0; index < count - 1; index++)); do
+    remove "${t4_archives[index]}"
+    [[ "${dry_run}" == "yes" ]] || rmdir "$(dirname "${t4_archives[index]}")" 2>/dev/null || true
+  done
+  ((count == 0)) || echo "Archive gardée : ${t4_archives[count - 1]}"
+
+  local newest_ipa=""
+  for item in "${local_root}"/export/*.ipa "${local_root}"/*/export/*.ipa; do
+    [[ -f "${item}" ]] || continue
+    [[ -z "${newest_ipa}" || "${item}" -nt "${newest_ipa}" ]] && newest_ipa="${item}"
+  done
+  for item in "${local_root}"/export/*.ipa "${local_root}"/*/export/*.ipa; do
+    [[ -f "${item}" && "${item}" != "${newest_ipa}" ]] || continue
+    remove "${item}"
+  done
+  [[ -z "${newest_ipa}" ]] || echo "IPA gardée : ${newest_ipa}"
+
+  if [[ "${dry_run}" == "yes" ]]; then
+    echo "Simulation : rien n’a été supprimé. Espace libre : ${before} Go."
+  else
+    echo "Espace libre : ${before} Go avant, $(free_gb) Go après."
+  fi
+}
+
 case "${ACTION}" in
   doctor) doctor ;;
   prebuild) prebuild ;;
   archive) archive yes ;;
   archive-unsigned) archive no ;;
   export) export_ipa ;;
-  *) echo "Usage : $0 {doctor|prebuild|archive|archive-unsigned|export}" >&2; exit 2 ;;
+  clean) clean "${2:-}" ;;
+  *) echo "Usage : $0 {doctor|prebuild|archive|archive-unsigned|export|clean [--dry-run]}" >&2; exit 2 ;;
 esac

@@ -43,7 +43,8 @@
     "t4:ios:prebuild": "bash ../../scripts/t4/ios-local.sh prebuild",
     "t4:ios:archive": "bash ../../scripts/t4/ios-local.sh archive",
     "t4:ios:archive:unsigned": "bash ../../scripts/t4/ios-local.sh archive-unsigned",
-    "t4:ios:export": "bash ../../scripts/t4/ios-local.sh export"
+    "t4:ios:export": "bash ../../scripts/t4/ios-local.sh export",
+    "t4:ios:clean": "bash ../../scripts/t4/ios-local.sh clean"
   },
   "dependencies": {
     "@clerk/expo": "catalog:",
