@@ -9,6 +9,8 @@ IOS="${MOBILE}/ios"
 SCHEME="T4Mobile"
 TOOLCHAIN="${T4_XCODE_CLOUD_TOOLCHAIN_DIR:-${HOME}/.t4-xcode-cloud}"
 STARTED="${SECONDS}"
+# Xcode Cloud starts in ios/ci_scripts, which prebuild deletes and recreates.
+cd "${ROOT}"
 
 export APP_VARIANT=production EXPO_NO_DOTENV=1 EXPO_NO_GIT_STATUS=1 EXPO_NO_TELEMETRY=1 CI=1
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
