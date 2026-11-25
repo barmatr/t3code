@@ -37,5 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 # generated native folders
-/ios
+/ios/*
+# Xcode Cloud only finds its scripts beside the generated workspace.
+!/ios/ci_scripts/
 /android
