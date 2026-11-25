@@ -101,6 +101,18 @@ echo "CocoaPods $(pod --version)."
 (cd "${IOS}" && retry pod install)
 node "${ROOT}/scripts/t4/verify-native-ios.mjs" "${IOS}"
 
+if [[ "${T4_XCODE_CLOUD_UNSIGNED_ARCHIVE:-}" == 1 ]]; then
+  step "Archive non signée (repli)"
+  # Fallback if the ad hoc archive stops at "entitlements that require signing with
+  # a development certificate", as it does on a Mac with Xcode 27.2. The export
+  # then signs the app without keychain-access-groups.
+  PBXPROJ="${IOS}/${SCHEME}.xcodeproj/project.pbxproj"
+  ENTITLEMENTS="CODE_SIGN_ENTITLEMENTS = ${SCHEME}/${SCHEME}.entitlements;"
+  sed -i '' "s|${ENTITLEMENTS}|${ENTITLEMENTS} CODE_SIGNING_ALLOWED = NO;|" "${PBXPROJ}"
+  [[ "$(grep -c "${ENTITLEMENTS} CODE_SIGNING_ALLOWED = NO;" "${PBXPROJ}")" == 2 ]] ||
+    fail "réglage de signature introuvable dans le projet généré."
+fi
+
 step "Paquets Swift"
 # Xcode Cloud resolves packages with automatic resolution off: without this file
 # the build stops at "a resolved file is required".
