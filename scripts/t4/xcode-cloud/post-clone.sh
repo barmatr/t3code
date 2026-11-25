@@ -35,6 +35,8 @@ step "Variables du workflow"
 export T4_IOS_BUILD_NUMBER="${CI_BUILD_NUMBER}"
 for name in T4_AMPHETAMINE_STATUS_ORIGIN T4_AMPHETAMINE_ENVIRONMENT_ID; do
   [[ -n "${!name:-}" ]] || fail "variable secrète ${name} absente du workflow."
+  # The workflow is created with this placeholder; Raoul types the real values.
+  [[ "${!name}" != A_REMPLACER ]] || fail "variable secrète ${name} encore à sa valeur de remplissage."
 done
 # Xcode build phases start from a fresh environment: app.config.ts reads this
 # file again when the app manifest is embedded. Values are never printed.
