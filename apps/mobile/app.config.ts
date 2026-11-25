@@ -446,6 +446,8 @@ const config: ExpoConfig = {
     ),
     iosPersonalTeamBuild: isIosPersonalTeamBuild,
     iosLocalOnlyBuild: isIosLocalOnlyBuild,
+    amphetamineStatusOrigin: repoEnv.T4_AMPHETAMINE_STATUS_ORIGIN,
+    amphetamineEnvironmentId: repoEnv.T4_AMPHETAMINE_ENVIRONMENT_ID,
     relay: {},
     clerk: {},
     observability: {},

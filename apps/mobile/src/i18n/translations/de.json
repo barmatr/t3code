@@ -1,4 +1,14 @@
 {
+  "4c1fe638b364b0dc": "Geschätztes Ende erreicht",
+  "f5235d22bbd4c8ca": "Noch {hours} Std. {minutes} Min.",
+  "41238129f0e46215": "Noch {minutes} Min.",
+  "39aa713056f0997e": "Ohne Zeitlimit",
+  "81030edd525caa8c": "Durch einen Auslöser gestartet",
+  "db54291c0212a26e": "Endet, sobald die Bedingung erfüllt ist",
+  "1a2e4a3d43ea9662": "Keine aktive Sitzung",
+  "c6ba7cbaf7557805": "App geschlossen",
+  "efa2b753ba618ac3": "Status nicht verfügbar",
+  "eeb7271e474014fc": "Amphetamine · Mac",
   "4bcfa3b976a421cf": "Nebenchat",
   "23be753133ae6950": "Thread",
   "0001ae5846061bb6": "Thread auf {machine}",
@@ -5384,5 +5394,7 @@
   "ad208e3e32c85029": "Alle ausblenden",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Tool-Aufrufe im Chat",
-  "8d545d54c0a9e950": "Die Befehle, Bearbeitungen und Suchen ausblenden, die Agenten ausführen. „Erfolgreiche ausblenden“ behält Fehler. „Zen“ zeigt nur endgültige Antworten. Genehmigungen, Fragen und Fehler werden immer angezeigt."
+  "8d545d54c0a9e950": "Die Befehle, Bearbeitungen und Suchen ausblenden, die Agenten ausführen. „Erfolgreiche ausblenden“ behält Fehler. „Zen“ zeigt nur endgültige Antworten. Genehmigungen, Fragen und Fehler werden immer angezeigt.",
+  "09e25b5806d84be6": "Direktoren",
+  "55f96c2d67c6fa4b": "Verschiedenes"
 }

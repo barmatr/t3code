@@ -1,4 +1,14 @@
 {
+  "4c1fe638b364b0dc": "Fin estimée atteinte",
+  "f5235d22bbd4c8ca": "{hours} h {minutes} min restantes",
+  "41238129f0e46215": "{minutes} min restantes",
+  "39aa713056f0997e": "Sans limite",
+  "81030edd525caa8c": "Déclenchée automatiquement",
+  "db54291c0212a26e": "Fin conditionnelle",
+  "1a2e4a3d43ea9662": "Aucune session",
+  "c6ba7cbaf7557805": "Application fermée",
+  "efa2b753ba618ac3": "Statut indisponible",
+  "eeb7271e474014fc": "Amphetamine · Mac",
   "4bcfa3b976a421cf": "Discussion annexe",
   "23be753133ae6950": "Fil",
   "0001ae5846061bb6": "Fil sur {machine}",
@@ -5378,5 +5388,7 @@
   "ad208e3e32c85029": "Tout masquer",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Appels d’outils dans la discussion",
-  "8d545d54c0a9e950": "Masque les commandes, modifications et recherches lancées par les agents. Masquer les réussis garde les échecs. Zen n’affiche que les réponses finales. Les approbations, questions et erreurs s’affichent toujours."
+  "8d545d54c0a9e950": "Masque les commandes, modifications et recherches lancées par les agents. Masquer les réussis garde les échecs. Zen n’affiche que les réponses finales. Les approbations, questions et erreurs s’affichent toujours.",
+  "09e25b5806d84be6": "Directeurs",
+  "55f96c2d67c6fa4b": "Divers"
 }

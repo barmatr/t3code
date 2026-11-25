@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>fr.emaxconseils.t4.amphetamine-status</string>
+  <key>CFBundleName</key>
+  <string>T4 Amphetamine Status</string>
+  <key>CFBundleExecutable</key>
+  <string>read-session</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+  <key>LSBackgroundOnly</key>
+  <true/>
+  <key>NSAppleEventsUsageDescription</key>
+  <string>T4 consulte la durée restante de la session Amphetamine pour l’afficher dans les réglages du mobile.</string>
+</dict>
+</plist>

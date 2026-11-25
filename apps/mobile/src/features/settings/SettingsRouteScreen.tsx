@@ -28,6 +28,8 @@ import { useSavedRemoteConnections } from "../../state/use-remote-environment-re
 import { SettingsRow } from "./components/SettingsRow";
 import { SettingsSection, SettingsSidebarContext } from "./components/SettingsSection";
 import { SettingsScreen } from "./components/SettingsScreen";
+import { AmphetamineSettingsRow, amphetamineSettingsConfig } from "./AmphetamineSettingsRow";
+import { includesAmphetamineEnvironment } from "./amphetamine-status";
 import type { SettingsPageTarget } from "./components/settings-page-targets";
 import { useSettingsEnvironmentMenu } from "./components/SettingsEnvironmentFilterHeader";
 import { useSettingsEnvironmentFilter } from "./settings-environment-filter";
@@ -178,13 +180,21 @@ function SettingsList(props: { readonly connections: readonly SettingsListRow[] 
   const workspace = useWorkspaceTabs();
   const query = workspace?.state.tabs.settings.query ?? "";
   const overflowRows = useOverflowRows();
-  const indexSections = useSettingsIndexSections();
+  const scope = useSettingsEnvironmentFilter();
+  const indexSections = useSettingsIndexSections(scope);
+  const connections = [...props.connections];
+  if (
+    amphetamineSettingsConfig &&
+    includesAmphetamineEnvironment(amphetamineSettingsConfig, scope.selectedTargets)
+  ) {
+    connections.push({
+      id: "amphetamine-status",
+      icon: "desktopcomputer",
+      label: gt("Amphetamine · Mac"),
+    });
+  }
   const sections = filterSettingsSections(
-    [
-      { rows: overflowRows },
-      { title: gt("Connections"), rows: props.connections },
-      ...indexSections,
-    ],
+    [{ rows: overflowRows }, { title: gt("Connections"), rows: connections }, ...indexSections],
     query,
     m,
   );
@@ -209,9 +219,13 @@ function SettingsList(props: { readonly connections: readonly SettingsListRow[] 
         {sections.length ? (
           sections.map((section, index) => (
             <SettingsSection key={section.title ?? `untitled-${index}`} title={section.title}>
-              {section.rows.map(({ id, ...row }) => (
-                <SettingsRow key={id} {...row} />
-              ))}
+              {section.rows.map(({ id, ...row }) =>
+                id === "amphetamine-status" ? (
+                  <AmphetamineSettingsRow key={id} label={row.label} />
+                ) : (
+                  <SettingsRow key={id} {...row} />
+                ),
+              )}
             </SettingsSection>
           ))
         ) : (
@@ -226,9 +240,12 @@ function SettingsList(props: { readonly connections: readonly SettingsListRow[] 
   );
 }
 
-function useSettingsIndexSections(): SettingsListSection[] {
+function useSettingsIndexSections({
+  selectedTargets,
+  projectGroups,
+  selectedProjectKey,
+}: ReturnType<typeof useSettingsEnvironmentFilter>): SettingsListSection[] {
   const gt = useGT();
-  const { selectedTargets, projectGroups, selectedProjectKey } = useSettingsEnvironmentFilter();
   const noServerTargets = selectedTargets.length === 0;
   const selectedProject = projectGroups.find((group) => group.key === selectedProjectKey);
   const scopedProjectMembers =

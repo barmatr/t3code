@@ -32,6 +32,7 @@ import * as EnvironmentRegistry from "../connection/registry.ts";
 import * as EnvironmentSupervisor from "../connection/supervisor.ts";
 import type { WsRpcProtocolClient } from "../rpc/protocol.ts";
 import type * as RpcSession from "../rpc/session.ts";
+import { environmentConnectionAtom } from "./runtime.ts";
 import { EMPTY_SHELL_STATE, type EnvironmentShellState } from "./shell.ts";
 import {
   createOlderSettledThreadAtoms,
@@ -349,6 +350,13 @@ const makeAtoms = Effect.fn(function* () {
   const registry = yield* Effect.acquireRelease(Effect.sync(AtomRegistry.make), (registry) =>
     Effect.sync(() => registry.dispose()),
   );
+  // The first value that passes, from a subscription.
+  const until = <A>(atom: Atom.Atom<A>, done: (value: A) => boolean) =>
+    AtomRegistry.toStream(registry, atom).pipe(
+      Stream.filter(done),
+      Stream.runHead,
+      Effect.map(Option.getOrThrow),
+    );
   return {
     replies,
     requests,
@@ -357,13 +365,32 @@ const makeAtoms = Effect.fn(function* () {
     registry,
     setShell: (state: Partial<EnvironmentShellState>) =>
       registry.set(shellState, AsyncResult.success({ ...EMPTY_SHELL_STATE, ...state })),
-    // The first value that passes, from a subscription.
-    until: <A>(atom: Atom.Atom<A>, done: (value: A) => boolean) =>
-      AtomRegistry.toStream(registry, atom).pipe(
-        Stream.filter(done),
-        Stream.runHead,
-        Effect.map(Option.getOrThrow),
-      ),
+    until,
+    // A new session replaces the connection, as when the app returns to the foreground. The shell
+    // state is left alone: a resume keeps its generation, and a test sets a new snapshot itself.
+    reconnect: Effect.gen(function* () {
+      const next = { ...session } as RpcSession.RpcSession;
+      yield* SubscriptionRef.update(supervisor.state, (state) => ({
+        ...state,
+        phase: "connecting" as const,
+      }));
+      yield* SubscriptionRef.set(supervisor.session, Option.none());
+      yield* SubscriptionRef.set(supervisor.session, Option.some(next));
+      yield* SubscriptionRef.update(supervisor.state, (state) => ({
+        ...state,
+        phase: "connected" as const,
+        generation: state.generation + 1,
+      }));
+      // Queries read this same atom, so they have seen the new session once it holds it.
+      yield* until(environmentConnectionAtom(runtime, environmentId), (connection) => {
+        const current = AsyncResult.getOrElse(connection, () => null);
+        return (
+          current !== null &&
+          current[0].phase === "connected" &&
+          Option.getOrNull(current[1]) === next
+        );
+      });
+    }),
   };
 });
 
@@ -565,6 +592,112 @@ describe("createOlderSettledThreadAtoms", () => {
       // Collapsing stops the pending read: nothing is left to run again on a reconnect.
       releaseTwo();
       yield* Deferred.await(second.stopped);
+    }),
+  );
+
+  it.effect("a new session reads only the pages it has no answer for", () =>
+    Effect.gen(function* () {
+      const { replies, requests, requestLog, atoms, registry, setShell, until, reconnect } =
+        yield* makeAtoms();
+      const snapshot = shellSnapshot({ sequence: 3, asOfSequence: 3, count: 60 });
+      setShell({ snapshot, generation: 1 });
+      const scope = { environmentId, projectIds: null };
+      const first = Array.from({ length: 25 }, (_, index) =>
+        row(`first-${String(index).padStart(2, "0")}`, { settledDay: 45 - index }),
+      );
+      const second = Array.from({ length: 25 }, (_, index) =>
+        row(`second-${String(index).padStart(2, "0")}`, { settledDay: 20 - index * 0.5 }),
+      );
+      const cursor = (rows: ReadonlyArray<OrchestrationV2ThreadShell>) => ({
+        before: { settledAt: DateTime.formatIso(rows[24]!.settledAt!), threadId: rows[24]!.id },
+        limit: 25,
+      });
+      yield* Queue.offer(
+        replies,
+        Effect.succeed({ snapshotSequence: 3, threads: first, counts: [] }),
+      );
+      yield* Queue.offer(
+        replies,
+        Effect.succeed({ snapshotSequence: 3, threads: second, counts: [] }),
+      );
+      const threePages = atoms.pagesAtom(scope, 3);
+      registry.mount(threePages);
+      // Two pages answered; the third is still in flight when the connection drops.
+      yield* Queue.take(requestLog);
+      yield* Queue.take(requestLog);
+      const inFlight = yield* Queue.take(requestLog);
+      expect(inFlight.input).toEqual(cursor(second));
+      yield* until(threePages, (pages) => pages.reads.length === 2 && pages.status === "pending");
+
+      // The shell resumes on the new session and keeps its generation: the answered pages
+      // stand, and only the read the old session never answered runs again.
+      yield* reconnect;
+      const rerun = yield* Queue.take(requestLog);
+      expect(rerun.input).toEqual(cursor(second));
+      yield* Queue.offer(
+        replies,
+        Effect.succeed({
+          snapshotSequence: 3,
+          threads: [row("last", { settledDay: 2 })],
+          counts: [],
+        }),
+      );
+      const done = yield* until(threePages, (pages) => pages.reads.length === 3);
+      expect(done.frontier).toBeNull();
+      expect(done.reads.map((page) => page.threads.length)).toEqual([25, 25, 1]);
+      expect(requests).toEqual([
+        { before: { settledAt: before }, limit: 25 },
+        cursor(first),
+        cursor(second),
+        cursor(second),
+      ]);
+
+      // A second new session with every page answered reads nothing. A new snapshot then
+      // reads the pages again, one at a time from the cut.
+      yield* reconnect;
+      setShell({ snapshot, generation: 2 });
+      expect((yield* Queue.take(requestLog)).input).toEqual({
+        before: { settledAt: before },
+        limit: 25,
+      });
+      expect(requests).toHaveLength(5);
+    }),
+  );
+
+  it.effect("a new session reads a failed page again", () =>
+    Effect.gen(function* () {
+      const { replies, requests, requestLog, atoms, registry, setShell, until, reconnect } =
+        yield* makeAtoms();
+      setShell({
+        snapshot: shellSnapshot({ sequence: 3, asOfSequence: 3, count: 30 }),
+        generation: 1,
+      });
+      const onePage = atoms.pagesAtom({ environmentId, projectIds: null }, 1);
+      registry.mount(onePage);
+      yield* Queue.take(requestLog);
+      yield* Queue.offer(
+        replies,
+        Effect.fail(new OrchestrationV2GetShellSnapshotError({ message: "read failed" })),
+      );
+      yield* until(onePage, (pages) => pages.status === "failed");
+
+      yield* reconnect;
+      expect((yield* Queue.take(requestLog)).input).toEqual({
+        before: { settledAt: before },
+        limit: 25,
+      });
+      yield* Queue.offer(
+        replies,
+        Effect.succeed({
+          snapshotSequence: 3,
+          threads: [row("short", { settledDay: 10 })],
+          counts: [],
+        }),
+      );
+      const recovered = yield* until(onePage, (pages) => pages.status === "ready");
+      expect(recovered.reads).toHaveLength(1);
+      expect(recovered.frontier).toBeNull();
+      expect(requests).toHaveLength(2);
     }),
   );
 });

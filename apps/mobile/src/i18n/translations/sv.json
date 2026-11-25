@@ -1,4 +1,14 @@
 {
+  "4c1fe638b364b0dc": "Beräknad sluttid uppnådd",
+  "f5235d22bbd4c8ca": "{hours} tim {minutes} min kvar",
+  "41238129f0e46215": "{minutes} min kvar",
+  "39aa713056f0997e": "Ingen tidsgräns",
+  "81030edd525caa8c": "Startad av en utlösare",
+  "db54291c0212a26e": "Avslutas när villkoret uppfylls",
+  "1a2e4a3d43ea9662": "Ingen aktiv session",
+  "c6ba7cbaf7557805": "Appen är stängd",
+  "efa2b753ba618ac3": "Statusen är inte tillgänglig",
+  "eeb7271e474014fc": "Amphetamine · Mac",
   "4bcfa3b976a421cf": "Sidochatt",
   "23be753133ae6950": "Tråd",
   "0001ae5846061bb6": "Tråd på {machine}",
@@ -5384,5 +5394,7 @@
   "ad208e3e32c85029": "Dölj alla",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Verktygsanrop i chatten",
-  "8d545d54c0a9e950": "Dölj kommandon, redigeringar och sökningar som agenter kör. Dölj lyckade behåller misslyckanden. Zen visar bara slutliga svar. Godkännanden, frågor och fel visas alltid."
+  "8d545d54c0a9e950": "Dölj kommandon, redigeringar och sökningar som agenter kör. Dölj lyckade behåller misslyckanden. Zen visar bara slutliga svar. Godkännanden, frågor och fel visas alltid.",
+  "09e25b5806d84be6": "Direktörer",
+  "55f96c2d67c6fa4b": "Övrigt"
 }

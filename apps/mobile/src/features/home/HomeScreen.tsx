@@ -1,4 +1,4 @@
-import { useGT, useMessages } from "gt-react-native";
+import { msg, useGT, useMessages } from "gt-react-native";
 
 import { useContentTopInset } from "../../components/ui/useBarInset";
 import { Button } from "../../components/ui/Button";
@@ -86,7 +86,6 @@ import { useThreadRowProviderInstanceResolver } from "../threads/thread-provider
 import { useOpenThreadPullRequests } from "../threads/use-open-thread-pull-requests";
 import type { ThreadPrPresentation } from "../../state/thread-pr-presentation";
 import {
-  threadListV2ListItemsAreEqual,
   threadListShowsMultipleEnvironments,
   THREAD_LIST_V2_SETTLED_INITIAL_COUNT,
   THREAD_LIST_V2_SETTLED_PAGE_COUNT,
@@ -117,6 +116,27 @@ import { ThreadAgeFilterNotice } from "./ThreadAgeFilterNotice";
 import type { ThreadAge } from "../../lib/thread-age";
 
 import { deriveHomeEmptyState } from "./home-empty-state";
+import {
+  groupAgentsHomeItems,
+  homeListItemsAreEqual,
+  type HomeListItem,
+} from "./agents-home-sections";
+
+const AGENTS_SECTION_TITLES = {
+  directors: msg("Directors", { $context: "Agents tab section" }),
+  agents: msg("Agents"),
+  miscellaneous: msg("Miscellaneous", { $context: "Agents tab section" }),
+  snoozed: msg("Snoozed", { $context: "thread list section" }),
+};
+
+function AgentsSectionHeader({
+  section,
+}: {
+  readonly section: keyof typeof AGENTS_SECTION_TITLES;
+}) {
+  const m = useMessages();
+  return <ThreadListV2ProjectHeader title={m(AGENTS_SECTION_TITLES[section])} />;
+}
 
 interface HomeScreenProps {
   readonly visible: boolean;
@@ -304,7 +324,7 @@ export function HomeScreen(props: HomeScreenProps) {
     });
   });
   const swipeRowActivation = createSwipeRowActivation();
-  const activateVisibleRows = (rows: ReadonlyArray<ThreadListV2ListItem>) => {
+  const activateVisibleRows = (rows: ReadonlyArray<HomeListItem>) => {
     const state = listRef.current?.getState();
     if (state === undefined || !(state.end >= 0)) return;
     swipeRowActivation.activate(
@@ -432,7 +452,7 @@ export function HomeScreen(props: HomeScreenProps) {
   const pendingOrder = usePendingThreadOrder();
   const {
     layout: threadListV2Layout,
-    items: threadListV2Items,
+    items: baseThreadListItems,
     contentOnlyThreadKeys,
     olderSettledShelf,
     ageFilter,
@@ -464,6 +484,18 @@ export function HomeScreen(props: HomeScreenProps) {
     settledShelfExpanded,
     selectedThreadKey,
   });
+  const agentsTab = props.fixedScope !== undefined;
+  const threadListV2Items = useMemo(
+    () => groupAgentsHomeItems(baseThreadListItems, agentsTab),
+    [baseThreadListItems, agentsTab],
+  );
+  const shortcutItems = useMemo(
+    () =>
+      threadListV2Items === baseThreadListItems
+        ? baseThreadListItems
+        : threadListV2Items.filter((item) => item.type !== "agents-section-header"),
+    [threadListV2Items, baseThreadListItems],
+  );
   // Called as `props.onSelectThread(...)`, the compiler would cache this handler on the whole
   // props object, which is new on every render of Home's parent.
   const { onSelectThread } = props;
@@ -479,13 +511,13 @@ export function HomeScreen(props: HomeScreenProps) {
     }
     onSelectThread(thread);
   };
-  useThreadJumpShortcuts(threadListV2Items, selectThread);
+  useThreadJumpShortcuts(shortcutItems, selectThread);
   // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- reads the list's visible range after commit to enable swipe gestures on those rows
   useEffect(() => {
     if (swipeEnabled) activateVisibleRows(threadListV2Items);
   }, [activateVisibleRows, swipeEnabled, threadListV2Items]);
 
-  const multipleEnvironments = threadListShowsMultipleEnvironments(threadListV2Items);
+  const multipleEnvironments = threadListShowsMultipleEnvironments(baseThreadListItems);
   // T4 : in the project view, each project heading can settle its listed threads at
   // once; every row starts checked and the user unchecks the ones to keep. One
   // project selects at a time.
@@ -495,7 +527,7 @@ export function HomeScreen(props: HomeScreenProps) {
   );
   const [settlingSelection, setSettlingSelection] = useState(false);
   const settleGroups = projectGrouped
-    ? settleGroupsByProjectHeader(threadListV2Items, settlementEnvironmentIds)
+    ? settleGroupsByProjectHeader(baseThreadListItems, settlementEnvironmentIds)
     : new Map<string, never>();
   const settleGroup = settleProjectKey === null ? undefined : settleGroups.get(settleProjectKey);
   if (settleProjectKey !== null && settleGroup === undefined && !settlingSelection) {
@@ -534,7 +566,7 @@ export function HomeScreen(props: HomeScreenProps) {
       );
     }
   };
-  const renderV2Item = ({ item }: { readonly item: ThreadListV2ListItem }) => {
+  const renderV2Item = ({ item }: { readonly item: HomeListItem }) => {
     if (settleGroup !== undefined && item.type === "v2-thread") {
       const selectionKey = scopedThreadKey(item.item.thread.environmentId, item.item.thread.id);
       if (!settleGroup.rowKeys.has(selectionKey)) {
@@ -554,7 +586,10 @@ export function HomeScreen(props: HomeScreenProps) {
     }
     return renderV2ItemContent(item);
   };
-  const renderV2ItemContent = (item: ThreadListV2ListItem) => {
+  const renderV2ItemContent = (item: HomeListItem) => {
+    if (item.type === "agents-section-header") {
+      return <AgentsSectionHeader section={item.section} />;
+    }
     if (item.type === "v2-project-header") {
       const selecting = settleProjectKey === item.key;
       const canSettle = (settleGroups.get(item.key)?.threads.length ?? 0) > 0;
@@ -715,7 +750,7 @@ export function HomeScreen(props: HomeScreenProps) {
       />
     );
   };
-  const v2KeyExtractor = (item: ThreadListV2ListItem) => item.key;
+  const v2KeyExtractor = (item: HomeListItem) => item.key;
 
   // extraData changes invalidate every visible row; put the minute clock on items to limit updates.
   const v2ExtraData = {
@@ -934,7 +969,7 @@ export function HomeScreen(props: HomeScreenProps) {
                 renderItem={renderV2Item}
                 keyExtractor={v2KeyExtractor}
                 getItemType={(item) => item.type}
-                itemsAreEqual={threadListV2ListItemsAreEqual}
+                itemsAreEqual={homeListItemsAreEqual}
                 estimatedItemSize={ESTIMATED_THREAD_LIST_V2_ROW_HEIGHT}
                 drawDistance={THREAD_LIST_V2_DRAW_DISTANCE}
                 recycleItems

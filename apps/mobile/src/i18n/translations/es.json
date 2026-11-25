@@ -1,4 +1,14 @@
 {
+  "4c1fe638b364b0dc": "Fin estimado alcanzado",
+  "f5235d22bbd4c8ca": "Quedan {hours} h {minutes} min",
+  "41238129f0e46215": "Quedan {minutes} min",
+  "39aa713056f0997e": "Sin límite de tiempo",
+  "81030edd525caa8c": "Iniciada por un activador",
+  "db54291c0212a26e": "Termina al cumplirse la condición",
+  "1a2e4a3d43ea9662": "Sin sesión activa",
+  "c6ba7cbaf7557805": "Aplicación cerrada",
+  "efa2b753ba618ac3": "Estado no disponible",
+  "eeb7271e474014fc": "Amphetamine · Mac",
   "4bcfa3b976a421cf": "Chat lateral",
   "23be753133ae6950": "Hilo",
   "0001ae5846061bb6": "Hilo en {machine}",
@@ -5378,5 +5388,7 @@
   "ad208e3e32c85029": "Ocultar todo",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Llamadas a herramientas en el chat",
-  "8d545d54c0a9e950": "Oculta los comandos, ediciones y búsquedas que ejecutan los agentes. Ocultar las correctas mantiene los fallos. Zen solo muestra las respuestas finales. Las aprobaciones, preguntas y errores siempre se muestran."
+  "8d545d54c0a9e950": "Oculta los comandos, ediciones y búsquedas que ejecutan los agentes. Ocultar las correctas mantiene los fallos. Zen solo muestra las respuestas finales. Las aprobaciones, preguntas y errores siempre se muestran.",
+  "09e25b5806d84be6": "Directores",
+  "55f96c2d67c6fa4b": "Varios"
 }

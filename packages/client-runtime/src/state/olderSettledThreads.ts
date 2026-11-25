@@ -252,14 +252,23 @@ export function createOlderSettledThreadAtoms<R, ER, E>(
   const pageReadAtom = createEnvironmentQueryAtomFamily(runtime, {
     label: "environment-data:orchestration:older-settled-page",
     staleTimeMs: Number.POSITIVE_INFINITY,
-    // A collapsed shelf keeps no read alive, as an idle one runs again when a reconnect replaces
-    // the session.
+    // A collapsed shelf keeps no read alive, as an idle one still pending or failed runs again
+    // when a reconnect replaces the session.
     idleTtlMs: 0,
-    execute: Effect.fn("OlderSettledThreads.readPage")(function* (input: {
-      readonly generation: number;
-      readonly projectIds: ReadonlyArray<ProjectId> | null;
-      readonly before: OrchestrationV2OlderSettledCursor;
-    }) {
+    execute: Effect.fn("OlderSettledThreads.readPage")(function* (
+      input: {
+        readonly generation: number;
+        readonly projectIds: ReadonlyArray<ProjectId> | null;
+        readonly before: OrchestrationV2OlderSettledCursor;
+      },
+      _emit: (value: OrchestrationV2OlderSettledThreadsPage) => Effect.Effect<void>,
+      answered: Option.Option<OrchestrationV2OlderSettledThreadsPage>,
+    ) {
+      // A query runs again with each new session, but a page belongs to its shell generation: a
+      // resume keeps the generation and brings the changes as deltas, and a new snapshot reads
+      // under a new key. So an answered page stands, and a reconnect reads only the pages the
+      // last session left pending or failed.
+      if (Option.isSome(answered)) return answered.value;
       return yield* request(ORCHESTRATION_V2_WS_METHODS.getOlderSettledThreads, {
         before: input.before,
         ...(input.projectIds === null ? {} : { projectIds: input.projectIds }),

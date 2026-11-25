@@ -1,4 +1,14 @@
 {
+  "4c1fe638b364b0dc": "Estimated end reached",
+  "f5235d22bbd4c8ca": "{hours} h {minutes} min remaining",
+  "41238129f0e46215": "{minutes} min remaining",
+  "39aa713056f0997e": "No time limit",
+  "81030edd525caa8c": "Started by a trigger",
+  "db54291c0212a26e": "Ends when its condition is met",
+  "1a2e4a3d43ea9662": "No active session",
+  "c6ba7cbaf7557805": "App closed",
+  "efa2b753ba618ac3": "Status unavailable",
+  "eeb7271e474014fc": "Amphetamine · Mac",
   "4bcfa3b976a421cf": "Side chat",
   "23be753133ae6950": "Thread",
   "0001ae5846061bb6": "Thread on {machine}",
@@ -5385,5 +5395,7 @@
   "ad208e3e32c85029": "Hide all",
   "3328503592789bed": "Zen",
   "856812e7e1fc445e": "Tool calls in chat",
-  "8d545d54c0a9e950": "Hide the commands, edits, and searches agents run. Hide successful keeps failures. Zen shows only final answers. Approvals, questions, and errors always show."
+  "8d545d54c0a9e950": "Hide the commands, edits, and searches agents run. Hide successful keeps failures. Zen shows only final answers. Approvals, questions, and errors always show.",
+  "09e25b5806d84be6": "Directors",
+  "55f96c2d67c6fa4b": "Miscellaneous"
 }

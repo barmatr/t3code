@@ -15,7 +15,24 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison : 0.1.0 (26), recette de la Nightly 4994
+## Dernière livraison — 0.1.0 (28), statut Amphetamine du Mac
+
+Le 25 novembre 2026 à 9 h 30 (Paris), Apple indique **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 28 dans **T4 Interne**. Identifiant Apple `64010124-bbfd-42a5-a830-677bee7b48fa`.
+
+- **Réglages → Connexions → Amphetamine · Mac** affiche l’état et, pour une session minutée, le temps restant. T4 Mobile demande une mesure au plus toutes les dix minutes quand les réglages sont ouverts au premier plan. La ligne est absente quand seul Linux est sélectionné.
+- Le LaunchAgent macOS lit Amphetamine en local. Le Mac a renvoyé le minuteur sur l’URL HTTPS privée du build avec OpenVPN actif et l’IP dédiée rétablie. Quelques appels depuis le Mac ont dépassé le délai avant de réussir à la relance. T3 officiel répond en nightly 4682. Reste à vérifier l’affichage depuis l’iPhone physique. [Service et procédure](scripts/t4/amphetamine/README.md) · [Vérification HTTPS](build/ios-local/build-28/verification-service.json).
+- La base `dac51dcea0` et les modifications locales du build sont décrites par `build/ios-local/build-28/source.patch`. L’IPA signée fait 64 341 076 octets. [Preuve Apple](build/ios-local/build-28/apple-final-status.json) · [Archive, IPA et preuves de livraison](build/ios-local/build-28/deployment.json).
+
+## Historique : 0.1.0 (27), ouverture des fils et Direction agentique
+
+Le 22 novembre 2026, Apple a validé le build 27 et l’a rendu disponible au groupe **T4 Interne**. État relu à 23 h 22 (Paris) : **VALID / INTERNAL_ONLY / IN_BETA_TESTING**. Identifiant Apple `3df754b7-381b-4910-8ad8-4bf7bb73d3cd`.
+
+- L’application réutilise les calculs de langue pour les pluriels et les pages de fils réglés déjà reçues lors d’une reprise. L’onglet Direction agentique présente Directeurs, Agents et Divers.
+- Sur le Duo simulé, avec « Tous les âges », le panneau commence à bouger en 0,7 s après cinq minutes d’inactivité. À partir de la sélection d’un fil Mac, les premiers messages apparaissent en 1,7 s dans cet essai. [Recette des latences](/Users/jrbmt/.t3/scratch/2026-11-22-demande-de-raoul-du-22-3e828ad8/recette-duo/trace-initiale.md) · [Recette des sections](/Users/jrbmt/.t3/scratch/2026-11-22-demande-de-raoul-du-22-3e828ad8/recette-duo/agents-build-27.md).
+- Base 4994 au commit `dac51dcea0` avec modifications locales conservées dans `build/ios-local/build-27/source.patch` et vérifiées avant l’envoi. Les serveurs restent compatibles en 4682.
+- IPA signée de 64,338,591 octets, SHA-256 `b9066be49a013267e10acb29a9bea9c66a211eccdfae72ba25735a2d9a087529`. [Preuve Apple](build/ios-local/build-27/apple-final-status.json) · [Archive, IPA et preuves de livraison](build/ios-local/build-27/deployment.json).
+
+## Historique : 0.1.0 (26), recette de la Nightly 4994
 
 Le **20 novembre 2026**, le build **26** a été compilé avec Xcode 27.2, signé,
 validé par Apple et distribué à **T4 Interne**. UUID
@@ -951,16 +968,17 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build : `0.1.0 (26)`, valide et distribué à T4 Interne, UUID
-> `25a31abc-e23e-49a6-be6d-38f79e60a439` : commit `91d9f1c87b` plus la barre
-> latérale du Duo en paysage élargie de 33 %, non commitée (`build/ios-local/build-26/source.patch`). Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
+> Dernier build `0.1.0 (28)`, valide et distribué à T4 Interne, UUID
+> `64010124-bbfd-42a5-a830-677bee7b48fa`. Commit `dac51dcea0` et modifications
+> locales (`build/ios-local/build-28/source.patch`), dont le statut Amphetamine
+> du Mac. Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
 > fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`, étiquette `t4-mobile-nightly-4994-20261120`.
 > Pour toute compilation, utiliser **Xcode 27.1 ou plus** pour l’adaptation iPhone
 > Duo. Le build 23 est l’ancienne recompilation du Duo sur Nightly 4682.
 > Point de retour : `t4-mobile-before-upgrade-20261120`. Preuves : `build/ios-local/build-24/`
 > et `build/upgrades/4994-20261120/`.
 > Avant la prochaine livraison, vérifier Apple et choisir un numéro supérieur à
-> 26 et à tout numéro déjà pris, à partir de 27.
+> 28 et à tout numéro déjà pris.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
 > Garder les serveurs réels en lecture seule et protéger les secrets. Ne pas toucher

@@ -1,0 +1,50 @@
+diff --git a/abstract/utils.js b/abstract/utils.js
+index 58d122c2e795d6d513d8f5986f588a173c7b7102..e5abac15e4d4de43ca87deee777816cdccdfe656 100644
+--- a/abstract/utils.js
++++ b/abstract/utils.js
+@@ -97,7 +97,20 @@ function findMatchingDistanceForLSR(desired, supported, data) {
+     }
+     throw new Error('No matching distance found');
+ }
++// Repeated message formatting compares the same canonical locales against the CLDR data.
++var localeDistanceCache = new Map();
+ function findMatchingDistance(desired, supported) {
++    var key = desired + ":" + supported;
++    var cached = localeDistanceCache.get(key);
++    if (cached !== undefined) return cached;
++    var distance = computeMatchingDistance(desired, supported);
++    if (localeDistanceCache.size >= 256) {
++        localeDistanceCache.delete(localeDistanceCache.keys().next().value);
++    }
++    localeDistanceCache.set(key, distance);
++    return distance;
++}
++function computeMatchingDistance(desired, supported) {
+     var desiredLocale = new Intl.Locale(desired).maximize();
+     var supportedLocale = new Intl.Locale(supported).maximize();
+     var desiredLSR = {
+diff --git a/lib/abstract/utils.js b/lib/abstract/utils.js
+index 369c5f22c5b41c65c6b70312ab6a99a821f7961e..72fbd36949aa6ff0ddcf814baf67c87fa18a1bb9 100644
+--- a/lib/abstract/utils.js
++++ b/lib/abstract/utils.js
+@@ -91,7 +91,20 @@ function findMatchingDistanceForLSR(desired, supported, data) {
+     }
+     throw new Error('No matching distance found');
+ }
++// Repeated message formatting compares the same canonical locales against the CLDR data.
++var localeDistanceCache = new Map();
+ export function findMatchingDistance(desired, supported) {
++    var key = desired + ":" + supported;
++    var cached = localeDistanceCache.get(key);
++    if (cached !== undefined) return cached;
++    var distance = computeMatchingDistance(desired, supported);
++    if (localeDistanceCache.size >= 256) {
++        localeDistanceCache.delete(localeDistanceCache.keys().next().value);
++    }
++    localeDistanceCache.set(key, distance);
++    return distance;
++}
++function computeMatchingDistance(desired, supported) {
+     var desiredLocale = new Intl.Locale(desired).maximize();
+     var supportedLocale = new Intl.Locale(supported).maximize();
+     var desiredLSR = {
