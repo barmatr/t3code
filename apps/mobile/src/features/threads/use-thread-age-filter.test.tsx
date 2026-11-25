@@ -28,8 +28,8 @@ async function ageFilterHarness(basis: ThreadAgeBasis = "assistant_reply") {
   const root = createRoot(document.createElement("div"));
   let current: ReturnType<typeof useThreadAgeFilter> | undefined;
   const commits: string[][] = [];
-  function Probe(props: { threads: Parameters<typeof useThreadAgeFilter>[0] }) {
-    const result = useThreadAgeFilter(props.threads, "1h", []);
+  function Probe(props: { threads: Parameters<typeof useThreadAgeFilter>[0]; age: ThreadAge }) {
+    const result = useThreadAgeFilter(props.threads, props.age, []);
     useLayoutEffect(() => {
       current = result;
       commits.push(result.threads.map((thread) => String(thread.id)));
@@ -43,11 +43,11 @@ async function ageFilterHarness(basis: ThreadAgeBasis = "assistant_reply") {
       if (!current) throw new Error("Filter not rendered");
       return current;
     },
-    render: (threads: Parameters<typeof useThreadAgeFilter>[0]) =>
+    render: (threads: Parameters<typeof useThreadAgeFilter>[0], age: ThreadAge = "1h") =>
       act(async () =>
         root.render(
           <RegistryContext value={registry}>
-            <Probe threads={threads} />
+            <Probe threads={threads} age={age} />
           </RegistryContext>,
         ),
       ),
@@ -71,6 +71,46 @@ function shellWithoutMessage(environment = "test", updatedAt = "2026-11-10T12:00
     }),
   );
 }
+
+it.each(["assistant_reply", "conversation_activity"] as const)(
+  "reads only plausible Last day candidates and keeps exact %s dates",
+  async (basis) => {
+    const now = Date.UTC(2026, 10, 10, 12);
+    vi.useFakeTimers({ now });
+    using _timers = { [Symbol.dispose]: () => vi.useRealTimers() };
+    await using view = await ageFilterHarness(basis);
+    const old = shellWithoutMessage("old", "2026-11-06T11:59:59.999Z");
+    const boundary = shellWithoutMessage("boundary", "2026-11-06T12:00:00.000Z");
+    const recent = shellWithoutMessage("recent");
+    const metadataOnly = shellWithoutMessage("renamed");
+    const threads = [old, boundary, recent, metadataOnly];
+    const lastWeek = Atom.make(AsyncResult.success<number | null>(now - 7 * 86_400_000));
+    const lastHour = Atom.make(AsyncResult.success<number | null>(now - 3_600_000));
+    const lookup = vi.mocked(latestThreadMessageAtom).mockReset();
+    lookup.mockImplementation(({ environmentId }) =>
+      environmentId === recent.environmentId || environmentId === boundary.environmentId
+        ? lastHour
+        : lastWeek,
+    );
+    await view.render(threads, "1d");
+    expect(view.current.threads).toEqual([boundary, recent]);
+    expect(view.current.checking).toBe(false);
+    const reads = () => new Set(lookup.mock.calls.map(([query]) => query.environmentId));
+    expect(reads()).toEqual(
+      new Set([boundary.environmentId, recent.environmentId, metadataOnly.environmentId]),
+    );
+    lookup.mockClear();
+    await view.render(threads, "older5d");
+    expect(view.current.threads).toEqual([old, metadataOnly]);
+    expect(reads()).toContain(old.environmentId);
+    lookup.mockClear();
+    await view.render([old], "1d");
+    expect(view.current.threads).toEqual([]);
+    expect(view.current.pending).toBe(false);
+    expect(view.current.checking).toBe(false);
+    expect(lookup).not.toHaveBeenCalled();
+  },
+);
 
 it.each(["assistant_reply", "conversation_activity"] as const)(
   "keeps a known recent %s date across stream versions and lookup failures",

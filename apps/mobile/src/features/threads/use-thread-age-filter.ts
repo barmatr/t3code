@@ -10,6 +10,9 @@ import { isOlderThreadAge, threadAgeOption, type ThreadAge } from "../../lib/thr
 import { mobilePreferencesAtom } from "../../state/preferences";
 import { latestThreadMessageAtom } from "../../state/thread-age-filter";
 
+// Some historical messages on the Mac postdate their thread metadata by up to 70 h 07.
+const THREAD_TIMESTAMP_GRACE_MS = 72 * 60 * 60_000;
+
 export function useThreadAgeFilter(
   threads: ReadonlyArray<EnvironmentThreadShell>,
   age: ThreadAge,
@@ -33,6 +36,7 @@ export function useThreadAgeFilter(
           : "assistant_reply";
         const reads: Array<ReturnType<typeof latestThreadMessageAtom>> = [];
         const pendingThreads = new Set<EnvironmentThreadShell>();
+        const outsideWindow = new Set<EnvironmentThreadShell>();
         let pending = false;
         let failed = false;
         const times = new Map<EnvironmentThreadShell, number | null>();
@@ -50,6 +54,15 @@ export function useThreadAgeFilter(
                 ? DateTime.toEpochMillis(message.updatedAt) > cutoff
                 : thread.source.visibleItemCount > 0 || thread.source.itemCount > 0
             ) {
+              if (
+                !older &&
+                message === null &&
+                Date.parse(thread.updatedAt) < cutoff - THREAD_TIMESTAMP_GRACE_MS &&
+                (basis !== "conversation_activity" || Date.parse(thread.createdAt) <= cutoff)
+              ) {
+                outsideWindow.add(thread);
+                continue;
+              }
               // Current servers omit message bodies from shell rows. Read bounded
               // conversation pages; thread metadata can also change without a reply.
               const atom = latestThreadMessageAtom({
@@ -104,7 +117,16 @@ export function useThreadAgeFilter(
             }
           }
         }
-        return { times, previousTimes, reads, pendingThreads, pending, failed, basis };
+        return {
+          times,
+          previousTimes,
+          reads,
+          pendingThreads,
+          outsideWindow,
+          pending,
+          failed,
+          basis,
+        };
       }),
     [threads, durationMs, older, afterMs],
   );
@@ -124,11 +146,19 @@ export function useThreadAgeFilter(
           : state.previousTimes.get(thread);
       if (timestamp !== undefined) {
         retained.set(key, timestamp);
-        if (timestamp !== null) times.set(thread, timestamp);
+        if (timestamp !== null && !state.outsideWindow.has(thread)) times.set(thread, timestamp);
       } else if (state.pendingThreads.has(thread)) checking = true;
     }
     return { retained, times, checking };
-  }, [threads, state.times, state.previousTimes, state.pendingThreads, state.basis, retainedTimes]);
+  }, [
+    threads,
+    state.times,
+    state.previousTimes,
+    state.pendingThreads,
+    state.outsideWindow,
+    state.basis,
+    retainedTimes,
+  ]);
   // Bound retention to the current candidates and basis. Adjust before commit so
   // a transient query state never reaches the list as an artificial removal.
   if (
