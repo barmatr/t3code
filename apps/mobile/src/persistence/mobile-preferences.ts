@@ -138,6 +138,36 @@ const ThreadProject = Schema.Struct({
 });
 const isThreadProject = Schema.is(ThreadProject);
 
+/** T4 : alertes dans l'app. Chaque clé absente vaut « activé ». */
+export interface InAppAlertPreferences {
+  readonly enabled?: boolean;
+  readonly attention?: boolean;
+  readonly completions?: boolean;
+  readonly failures?: boolean;
+  readonly haptics?: boolean;
+  readonly badge?: boolean;
+}
+
+const IN_APP_ALERT_PREFERENCE_KEYS = [
+  "enabled",
+  "attention",
+  "completions",
+  "failures",
+  "haptics",
+  "badge",
+] as const satisfies ReadonlyArray<keyof InAppAlertPreferences>;
+
+function sanitizeInAppAlertPreferences(value: unknown): InAppAlertPreferences | undefined {
+  if (typeof value !== "object" || value === null) return undefined;
+  const source = value as Record<string, unknown>;
+  const result: { -readonly [K in keyof InAppAlertPreferences]: boolean } = {};
+  for (const key of IN_APP_ALERT_PREFERENCE_KEYS) {
+    const flag = source[key];
+    if (typeof flag === "boolean") result[key] = flag;
+  }
+  return result;
+}
+
 export interface Preferences {
   readonly navigationTabOrder?: readonly string[];
   readonly hiddenNavigationTabs?: readonly string[];
@@ -150,6 +180,7 @@ export interface Preferences {
   readonly pullRequestActivityVisibility?: PullRequestActivityVisibility;
   readonly pullRequestMergeMethod?: PullRequestMergeMethod;
   readonly liveActivitiesEnabled?: boolean;
+  readonly inAppAlerts?: InAppAlertPreferences;
   readonly themeId?: MobileThemeId;
   readonly lightThemeId?: MobileThemeId;
   readonly darkThemeId?: MobileThemeId;
@@ -246,6 +277,7 @@ function sanitizePreferences(parsed: Preferences): Preferences {
     pullRequestActivityVisibility?: PullRequestActivityVisibility;
     pullRequestMergeMethod?: PullRequestMergeMethod;
     liveActivitiesEnabled?: boolean;
+    inAppAlerts?: InAppAlertPreferences;
     themeId?: MobileThemeId;
     lightThemeId?: MobileThemeId;
     darkThemeId?: MobileThemeId;
@@ -326,6 +358,8 @@ function sanitizePreferences(parsed: Preferences): Preferences {
   if (typeof parsed.liveActivitiesEnabled === "boolean") {
     preferences.liveActivitiesEnabled = parsed.liveActivitiesEnabled;
   }
+  const inAppAlerts = sanitizeInAppAlertPreferences(parsed.inAppAlerts);
+  if (inAppAlerts !== undefined) preferences.inAppAlerts = inAppAlerts;
   if (
     typeof parsed.themeId === "string" &&
     (MOBILE_THEME_IDS as readonly string[]).includes(parsed.themeId)

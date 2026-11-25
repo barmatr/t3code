@@ -56,6 +56,8 @@ import { subscribeComposerDraftModelReconciliation } from "./state/use-composer-
 import { environmentThreadShells, threadEnvironment } from "./state/threads";
 import { environmentShell, shellCachesReadAtom } from "./state/shell";
 import { OverlayPortalHost } from "./components/ui/OverlayPortal";
+import { InAppAlertHost } from "./features/in-app-alerts/InAppAlertBanner";
+import { installInAppAlerts, setInAppAlertPathname } from "./features/in-app-alerts/inAppAlerts";
 import { shouldHandleAppLink, restoreDraftLinkState } from "./lib/appLinking";
 import { hasCloudPublicConfig } from "./features/cloud/publicConfig";
 import { takeScheduledTaskNewLink } from "./features/settings/scheduled-task-editor-state";
@@ -184,7 +186,9 @@ function handleNavigationStateChange(state: NavigationState | undefined): void {
   if (!state) return;
   // A launch that opens another route has no Home rows for the splash to wait for.
   if (state.routes[state.index]?.name !== "Home") settleLaunchSplashHomeRows();
-  setAgentNotificationPathname(workspaceLocationFromState(state).pathname);
+  const pathname = workspaceLocationFromState(state).pathname;
+  setAgentNotificationPathname(pathname);
+  setInAppAlertPathname(pathname);
   recordAppShortcutNavigationState(state);
   pruneNewTaskFlowStates(state);
   pruneNewTaskBranchCheckouts(state);
@@ -214,6 +218,7 @@ const appServiceDisposers = [
   installComposerAttachmentUploads(),
   startIncomingShareInbox(),
   installAgentNotificationNavigation(linkToAppPath),
+  installInAppAlerts({ registry: appAtomRegistry, navigate: linkToAppPath }),
   installAppShortcuts(linkToAppPath),
   installAppUpdateChecks(),
   installShowcaseCapture(rootPathnameFromState),
@@ -323,6 +328,7 @@ function AppContent() {
               </NativeLayoutMetricsProvider>
             </GlobalVoiceInputControl>
             <OverlayPortalHost />
+            <InAppAlertHost />
           </SafeAreaProvider>
         </KeyboardProvider>
       </GestureHandlerRootView>

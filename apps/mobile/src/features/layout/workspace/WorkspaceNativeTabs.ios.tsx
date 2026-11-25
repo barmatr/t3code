@@ -40,6 +40,8 @@ import { WorkspaceSidebarTabs } from "./WorkspaceSidebarTabs";
 import { useAdaptiveWorkspaceLayout, useWorkspacePaneState } from "../AdaptiveWorkspaceLayout";
 import { useSelectWorkspaceTab } from "./useSelectWorkspaceTab";
 import { useWorkspaceCompose } from "./useWorkspaceCompose";
+import { registerDiscussionsOpener } from "../../in-app-alerts/inAppAlerts";
+import { useDiscussionsBadge } from "../../in-app-alerts/useDiscussionsBadge";
 
 const AGENTS_ICON = require("../../../../assets/icons/robot.png");
 const ISSUE_ICON = require("../../../../assets/icons/issue.png");
@@ -155,6 +157,9 @@ export function WorkspaceNativeTabs(props: {
   const primaryTabs = order.slice(0, 4);
   const overflow = order[4];
   const selectTab = useSelectWorkspaceTab();
+  const discussionsBadge = useDiscussionsBadge();
+  // oxlint-disable-next-line t3code/no-unreasoned-state-sync -- lets a grouped in-app banner bring Discussions forward
+  useEffect(() => registerDiscussionsOpener(() => selectTab("threads")), [selectTab]);
   const [provenance, setProvenance] = useState(0);
   const systemTabBar = useSystemWorkspaceTabBar();
   const deviceType = useDeviceType();
@@ -239,6 +244,7 @@ export function WorkspaceNativeTabs(props: {
                 tabBarItemAccessibilityLabel={
                   settings ? gt("Settings") : m(WORKSPACE_TAB_LABELS[tab])
                 }
+                badgeValue={!settings && tab === "threads" ? discussionsBadge : undefined}
                 ios={{
                   prewarmRequest: prewarmRequests.get(slot) ?? 0,
                   contentReady: mountedSlots.has(slot),

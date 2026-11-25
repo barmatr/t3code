@@ -114,6 +114,15 @@ const SETTINGS_SEARCH_TERMS = {
     msg("auto-resume", { $context: "settings search keyword" }),
     msg("thread behavior", { $context: "settings search keyword" }),
   ],
+  SettingsInAppAlerts: [
+    msg("alerts", { $context: "settings search keyword" }),
+    msg("banner", { $context: "settings search keyword" }),
+    msg("badge", { $context: "settings search keyword" }),
+    msg("haptics", { $context: "settings search keyword" }),
+    msg("vibration", { $context: "settings search keyword" }),
+    msg("approvals", { $context: "settings search keyword" }),
+    msg("errors", { $context: "settings search keyword" }),
+  ],
   SettingsFollowUp: [
     msg("follow-ups", { $context: "settings search keyword" }),
     msg("queue", { $context: "settings search keyword" }),

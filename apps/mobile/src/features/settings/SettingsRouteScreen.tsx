@@ -277,6 +277,7 @@ function useSettingsIndexSections({
         page("SettingsOrganization", "gearshape", gt("General")),
         page("SettingsAppearance", "paintbrush", gt("Appearance")),
         page("SettingsFollowUp", "bubble.left.and.bubble.right", gt("Chat")),
+        page("SettingsInAppAlerts", "bell.badge", gt("In-app notifications")),
         ...(navigationCustomizationAvailable()
           ? [page("SettingsNavigation", "line.3.horizontal", gt("Navigation tabs"))]
           : []),
