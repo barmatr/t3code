@@ -15,7 +15,17 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison — 0.1.0 (30), visibilité des alertes
+## Dernière livraison — 0.1.0 (31), filtre d’âge des fils
+
+Le 25 novembre 2026 à 14 h 14 (Paris), Apple confirme **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 31 dans **T4 Interne**. UUID `0c6d0425-01a6-4d1e-9976-ddfab881db1b`. Le groupe contient le testeur attendu, les notifications automatiques sont désactivées et le build a été installé depuis TestFlight sur le Duo. [État Apple](build/ios-local/build-31/apple-final-status.json) · [Groupe](build/ios-local/build-31/groupe-interne.json).
+
+- Pour les filtres récents, T4 évite de lire l’historique si le fil a été modifié plus de 72 h avant la limite. Sur « Last day », cela écarte les fils modifiés il y a plus de quatre jours. Une modification récente continue de déclencher une lecture lorsque la liste omet le dernier message. Les deux bases conservent leur date de référence. « > 5 days » continue de chercher la date exacte.
+- Vérification sur la Nightly Mac 4682 et sur les 4 124 fils ni archivés ni supprimés. La ligne de liste reprend la date du fil encodée dans la projection, égale à la colonne `updated_at` pour ces 4 124 fils. Les 48 décalages côté assistant et 31 côté utilisateur atteignent au plus 70 h 07. Le dernier message assistant en décalage date du 5 octobre. [Requête en lecture seule et résultats](build/ios-local/build-31/projection-check.json).
+- Sur le même Duo, après relance à froid avec « All env · All projects · Last day », le Mac a reçu **1 010 lectures avec le build 30, puis 841 avec le build 31**, soit **16,7 % de moins**. Chaque fenêtre de mesure dure deux minutes. Les filtres ont été vérifiés à l’écran. Un premier essai du 31, interrompu avec une erreur de lecture, a été exclu. Sur l’essai complet, « Checking recent replies… » était encore visible à 47 s et absent à 62 s. [Essai interrompu](build/ios-local/build-31/duo-build-31-incomplete.json) · [Mesure du build 30](build/ios-local/build-31/duo-build-30.json) · [Mesure du build 31](build/ios-local/build-31/duo-build-31.json).
+- Correctif et tests au commit `d1cc642d40`. Les deux nouveaux cas échouent sur le build 30. Les 11 tests du filtre, TypeScript, le lint des fichiers modifiés et React Compiler passent. Knip signale toujours `useOpenWorkspaceDetail.ts`, déjà présent au build 29. [Tests avant](build/ios-local/build-31/filter-red.log) · [Tests après](build/ios-local/build-31/filter-green.log) · [Contrôles sur la branche](build/ios-local/build-31/check-branch.log).
+- Configuration Amphetamine identique dans les IPA 30 et 31. Après nettoyage, le disque est passé de 51,9 à 57,8 Go libres. [Vérification de l’IPA](build/ios-local/build-31/verification-ipa.json) · [Archive et IPA](build/ios-local/build-31/deployment.json) · [Nettoyage](build/ios-local/build-31/cleanup.log).
+
+## Historique — 0.1.0 (30), visibilité des alertes
 
 Le 25 novembre 2026 à 13 h 38 (Paris), Apple indique **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 30 dans **T4 Interne**. Identifiant Apple `a396bac6-011e-4e5d-95fc-4f03ec605740`.
 
@@ -987,10 +997,10 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build `0.1.0 (30)`, valide et distribué à T4 Interne, UUID
-> `a396bac6-011e-4e5d-95fc-4f03ec605740`. Le commit `10cf1dbd21` sur `fork/t4-mobile-4682`
-> prolonge les alertes et ajoute le liseré. Voir `docs/t4/alertes-dans-l-app/README.md`
-> et les preuves de livraison dans `build/ios-local/build-30/`.
+> Dernier build `0.1.0 (31)`, distribué à T4 Interne et installé sur le Duo, UUID
+> `0c6d0425-01a6-4d1e-9976-ddfab881db1b`. Le commit `d1cc642d40` sur `fork/t4-mobile-4682`
+> évite les lectures d’historique des fils hors des filtres récents. Les mesures sur le Duo
+> et les preuves de livraison se trouvent dans `build/ios-local/build-31/`.
 > Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
 > fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`, étiquette `t4-mobile-nightly-4994-20261120`.
 > Pour toute compilation, utiliser **Xcode 27.1 ou plus** pour l’adaptation iPhone
@@ -998,7 +1008,7 @@ autorise cette livraison sans nouvelle question à Raoul.
 > Point de retour : `t4-mobile-before-upgrade-20261120`. Preuves : `build/ios-local/build-24/`
 > et `build/upgrades/4994-20261120/`.
 > Avant la prochaine livraison, vérifier Apple et choisir un numéro supérieur à
-> 30 et à tout numéro déjà pris.
+> 31 et à tout numéro déjà pris.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
 > Garder les serveurs réels en lecture seule et protéger les secrets. Ne pas toucher
