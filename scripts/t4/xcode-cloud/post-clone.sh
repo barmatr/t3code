@@ -97,7 +97,8 @@ printf 'export NODE_BINARY=%s\n' "${NODE_HOME}/bin/node" > "${IOS}/.xcode.env.lo
 step "CocoaPods"
 command -v pod >/dev/null || retry brew install cocoapods
 echo "CocoaPods $(pod --version)."
-retry pod install --project-directory="${IOS}"
+# The Podfile resolves expo and react-native from its own directory.
+(cd "${IOS}" && retry pod install)
 node "${ROOT}/scripts/t4/verify-native-ios.mjs" "${IOS}"
 
 step "Paquets Swift"
