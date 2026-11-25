@@ -79,8 +79,8 @@ it.each(["assistant_reply", "conversation_activity"] as const)(
     vi.useFakeTimers({ now });
     using _timers = { [Symbol.dispose]: () => vi.useRealTimers() };
     await using view = await ageFilterHarness(basis);
-    const old = shellWithoutMessage("old", "2026-11-06T11:59:59.999Z");
-    const boundary = shellWithoutMessage("boundary", "2026-11-06T12:00:00.000Z");
+    const old = shellWithoutMessage("old", "2026-11-09T05:59:59.999Z");
+    const boundary = shellWithoutMessage("boundary", "2026-11-09T06:00:00.000Z");
     const recent = shellWithoutMessage("recent");
     const metadataOnly = shellWithoutMessage("renamed");
     const threads = [old, boundary, recent, metadataOnly];

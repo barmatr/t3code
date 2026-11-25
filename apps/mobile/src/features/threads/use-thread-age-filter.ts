@@ -10,8 +10,9 @@ import { isOlderThreadAge, threadAgeOption, type ThreadAge } from "../../lib/thr
 import { mobilePreferencesAtom } from "../../state/preferences";
 import { latestThreadMessageAtom } from "../../state/thread-age-filter";
 
-// Some historical messages on the Mac postdate their thread metadata by up to 70 h 07.
-const THREAD_TIMESTAMP_GRACE_MS = 72 * 60 * 60_000;
+// Since October 1, the largest observed message lag on the Mac was 4 h 02 (rounded up).
+// A future lag over six hours can hide a recent reply until the thread updates.
+const THREAD_TIMESTAMP_GRACE_MS = 6 * 60 * 60_000;
 
 export function useThreadAgeFilter(
   threads: ReadonlyArray<EnvironmentThreadShell>,
