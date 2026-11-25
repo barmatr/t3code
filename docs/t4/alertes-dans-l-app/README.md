@@ -1,9 +1,12 @@
 # Alertes dans l’app — T4 Mobile
 
 Demande de Raoul du 25 novembre 2026 : voir dans T4 Mobile, à l’écran et sans
-notification push, ce que le Mac signale déjà. Livré dans le build **0.1.0 (29)**,
+notification push, ce que le Mac signale déjà. Première livraison dans le build **0.1.0 (29)**,
 commits `123df6888e` (fonction) et `62f2c2be05` (correctif), branche
 `t4-mobile-4682` poussée sur `fork` (`barmatr/t3code`).
+
+Le build **0.1.0 (30)** prolonge les bandeaux et leur ajoute un liseré coloré
+(commit `10cf1dbd21`). [Livraison TestFlight](../../../T4-TESTFLIGHT-REPRISE.md).
 
 - [Étude de faisabilité](etude-alertes-t4-mobile.md), révisée après challenge.
 - [Diaporama de conception](diaporama-alertes-t4-mobile.html) : maquettes du
@@ -21,14 +24,17 @@ au-dessus de tout, feuilles natives comprises. Il annonce :
 
 | Événement            | Titre                         | Durée |
 | -------------------- | ----------------------------- | ----- |
-| Validation demandée  | Approbation requise           | 8 s   |
-| Question de l’agent  | Réponse requise               | 8 s   |
-| Message d’un invité  | Demande d’invité              | 8 s   |
-| Échec du tour        | Échec du fil                  | 8 s   |
-| Limite d’utilisation | Limite d’utilisation atteinte | 8 s   |
-| Fin de tour          | Fil terminé                   | 5 s   |
+| Validation demandée  | Approbation requise           | 16 s  |
+| Question de l’agent  | Réponse requise               | 16 s  |
+| Message d’un invité  | Demande d’invité              | 16 s  |
+| Échec du tour        | Échec du fil                  | 16 s  |
+| Limite d’utilisation | Limite d’utilisation atteinte | 16 s  |
+| Fin de tour          | Fil terminé                   | 10 s  |
 
-Le bandeau donne le titre du fil, puis le projet, ou l’erreur pour un échec.
+Un liseré de 2 points entoure le bandeau et reprend la couleur de son icône,
+verte pour une fin de tour. Il suit le thème clair ou sombre, y compris pour
+les alertes groupées. Le bandeau donne le titre du fil, puis le projet, ou
+l’erreur pour un échec.
 Toucher ouvre le fil. Plusieurs alertes de même nature se regroupent (« 3 fils
 t’attendent ») et le bouton **Voir** ouvre Discussions. Ordre de passage : ce qui
 attend Raoul, puis les échecs, puis les fins de tour. Glisser vers le haut ferme
@@ -110,8 +116,12 @@ traduits dans les 10 langues. Suite mobile complète : seuls échouent les 4 tes
 alertes ([preuve](../../../build/ios-local/build-29/verification-ipa.json), dossier
 local non versionné).
 
-Pas de recette sur simulateur : il aurait fallu un environnement T3 appairé dans le
-simulateur. **À vérifier sur l’iPhone** avec le build 29 :
+Raoul a vu le bandeau du build 29 sur son Duo, depuis Discussions puis en lisant
+un autre fil. Pour le build 30, les 32 tests des alertes et le contrôle de types
+passent. La comparaison des deux IPA confirme le passage de 5 à 10 secondes et
+de 8 à 16 secondes. Le contraste du liseré sur l’écran du Duo reste à vérifier.
+
+**Recette sur iPhone**
 
 1. Fin de tour d’un fil lancé depuis le Mac, T4 ouvert sur un autre fil : bandeau
    « Fil terminé », toucher ouvre le fil.

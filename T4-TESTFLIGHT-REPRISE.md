@@ -15,7 +15,16 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison — 0.1.0 (29), alertes dans l’app
+## Dernière livraison — 0.1.0 (30), visibilité des alertes
+
+Le 25 novembre 2026 à 13 h 38 (Paris), Apple indique **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 30 dans **T4 Interne**. Identifiant Apple `a396bac6-011e-4e5d-95fc-4f03ec605740`.
+
+- Le bandeau « Fil terminé » reste affiché 10 secondes. Les demandes, échecs et limites restent affichés 16 secondes. Un liseré de 2 points de la couleur de l’icône entoure le bandeau, y compris en mode sombre et pour les alertes groupées.
+- Le changement est dans `10cf1dbd21`. Les 32 tests des alertes, le contrôle TypeScript et le lint du composant passent. Le contrôle global Knip signale le fichier inutilisé `useOpenWorkspaceDetail.ts`, déjà présent dans le build 29. La comparaison des IPA confirme les durées et la configuration Amphetamine. Le rendu sur le Duo reste à vérifier pour le build 30.
+- Le groupe interne compte le testeur attendu. La notification automatique TestFlight est désactivée. [Preuve Apple](build/ios-local/build-30/apple-final-status.json) · [Vérification du binaire](build/ios-local/build-30/verification-ipa.json) · [Archive et IPA](build/ios-local/build-30/deployment.json).
+- Après nettoyage, le disque est passé de 52,8 à 58,8 Go libres. [Journal du nettoyage](build/ios-local/build-30/cleanup.log).
+
+## Historique — 0.1.0 (29), alertes dans l’app
 
 Le 25 novembre 2026 à 11 h 59 (Paris), Apple indique **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 29 dans **T4 Interne**. Identifiant Apple `f8cb39ba-ed9e-4b18-9f88-0c71e3fd3b11`.
 
@@ -978,10 +987,10 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build `0.1.0 (29)`, valide et distribué à T4 Interne, UUID
-> `f8cb39ba-ed9e-4b18-9f88-0c71e3fd3b11`. Commit `62f2c2be05`, sans modification
-> locale, poussé sur `fork/t4-mobile-4682` : alertes dans l’app
-> (`docs/t4/alertes-dans-l-app/README.md`) et statut Amphetamine du Mac.
+> Dernier build `0.1.0 (30)`, valide et distribué à T4 Interne, UUID
+> `a396bac6-011e-4e5d-95fc-4f03ec605740`. Le commit `10cf1dbd21` sur `fork/t4-mobile-4682`
+> prolonge les alertes et ajoute le liseré. Voir `docs/t4/alertes-dans-l-app/README.md`
+> et les preuves de livraison dans `build/ios-local/build-30/`.
 > Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
 > fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`, étiquette `t4-mobile-nightly-4994-20261120`.
 > Pour toute compilation, utiliser **Xcode 27.1 ou plus** pour l’adaptation iPhone
@@ -989,7 +998,7 @@ autorise cette livraison sans nouvelle question à Raoul.
 > Point de retour : `t4-mobile-before-upgrade-20261120`. Preuves : `build/ios-local/build-24/`
 > et `build/upgrades/4994-20261120/`.
 > Avant la prochaine livraison, vérifier Apple et choisir un numéro supérieur à
-> 29 et à tout numéro déjà pris.
+> 30 et à tout numéro déjà pris.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
 > Garder les serveurs réels en lecture seule et protéger les secrets. Ne pas toucher

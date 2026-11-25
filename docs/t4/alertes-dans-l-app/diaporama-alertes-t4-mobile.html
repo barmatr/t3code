@@ -160,7 +160,7 @@ b, strong { font-weight: 700; }
 .send svg { width: 14px; height: 14px; }
 
 /* Bandeau d'alerte */
-.bn { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 9px; align-items: center; padding: 9px 10px 11px; border-radius: 18px; background: rgba(36,36,40,.94); border: 1px solid rgba(255,255,255,.09); box-shadow: 0 10px 28px rgba(0,0,0,.55); backdrop-filter: blur(14px); position: relative; color: var(--t4-fg); font-family: "DM Sans", system-ui, sans-serif; }
+.bn { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 9px; align-items: center; padding: 9px 10px 11px; border-radius: 18px; background: rgba(36,36,40,.94); border: 2px solid var(--k); box-shadow: 0 10px 28px rgba(0,0,0,.55); backdrop-filter: blur(14px); position: relative; color: var(--t4-fg); font-family: "DM Sans", system-ui, sans-serif; }
 .bn .bi { width: 30px; height: 30px; border-radius: 10px; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); display: flex; align-items: center; justify-content: center; }
 .bn .bi svg { width: 17px; height: 17px; }
 .bn .b1 { font-size: 11px; font-weight: 700; line-height: 14px; }
@@ -405,7 +405,7 @@ b, strong { font-weight: 700; }
       <ul class="clean">
         <li><b>Toucher</b> ouvre le fil concerné.</li>
         <li><b>Glisser vers le haut</b> le ferme.</li>
-        <li>Il <b>disparaît seul</b> après 5 secondes environ. Le fil reste en tête de Discussions.</li>
+        <li>Il <b>disparaît seul</b> après 10 secondes pour une fin de tour et 16 secondes pour les autres alertes. Le fil reste en tête de Discussions.</li>
         <li>Une <b>vibration légère</b> l’accompagne, désactivable.</li>
         <li>Plusieurs alertes en même temps sont <b>regroupées</b> dans un seul bandeau.</li>
       </ul>
