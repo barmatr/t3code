@@ -11,9 +11,10 @@ partagés. Les noms internes `@t3tools/*` restent compatibles.
 - iOS et Android : `fr.emaxconseils.t4`. Dev : suffixe `.dev`, preview : `.preview`.
 - Signature iOS : équipe `emax conseils`, `GY9P9U75F3`.
 - Première version locale : `0.1.0`, build `1` (modifiable avec `T4_IOS_BUILD_NUMBER`).
-- Sources courantes : branche `t4-mobile-4682`, intégration de
-  `v0.1.10-nightly.20261114.4682` ; état précédent protégé par le tag local
-  `t4-mobile-before-4682-20261114`. Cette mise à niveau reste locale (ni push ni PR).
+- Sources courantes : branche `t4-mobile-4682`, poussée sur `fork` (`barmatr/t3code`),
+  base `v0.1.12-nightly.20261120.4994` (tag `t4-mobile-nightly-4994-20261120`) depuis le
+  20 novembre 2026. États précédents protégés par les tags locaux
+  `t4-mobile-before-4682-20261114` et `t4-mobile-before-upgrade-20261120`.
 - Historique : à partir du build 7, branche `t4-mobile-4515`, partie de T3
   `v0.1.9-nightly.20261111.4515` avec les seules personnalisations mobiles reprises
   (commit du build 6 `7cc84fd38a`, tag `t4-mobile-build-6`). Les builds 1 à 6
@@ -29,7 +30,9 @@ peut ouvrir directement T4. Ne pas publier de lien d’appairage contenant un je
 Le client conserve le flux de conversation temps réel lorsque l’app est active ;
 son fonctionnement sur l’iPhone de Raoul reste à vérifier. Cette
 version ne déclare pas les capacités push, widgets, Live Activities, réception par
-extension ou Sign in with Apple. L’app officielle conserve ces usages. Le service
+extension ou Sign in with Apple. Depuis le build 29, T4 affiche ses propres alertes
+quand l’app est ouverte (bandeau, pastille sur Discussions, réglages) :
+[docs/t4/alertes-dans-l-app](docs/t4/alertes-dans-l-app/README.md). L’app officielle conserve ces usages. Le service
 T3 Connect/Clerk et la télémétrie cloud ne sont pas configurés ici. Si un serveur
 n’est accessible que via T3 Connect, son accès depuis ce build reste à valider ;
 prévoir une route directe accessible à l’iPhone (réseau local, VPN/tailnet ou HTTPS).
@@ -104,9 +107,13 @@ pas une publication publique : [documentation Apple](https://developer.apple.com
 
 ## Maintenance
 
-Branches `t4-mobile` (builds 1 à 6) et `t4-mobile-4515` (builds 7 à 15), avec
-les tags `t4-mobile-build-N`, poussées sur le fork `fork` (`barmatr/t3code`) depuis
-le 11 novembre 2026, à côté de la branche `t4` de T4 PC. Les remotes de lecture
+Branches `t4-mobile` (builds 1 à 6), `t4-mobile-4515` (builds 7 à 15) et
+`t4-mobile-4682` (depuis le build 16), avec les tags `t4-mobile-build-N`, poussées
+sur le fork `fork` (`barmatr/t3code`) depuis le 11 novembre 2026, à côté de la
+branche `t4` de T4 PC. Ce fork est **public** : n’y pousser ni secret ni adresse
+Tailscale (ils restent dans `.env.local`). L’identifiant d’environnement du Mac y
+figure depuis le build 7 dans `agents-project.ts` : il désigne le serveur, sans
+donner d’accès. Les remotes de lecture
 `desktop-source` et `upstream` gardent leur push neutralisé. Conserver les commits personnalisés mobile à part avant toute mise à jour,
 puis reprendre une base compatible avec les serveurs T3 réellement utilisés.
 Exécuter les vérifications ciblées après intégration ; éviter le script de mise à jour

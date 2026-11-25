@@ -7,6 +7,8 @@ T3 Nightly `v0.1.8-nightly.20261104.4165`.
 - Mobile autonome : lire [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md) avant de modifier
   l’app, sa signature ou ses commandes de build.
 - Exploitation et limites : [T4-MOBILE.md](T4-MOBILE.md).
+- Alertes dans l’app (bandeau, pastille, réglages) : [docs/t4/alertes-dans-l-app](docs/t4/alertes-dans-l-app/README.md).
+  Leur filtre copie un fichier du client web T3 : le comparer après chaque mise à niveau.
 - Reprise sans historique : pour la signature, les accès Apple ou TestFlight,
   lire [T4-TESTFLIGHT-REPRISE.md](T4-TESTFLIGHT-REPRISE.md) avant d’agir. Ce document
   donne les dépendances propres à ce Mac, les preuves datées et les étapes restantes.

@@ -15,13 +15,23 @@ Relire l’état Apple et l’association au groupe, et enregistrer la preuve de
 Un build local ou un upload réussi seul ne termine pas le travail. En cas de blocage
 technique non résolu, indiquer l’étape restante sans annoncer le build comme livré.
 
-## Dernière livraison — 0.1.0 (28), statut Amphetamine du Mac
+## Dernière livraison — 0.1.0 (29), alertes dans l’app
+
+Le 25 novembre 2026 à 11 h 59 (Paris), Apple indique **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 29 dans **T4 Interne**. Identifiant Apple `f8cb39ba-ed9e-4b18-9f88-0c71e3fd3b11`.
+
+- Quand T4 est ouvert, un bandeau en haut de l’écran annonce les validations et questions en attente, les fins de tour, les échecs et les limites d’utilisation. Une pastille sur l’onglet Discussions compte les fils qui attendent. **Réglages → Notifications dans l’app** règle le bandeau, les familles d’alertes, la vibration et la pastille. Fonctionnement, code, recette et limites : [docs/t4/alertes-dans-l-app](docs/t4/alertes-dans-l-app/README.md).
+- Sources sans modification locale : commits `123df6888e` et `62f2c2be05`, poussés sur `fork/t4-mobile-4682`. Les builds 27 et 28 sont commités dans `db4c99424b`. Le bundle JavaScript, produit à 11 h 52, contient le correctif `62f2c2be05`, commité à 11 h 47 pendant la compilation native ([source-commit.txt](build/ios-local/build-29/source-commit.txt)).
+- La configuration Amphetamine du build 28 est reprise de `.env.local`. L’IPA signée fait 64 362 480 octets, SHA-256 `7d09d418…573ce2`. [Vérification de l’IPA](build/ios-local/build-29/verification-ipa.json) · [Preuve Apple](build/ios-local/build-29/apple-final-status.json) · [Archive, IPA et preuves de livraison](build/ios-local/build-29/deployment.json).
+- Notification TestFlight automatique désactivée, comme pour les builds précédents : installer le build depuis l’app TestFlight. La recette sur l’iPhone reste à faire, avec la liste de la fiche des alertes.
+- Nettoyage fait : 54,3 Go libres avant, 60,3 Go après ([journal](build/ios-local/build-29/cleanup.log)).
+
+## Historique : 0.1.0 (28), statut Amphetamine du Mac
 
 Le 25 novembre 2026 à 9 h 30 (Paris), Apple indique **VALID / INTERNAL_ONLY / IN_BETA_TESTING** pour le build 28 dans **T4 Interne**. Identifiant Apple `64010124-bbfd-42a5-a830-677bee7b48fa`.
 
 - **Réglages → Connexions → Amphetamine · Mac** affiche l’état et, pour une session minutée, le temps restant. T4 Mobile demande une mesure au plus toutes les dix minutes quand les réglages sont ouverts au premier plan. La ligne est absente quand seul Linux est sélectionné.
 - Le LaunchAgent macOS lit Amphetamine en local. Le Mac a renvoyé le minuteur sur l’URL HTTPS privée du build avec OpenVPN actif et l’IP dédiée rétablie. Quelques appels depuis le Mac ont dépassé le délai avant de réussir à la relance. T3 officiel répond en nightly 4682. Reste à vérifier l’affichage depuis l’iPhone physique. [Service et procédure](scripts/t4/amphetamine/README.md) · [Vérification HTTPS](build/ios-local/build-28/verification-service.json).
-- La base `dac51dcea0` et les modifications locales du build sont décrites par `build/ios-local/build-28/source.patch`. L’IPA signée fait 64 341 076 octets. [Preuve Apple](build/ios-local/build-28/apple-final-status.json) · [Archive, IPA et preuves de livraison](build/ios-local/build-28/deployment.json).
+- La base `dac51dcea0` et les modifications locales du build sont décrites par `build/ios-local/build-28/source.patch`, puis commitées dans `db4c99424b`. L’IPA signée fait 64 341 076 octets. [Preuve Apple](build/ios-local/build-28/apple-final-status.json) · [Archive, IPA et preuves de livraison](build/ios-local/build-28/deployment.json).
 
 ## Historique : 0.1.0 (27), ouverture des fils et Direction agentique
 
@@ -968,17 +978,18 @@ autorise cette livraison sans nouvelle question à Raoul.
 ## Message de reprise après cette livraison
 
 > Lis `T4-TESTFLIGHT-REPRISE.md` dans `/Users/jrbmt/Desktop/workspace/t4mobile`.
-> Dernier build `0.1.0 (28)`, valide et distribué à T4 Interne, UUID
-> `64010124-bbfd-42a5-a830-677bee7b48fa`. Commit `dac51dcea0` et modifications
-> locales (`build/ios-local/build-28/source.patch`), dont le statut Amphetamine
-> du Mac. Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
+> Dernier build `0.1.0 (29)`, valide et distribué à T4 Interne, UUID
+> `f8cb39ba-ed9e-4b18-9f88-0c71e3fd3b11`. Commit `62f2c2be05`, sans modification
+> locale, poussé sur `fork/t4-mobile-4682` : alertes dans l’app
+> (`docs/t4/alertes-dans-l-app/README.md`) et statut Amphetamine du Mac.
+> Branche `t4-mobile-4682`, base `v0.1.12-nightly.20261120.4994`,
 > fusion `20cafdda4cf64e3fc105faa34eac7d319229bb9d`, étiquette `t4-mobile-nightly-4994-20261120`.
 > Pour toute compilation, utiliser **Xcode 27.1 ou plus** pour l’adaptation iPhone
 > Duo. Le build 23 est l’ancienne recompilation du Duo sur Nightly 4682.
 > Point de retour : `t4-mobile-before-upgrade-20261120`. Preuves : `build/ios-local/build-24/`
 > et `build/upgrades/4994-20261120/`.
 > Avant la prochaine livraison, vérifier Apple et choisir un numéro supérieur à
-> 28 et à tout numéro déjà pris.
+> 29 et à tout numéro déjà pris.
 > Ne renvoyer ni expirer les anciens builds. Tout développement va automatiquement
 > jusqu’à la disponibilité TestFlight pour T4 Interne, sans nouvelle confirmation.
 > Garder les serveurs réels en lecture seule et protéger les secrets. Ne pas toucher

@@ -183,6 +183,9 @@ export default defineConfig({
       "infra/task-cache/vendor/**",
       // Macroscope requires one glob per line; Markdown formatting corrupts it.
       ".macroscope/ignore.md",
+      // T4 : pages HTML de conception conservées telles que présentées ; le formatage
+      // ajoute des espaces visibles entre éléments en ligne.
+      "docs/t4/**/*.html",
       ".alchemy",
       "dist",
       "dist-electron",

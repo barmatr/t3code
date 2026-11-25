@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alertes T4 Mobile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --fg: var(--foreground, #ededf0);
+  --mfg: var(--muted-foreground, #9b9ba3);
+  --cardc: var(--card, #141416);
+  --bd: var(--border, #2a2a2f);
+  --pri: var(--primary, #4b7cf3);
+  --okc: var(--success, #34d399);
+  --warnc: var(--warning, #f5a524);
+  --errc: var(--destructive, #f87171);
+  --rad: var(--radius, 12px);
+  /* Couleurs de T4 Mobile, thème sombre par défaut (generated-uniwind-default-theme-variables.json) */
+  --t4-screen: #0a0a0a;
+  --t4-card: #1a1b1b;
+  --t4-fg: #f5f5f5;
+  --t4-muted: #838383;
+  --t4-border: #191919;
+  --t4-primary: #4b7cf3;
+  --k-amber: #ffb900;
+  --k-indigo: #a5b4fc;
+  --k-green: #6ee7b7;
+  --k-red: #ff6467;
+  --k-sky: #38bdf8;
+}
+.standalone body { background: #0b0b0c; color: #ededf0; padding: 24px 16px; }
+
+* { box-sizing: border-box; }
+.deck { max-width: 1000px; margin: 0 auto; color: var(--fg); font-family: var(--font-sans, "DM Sans", system-ui, sans-serif); }
+.stage { position: relative; height: 600px; }
+.slide { position: absolute; inset: 0; display: none; flex-direction: column; gap: 14px; overflow-y: auto; padding: 2px 2px 6px; }
+.slide.on { display: flex; }
+.deck.all .stage { height: auto; }
+.deck.all .slide { position: static; display: flex; overflow: visible; padding-bottom: 32px; margin-bottom: 32px; border-bottom: 1px solid var(--bd); }
+.deck.all .nav .step { display: none; }
+
+.kicker { font-size: 12px; letter-spacing: .07em; text-transform: uppercase; color: var(--mfg); font-weight: 600; margin: 0; }
+h1 { font-size: 34px; line-height: 1.1; margin: 4px 0 6px; font-weight: 700; text-wrap: balance; }
+h2 { font-size: 23px; line-height: 1.22; margin: 3px 0 0; font-weight: 700; text-wrap: balance; }
+h3 { font-size: 15px; margin: 0 0 6px; font-weight: 700; }
+p { margin: 0; }
+.lead { font-size: 15px; line-height: 1.5; color: var(--mfg); text-wrap: pretty; }
+.txt { font-size: 14px; line-height: 1.5; text-wrap: pretty; }
+.small { font-size: 12.5px; line-height: 1.45; color: var(--mfg); }
+ul.clean { list-style: none; padding: 0; margin: 0; display: grid; gap: 9px; }
+ul.clean li { font-size: 14px; line-height: 1.45; padding-left: 22px; position: relative; text-wrap: pretty; }
+ul.clean li::before { content: ""; position: absolute; left: 4px; top: .6em; width: 6px; height: 6px; border-radius: 50%; background: var(--mfg); }
+ul.ok li::before { content: "✓"; background: none; width: auto; height: auto; top: 0; left: 2px; color: var(--okc); font-weight: 700; }
+ul.ko li::before { content: "✕"; background: none; width: auto; height: auto; top: 0; left: 2px; color: var(--errc); font-weight: 700; }
+b, strong { font-weight: 700; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 26px; align-items: start; }
+.split > .col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.box { background: var(--cardc); border: 1px solid var(--bd); border-radius: var(--rad); padding: 16px; }
+.box.ok { border-color: color-mix(in srgb, var(--okc) 45%, var(--bd)); }
+.box.ko { border-color: color-mix(in srgb, var(--errc) 45%, var(--bd)); }
+.box.pri { border-color: color-mix(in srgb, var(--pri) 55%, var(--bd)); }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--bd); color: var(--mfg); width: fit-content; }
+.tag.reco { color: var(--okc); border-color: color-mix(in srgb, var(--okc) 50%, var(--bd)); }
+.tag.opt { color: var(--warnc); border-color: color-mix(in srgb, var(--warnc) 50%, var(--bd)); }
+.tag.no { color: var(--errc); border-color: color-mix(in srgb, var(--errc) 50%, var(--bd)); }
+.quote { border-left: 3px solid var(--pri); padding: 4px 0 4px 12px; font-size: 14px; line-height: 1.45; font-style: italic; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; padding: 6px 11px; border-radius: 999px; background: #121214; border: 1px solid #26262b; color: var(--k); }
+.chip svg { width: 15px; height: 15px; }
+.num { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--pri); color: #fff; font-size: 11px; font-weight: 700; flex: none; }
+.legend { display: grid; gap: 10px; }
+.legend > div { display: grid; grid-template-columns: 20px 1fr; gap: 10px; font-size: 14px; line-height: 1.45; }
+
+/* Navigation */
+.nav { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.nav > button { white-space: nowrap; font: inherit; font-size: 13px; color: var(--fg); background: var(--cardc); border: 1px solid var(--bd); border-radius: 999px; padding: 6px 13px; cursor: pointer; }
+.nav > button:disabled { opacity: .35; cursor: default; }
+.nav > button:focus-visible, .dot:focus-visible { outline: 2px solid var(--pri); outline-offset: 2px; }
+.dots { display: flex; gap: 5px; flex: 1 1 160px; flex-wrap: wrap; justify-content: center; align-items: center; }
+.dot { width: 8px; height: 8px; border-radius: 50%; border: 0; padding: 0; background: var(--bd); cursor: pointer; }
+.dot.on { background: var(--pri); width: 20px; border-radius: 4px; }
+.count { font-size: 12.5px; color: var(--mfg); min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+
+/* Diagramme */
+.flow { display: grid; grid-template-columns: 1fr 34px 1.25fr 34px 1fr; align-items: center; gap: 6px; }
+.flow .node { background: var(--cardc); border: 1px solid var(--bd); border-radius: var(--rad); padding: 14px; display: grid; gap: 6px; }
+.flow .node .hd { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.flow .node .hd svg { width: 18px; height: 18px; color: var(--mfg); }
+.flow .inner { background: color-mix(in srgb, var(--pri) 12%, transparent); border: 1px dashed color-mix(in srgb, var(--pri) 60%, var(--bd)); border-radius: 10px; padding: 10px; font-size: 13px; line-height: 1.4; }
+.flow .arrow { text-align: center; color: var(--mfg); font-size: 20px; }
+.outs { display: grid; gap: 8px; }
+.outs > div { background: var(--cardc); border: 1px solid var(--bd); border-radius: 10px; padding: 9px 11px; font-size: 13px; line-height: 1.35; }
+.outs > div.same { opacity: .7; border-style: dashed; }
+.pipe { font-size: 12px; color: var(--mfg); text-align: center; margin-top: -2px; }
+
+/* Tableau d'impact */
+.impact { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.impact .box { padding: 14px; }
+.impact h3 { display: flex; align-items: center; gap: 7px; }
+.impact h3 .dotc { width: 9px; height: 9px; border-radius: 50%; background: var(--c); }
+.impact ul { margin: 0; padding-left: 16px; display: grid; gap: 6px; font-size: 13px; line-height: 1.4; }
+
+/* Choix */
+.choices { display: grid; gap: 10px; }
+.choice { display: grid; grid-template-columns: 28px 1fr; gap: 12px; align-items: start; background: var(--cardc); border: 1px solid var(--bd); border-radius: var(--rad); padding: 13px 15px; }
+.choice .q { font-size: 14.5px; font-weight: 700; margin-bottom: 6px; }
+.choice .opts { display: flex; flex-wrap: wrap; gap: 7px; }
+.choice .o { font-size: 12.5px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--bd); color: var(--mfg); }
+.choice .o.r { color: var(--okc); border-color: color-mix(in srgb, var(--okc) 55%, var(--bd)); font-weight: 700; }
+
+/* ───────────── Maquettes T4 Mobile ───────────── */
+.phone { width: 262px; height: 540px; border-radius: 42px; padding: 8px; background: #1d1d20; box-shadow: 0 0 0 1px #2e2e33, 0 18px 40px rgba(0,0,0,.45); flex: none; }
+.screen { position: relative; height: 100%; border-radius: 34px; overflow: hidden; background: var(--t4-screen); color: var(--t4-fg); font-family: "DM Sans", system-ui, sans-serif; }
+.island { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 76px; height: 22px; border-radius: 12px; background: #000; box-shadow: 0 0 0 1px #151515; z-index: 5; }
+.sb { height: 34px; display: flex; align-items: center; justify-content: space-between; padding: 6px 24px 0; font-size: 11px; font-weight: 700; font-family: system-ui, sans-serif; }
+.sb .ic { display: flex; gap: 4px; align-items: center; }
+.sb .bat { width: 19px; height: 9px; border: 1px solid #bdbdbd; border-radius: 3px; position: relative; }
+.sb .bat::after { content: ""; position: absolute; inset: 1px 4px 1px 1px; background: #f5f5f5; border-radius: 1px; }
+.sb .bars { display: flex; gap: 1.5px; align-items: flex-end; }
+.sb .bars i { width: 2.5px; background: #f5f5f5; border-radius: 1px; }
+.home-ind { position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%); width: 92px; height: 4px; border-radius: 2px; background: rgba(245,245,245,.6); }
+.lt { display: flex; align-items: center; justify-content: space-between; padding: 2px 14px 6px; }
+.lt .t { font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.lt .acts { display: flex; gap: 6px; }
+.gbtn { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; color: var(--t4-fg); flex: none; }
+.gbtn svg { width: 14px; height: 14px; }
+.row { display: grid; grid-template-columns: 17px minmax(0,1fr) auto; gap: 8px; padding: 7px 14px; border-bottom: 1px solid var(--t4-border); align-items: start; }
+.fav { width: 17px; height: 17px; border-radius: 5px; background: var(--c); color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.rt { font-size: 12px; line-height: 15px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rm { margin-top: 3px; display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--t4-muted); }
+.st { display: inline-flex; align-items: center; gap: 3px; font-weight: 700; color: var(--k); }
+.st svg { width: 11px; height: 11px; }
+.rerr { margin-top: 2px; font-size: 9.5px; color: var(--k-red); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mk { width: 15px; height: 15px; border-radius: 50%; background: var(--pri); color: #fff; font-size: 8.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; font-family: system-ui, sans-serif; }
+.shelf { padding: 8px 14px; font-size: 10.5px; color: var(--t4-muted); display: flex; justify-content: space-between; }
+.tabs { position: absolute; bottom: 16px; left: 10px; right: 58px; height: 48px; border-radius: 24px; background: rgba(40,40,44,.86); border: 1px solid rgba(255,255,255,.07); display: flex; justify-content: space-around; align-items: center; backdrop-filter: blur(12px); }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 8px; color: #a1a1aa; }
+.tab svg { width: 17px; height: 17px; }
+.tab.on { color: var(--t4-primary); }
+.searchc { position: absolute; bottom: 16px; right: 10px; width: 44px; height: 48px; border-radius: 24px; background: rgba(40,40,44,.86); border: 1px solid rgba(255,255,255,.07); display: flex; align-items: center; justify-content: center; color: #d4d4d8; }
+.searchc svg { width: 16px; height: 16px; }
+.badge { position: absolute; top: -4px; left: calc(50% + 3px); min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; background: #ff3b30; color: #fff; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; font-family: system-ui, sans-serif; }
+.badge.dotonly { min-width: 8px; width: 8px; height: 8px; padding: 0; top: -1px; }
+
+/* Écran d'un fil */
+.th { display: grid; grid-template-columns: 28px 1fr 28px; align-items: center; padding: 2px 10px 8px; gap: 6px; }
+.th .ti { text-align: center; line-height: 1.2; }
+.th .ti b { display: block; font-size: 11.5px; }
+.th .ti span { font-size: 9px; color: var(--t4-muted); }
+.msgs { padding: 8px 14px; display: flex; flex-direction: column; gap: 10px; }
+.ub { align-self: flex-end; background: #1f1f23; border-radius: 14px; padding: 7px 10px; font-size: 11px; line-height: 15px; max-width: 82%; }
+.at { font-size: 11px; line-height: 15.5px; color: #e4e4e7; }
+.ln { height: 7px; border-radius: 4px; background: #1c1c1f; }
+.composer { position: absolute; bottom: 18px; left: 10px; right: 10px; height: 42px; border-radius: 21px; background: #151517; border: 1px solid #242427; display: flex; align-items: center; justify-content: space-between; padding: 0 6px 0 14px; font-size: 11px; color: #6f6f79; }
+.send { width: 30px; height: 30px; border-radius: 50%; background: #f5f5f5; color: #0a0a0a; display: flex; align-items: center; justify-content: center; }
+.send svg { width: 14px; height: 14px; }
+
+/* Bandeau d'alerte */
+.bn { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 9px; align-items: center; padding: 9px 10px 11px; border-radius: 18px; background: rgba(36,36,40,.94); border: 1px solid rgba(255,255,255,.09); box-shadow: 0 10px 28px rgba(0,0,0,.55); backdrop-filter: blur(14px); position: relative; color: var(--t4-fg); font-family: "DM Sans", system-ui, sans-serif; }
+.bn .bi { width: 30px; height: 30px; border-radius: 10px; background: color-mix(in srgb, var(--k) 18%, transparent); color: var(--k); display: flex; align-items: center; justify-content: center; }
+.bn .bi svg { width: 17px; height: 17px; }
+.bn .b1 { font-size: 11px; font-weight: 700; line-height: 14px; }
+.bn .b2 { font-size: 11px; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e4e4e7; }
+.bn .b3 { font-size: 9.5px; color: var(--t4-muted); line-height: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bn .b3.err { color: var(--k-red); }
+.bn .bo { font-size: 10px; font-weight: 700; padding: 5px 9px; border-radius: 12px; background: rgba(255,255,255,.1); }
+.bn .grab { position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%); width: 26px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.22); }
+.phone .bn.top { position: absolute; top: 40px; left: 7px; right: 7px; z-index: 6; }
+.phone .bn.bottom { position: absolute; bottom: 70px; left: 10px; right: 10px; z-index: 6; padding: 8px 10px; }
+.slide.on .bn.top { animation: drop .55s cubic-bezier(.2,.85,.25,1) .35s both; }
+.slide.on .bn.bottom { animation: rise .55s cubic-bezier(.2,.85,.25,1) .35s both; }
+@keyframes drop { from { transform: translateY(-130%); opacity: 0; } }
+@keyframes rise { from { transform: translateY(60%); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .slide.on .bn.top, .slide.on .bn.bottom { animation: none; } }
+.bn.lg { grid-template-columns: 38px minmax(0,1fr) auto; padding: 12px 13px 14px; border-radius: 20px; }
+.bn.lg .bi { width: 38px; height: 38px; border-radius: 12px; }
+.bn.lg .bi svg { width: 21px; height: 21px; }
+.bn.lg .b1 { font-size: 13.5px; line-height: 17px; }
+.bn.lg .b2 { font-size: 13.5px; line-height: 17px; }
+.bn.lg .b3 { font-size: 11.5px; line-height: 15px; }
+.bn.lg .bo { font-size: 12px; padding: 6px 11px; }
+.stagebg { background: #0a0a0a; border-radius: var(--rad); padding: 14px; display: grid; gap: 12px; border: 1px solid #1c1c1f; }
+.vlabel { font-size: 12px; color: var(--mfg); margin: 0 0 6px 2px; }
+
+/* Résumé « Depuis ton départ » */
+.since { margin: 2px 12px 6px; background: #141416; border: 1px solid #26262b; border-radius: 12px; padding: 8px 10px; display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+.since .s1 { font-size: 10px; font-weight: 700; }
+.since .s2 { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 3px; font-size: 9.5px; }
+.since .x { width: 18px; height: 18px; color: var(--t4-muted); }
+
+/* Réglages */
+.sh { font-size: 9.5px; letter-spacing: .05em; text-transform: uppercase; color: var(--t4-muted); margin: 12px 26px 5px; }
+.grp { margin: 0 12px; background: var(--t4-card); border-radius: 12px; overflow: hidden; }
+.sr { display: flex; justify-content: space-between; align-items: center; padding: 9px 12px; font-size: 11.5px; border-bottom: 1px solid #262628; gap: 8px; }
+.sr:last-child { border-bottom: 0; }
+.sr .l { display: flex; align-items: center; gap: 7px; }
+.sr .l svg { width: 13px; height: 13px; color: var(--k); }
+.tg { width: 32px; height: 19px; border-radius: 10px; background: #34c759; position: relative; flex: none; }
+.tg::after { content: ""; position: absolute; top: 2px; right: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; }
+.tg.off { background: #39393d; }
+.tg.off::after { right: auto; left: 2px; }
+.sf { font-size: 9.5px; line-height: 13px; color: var(--t4-muted); margin: 6px 26px 0; }
+
+/* Mini illustrations */
+.minibar { position: relative; height: 52px; width: 230px; border-radius: 26px; background: rgba(40,40,44,.95); border: 1px solid rgba(255,255,255,.07); display: flex; justify-content: space-around; align-items: center; font-family: "DM Sans", system-ui, sans-serif; }
+.minihead { width: 230px; height: 44px; border-radius: 14px; background: #0a0a0a; border: 1px solid #1c1c1f; display: flex; align-items: center; gap: 8px; padding: 0 10px; font-family: "DM Sans", system-ui, sans-serif; color: var(--t4-fg); }
+.backpill { display: flex; align-items: center; gap: 2px; height: 28px; padding: 0 9px 0 6px; border-radius: 14px; background: rgba(255,255,255,.08); font-size: 12px; font-weight: 700; }
+.backpill svg { width: 13px; height: 13px; }
+.illus { display: grid; gap: 8px; }
+.illus .cap { font-size: 12.5px; color: var(--mfg); }
+
+@media (max-width: 680px) {
+  .stage { height: auto; }
+  .slide { position: static; overflow: visible; }
+  .split, .grid2, .impact { grid-template-columns: 1fr; }
+  .split > .phone, .split > .phonewrap { justify-self: center; }
+  .flow { grid-template-columns: 1fr; }
+  .flow .arrow { transform: rotate(90deg); }
+  h1 { font-size: 28px; }
+  .nav .dots { order: -1; flex-basis: 100%; }
+  .nav .count { margin-right: auto; }
+}
+@media (min-width: 681px) and (max-width: 860px) {
+  .impact { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M12 8v4.5"/><circle cx="12" cy="15.8" r=".7" fill="currentColor"/></symbol>
+    <symbol id="i-ask" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M10 8.8a2 2 0 1 1 3 1.7c-.7.4-1 .8-1 1.4"/><circle cx="12" cy="14" r=".6" fill="currentColor"/></symbol>
+    <symbol id="i-fail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><circle cx="12" cy="16.3" r=".7" fill="currentColor"/></symbol>
+    <symbol id="i-done" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.8"/></symbol>
+    <symbol id="i-work" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9" stroke-dasharray="3.2 2.6"/></symbol>
+    <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12.5h5"/></symbol>
+    <symbol id="i-robot" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M3 12v3M21 12v3"/><circle cx="9.5" cy="13" r=".9" fill="currentColor"/><circle cx="14.5" cy="13" r=".9" fill="currentColor"/></symbol>
+    <symbol id="i-issue" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2" fill="currentColor"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20h16M7 16v-4M12 16V7M17 16v-6"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol>
+    <symbol id="i-compose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="6" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18" cy="12" r="1.7"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7l10 10M17 7L7 17"/></symbol>
+    <symbol id="i-mac" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol>
+    <symbol id="i-wave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 11v2"/></symbol>
+  </defs>
+</svg>
+
+<div class="deck" id="deck">
+<div class="stage" id="stage">
+
+<!-- 1 · Couverture -->
+<section class="slide" aria-label="Couverture">
+  <p class="kicker">T4 Mobile · étude du 25 novembre 2026 · rien n’est encore développé</p>
+  <h1>Les alertes de tes agents, à l’écran de T4</h1>
+  <p class="lead">Le challenge de l’étude, puis ce qu’on construirait concrètement, en maquettes.</p>
+  <div class="box">
+    <h3>Ce que tu as demandé</h3>
+    <div class="chips" style="margin:8px 0 10px">
+      <span class="chip" style="--k:var(--k-amber)"><svg><use href="#i-shield"/></svg>Approbations</span>
+      <span class="chip" style="--k:var(--k-indigo)"><svg><use href="#i-ask"/></svg>Questions</span>
+      <span class="chip" style="--k:var(--k-green)"><svg><use href="#i-done"/></svg>Fins de tour</span>
+      <span class="chip" style="--k:var(--k-red)"><svg><use href="#i-fail"/></svg>Erreurs</span>
+    </div>
+    <p class="txt">Affichées dans l’interface de T4, sans notification push.</p>
+  </div>
+  <div class="box pri">
+    <h3>En bref</h3>
+    <p class="txt">Le challenge garde le socle de l’étude : tout passe par la connexion que T4 a déjà avec le Mac. Il retire deux pièces : la liste « Activité », qui doublait l’onglet Discussions, et le service sur le Mac. Il reste <b>un bandeau</b>, <b>une pastille</b> et <b>un réglage</b>, sur le modèle de ce que T3 fait déjà sur le Mac. Environ <b>1,5 jour</b>, recette comprise.</p>
+  </div>
+  <p class="small">← → ou les boutons ci-dessous pour avancer. « Tout afficher » met les diapositives à la suite.</p>
+</section>
+
+<!-- 2 · Challenge -->
+<section class="slide" aria-label="Challenge">
+  <p class="kicker">1 · Le challenge</p>
+  <h2>Le socle tient. Deux pièces de l’étude tombent.</h2>
+  <div class="grid2">
+    <div class="box ok">
+      <h3>Ce qui tient</h3>
+      <ul class="clean ok">
+        <li><b>La source :</b> T4 reçoit déjà l’état de chaque fil par sa connexion au Mac, via Tailscale. Rien à installer sur le Mac, aucune interrogation à intervalles réguliers, aucune batterie en plus.</li>
+        <li><b>Le serveur T3 officiel</b> reste tel quel.</li>
+        <li><b>La cause des push manquants :</b> T4 a sa propre identité d’app, sans droit aux push Apple. Vérifié sur le build 28.</li>
+      </ul>
+    </div>
+    <div class="box ko">
+      <h3>Ce qui tombe</h3>
+      <ul class="clean ko">
+        <li><b>La liste « Activité » :</b> elle doublerait l’onglet Discussions, qui fait déjà ce travail (diapositive suivante).</li>
+        <li><b>Le service Mac façon Amphetamine :</b> il n’ajouterait que des événements déjà réglés pendant ton absence, ou plusieurs fins d’un même fil. Pour savoir ce qui t’attend, la liste suffit.</li>
+        <li><b>Un historique local des alertes :</b> le « non lu » est déjà enregistré sur le serveur T3.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · Discussions = boîte de réception -->
+<section class="slide" aria-label="Discussions déjà triée">
+  <div class="split">
+    <div class="col">
+      <p class="kicker">2 · Ce qui existe déjà</p>
+      <h2>L’onglet Discussions est déjà ta boîte de réception</h2>
+      <p class="txt">L’accueil de T4 trie toujours les fils par urgence. C’est le code actuel, pas une proposition :</p>
+      <div class="legend">
+        <div><span class="num">1</span><span><b>En tête, ce qui t’attend :</b> approbation, réponse, échec.</span></div>
+        <div><span class="num">2</span><span><b>Ensuite, les fins non lues :</b> libellé vert « Terminé ».</span></div>
+        <div><span class="num">3</span><span><b>Puis ce qui tourne</b>, et enfin les fils clos.</span></div>
+      </div>
+      <div class="box">
+        <p class="txt">Le « non lu » est enregistré sur le serveur T3 du Mac. Un fil que tu as ouvert sur le Mac n’est donc plus signalé sur l’iPhone, et inversement.</p>
+      </div>
+      <p class="small">Maquette fidèle aux couleurs, icônes et libellés de T4. Fils d’exemple.</p>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+      <div class="lt"><span class="t">Discussions</span><span class="acts"><span class="gbtn"><svg><use href="#i-filter"/></svg></span><span class="gbtn"><svg><use href="#i-compose"/></svg></span></span></div>
+      <div class="row"><span class="fav" style="--c:#0f766e">L</span><div><div class="rt">Migration Supabase des comptes</div><div class="rm"><span class="st" style="--k:var(--k-amber)"><svg><use href="#i-shield"/></svg>Approbation</span>2 min</div></div><span class="mk">1</span></div>
+      <div class="row"><span class="fav" style="--c:#7c3aed">I</span><div><div class="rt">Brief vidéo Calmaria</div><div class="rm"><span class="st" style="--k:var(--k-indigo)"><svg><use href="#i-ask"/></svg>Réponse</span>6 min</div></div><span class="mk">1</span></div>
+      <div class="row"><span class="fav" style="--c:#2563eb">T</span><div><div class="rt">Build TestFlight 29</div><div class="rm"><span class="st" style="--k:var(--k-red)"><svg><use href="#i-fail"/></svg>Échec</span>12 min</div><div class="rerr">Profil de signature introuvable</div></div><span class="mk">1</span></div>
+      <div class="row"><span class="fav" style="--c:#b45309">E</span><div><div class="rt">Relecture du contrat client</div><div class="rm"><span class="st" style="--k:var(--k-green)"><svg><use href="#i-done"/></svg>Terminé</span>25 min</div></div><span class="mk">2</span></div>
+      <div class="row"><span class="fav" style="--c:#475569">A</span><div><div class="rt">Nettoyage du disque</div><div class="rm"><span class="st" style="--k:var(--k-green)"><svg><use href="#i-done"/></svg>Terminé</span>1 h</div></div><span class="mk">2</span></div>
+      <div class="row"><span class="fav" style="--c:#2563eb">T</span><div><div class="rt">Étude alertes T4</div><div class="rm"><span class="st" style="--k:var(--k-sky)"><svg><use href="#i-work"/></svg>3:12</span></div></div><span class="mk">3</span></div>
+      <div class="shelf"><span>Clos</span><span>24</span></div>
+      <div class="tabs"><span class="tab on"><svg><use href="#i-chat"/></svg>Discussions</span><span class="tab"><svg><use href="#i-robot"/></svg>Agents</span><span class="tab"><svg><use href="#i-issue"/></svg>Tickets</span><span class="tab"><svg><use href="#i-chart"/></svg>Utilisation</span></div>
+      <div class="searchc"><svg><use href="#i-search"/></svg></div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 4 · Le vrai manque -->
+<section class="slide" aria-label="Le vrai manque">
+  <p class="kicker">3 · Le vrai manque</p>
+  <h2>Ce qui manque : être prévenu quand tu n’es pas sur la liste</h2>
+  <div class="grid2">
+    <div class="box">
+      <h3>Situation 1 · tu lis un fil</h3>
+      <p class="txt">Un autre fil te pose une question ou se termine. Rien ne te le dit avant ton retour à la liste.</p>
+      <p class="txt" style="margin-top:8px"><b>→ Le bandeau</b></p>
+    </div>
+    <div class="box">
+      <h3>Situation 2 · tu es dans un autre onglet</h3>
+      <p class="txt">Agents, Tickets ou Utilisation. Rien ne signale qu’un fil t’attend dans Discussions.</p>
+      <p class="txt" style="margin-top:8px"><b>→ La pastille</b></p>
+    </div>
+  </div>
+  <div class="box ok">
+    <h3>T3 fait déjà exactement ça sur le Mac</h3>
+    <p class="quote">« Notifications dans l’app : affiche une notification quand un autre fil se termine, échoue ou attend une réponse ou une approbation pendant que l’app est active. »</p>
+    <p class="txt" style="margin-top:10px">La logique qui décide quand alerter tient dans un module autonome de 133 lignes, avec ses tests. On la reprend telle quelle : T4 alertera dans les mêmes cas que T3 sur le Mac, avec les mêmes mots (« Approbation requise », « Réponse requise », « Fil terminé », « Échec du fil »).</p>
+  </div>
+</section>
+
+<!-- 5 · Comment ça marche -->
+<section class="slide" aria-label="Fonctionnement">
+  <p class="kicker">4 · Comment ça marche</p>
+  <h2>Aucune nouvelle connexion : T4 compare ce qu’il reçoit déjà</h2>
+  <div class="flow">
+    <div class="node">
+      <div class="hd"><svg><use href="#i-mac"/></svg>Mac · T3 officiel</div>
+      <p class="small">Inchangé. Il calcule l’état de chaque fil : approbation, réponse, en cours, terminé, échec.</p>
+    </div>
+    <div class="arrow">→</div>
+    <div class="node">
+      <div class="hd"><svg><use href="#i-phone"/></svg>T4 Mobile</div>
+      <div class="inner"><b>Coordinateur</b>, repris de T3 sur le Mac. À chaque mise à jour reçue, il compare l’avant et l’après de chaque fil.</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="outs">
+      <div><b>Bandeau</b> · un autre fil vient de changer</div>
+      <div><b>Pastille</b> · nombre de fils qui t’attendent</div>
+      <div class="same"><b>Liste Discussions</b> · inchangée</div>
+    </div>
+  </div>
+  <p class="pipe">Le flux des fils est celui que T4 ouvre déjà via Tailscale pour afficher ses listes.</p>
+  <div class="box">
+    <h3>Les règles reprises de T3, pour éviter le bruit</h3>
+    <ul class="clean">
+      <li>Pas de bandeau pour le fil que tu as sous les yeux.</li>
+      <li>Rien pour un fil reporté ou archivé, ni pour un arrêt volontaire.</li>
+      <li>Les demandes d’un sous-agent remontent au fil parent, sans bandeau par sous-agent.</li>
+      <li>Un simple réveil de suivi ne compte pas comme une fin. Une demande ne déclenche qu’une seule alerte.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6 · A · Bandeau en haut -->
+<section class="slide" aria-label="Proposition A">
+  <div class="split">
+    <div class="col">
+      <p class="kicker">5 · Proposition A</p>
+      <h2>Un bandeau qui descend du haut de l’écran</h2>
+      <span class="tag reco">Recommandé</span>
+      <p class="txt">Il apparaît par-dessus l’écran en cours, à la manière d’une notification iOS, mais dessiné par T4.</p>
+      <ul class="clean">
+        <li><b>Toucher</b> ouvre le fil concerné.</li>
+        <li><b>Glisser vers le haut</b> le ferme.</li>
+        <li>Il <b>disparaît seul</b> après 5 secondes environ. Le fil reste en tête de Discussions.</li>
+        <li>Une <b>vibration légère</b> l’accompagne, désactivable.</li>
+        <li>Plusieurs alertes en même temps sont <b>regroupées</b> dans un seul bandeau.</li>
+      </ul>
+      <p class="small">Le haut de l’écran reste libre de toute saisie : le bandeau ne gêne ni la zone de saisie ni la barre d’onglets.</p>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+      <div class="th"><span class="gbtn"><svg><use href="#i-back"/></svg></span><span class="ti"><b>Étude alertes T4</b><span>t4mobile</span></span><span class="gbtn"><svg><use href="#i-more"/></svg></span></div>
+      <div class="msgs">
+        <div class="ub">Challenge l’étude et fais-moi des maquettes.</div>
+        <div class="at">J’ai relu l’accueil de T4 : il trie déjà les fils qui t’attendent en tête de liste. Le manque est ailleurs…</div>
+        <div class="ln" style="width:92%"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:55%"></div>
+      </div>
+      <div class="bn top" style="--k:var(--k-amber)"><span class="bi"><svg><use href="#i-shield"/></svg></span><span><div class="b1">Approbation requise</div><div class="b2">Migration Supabase des comptes</div><div class="b3">lendosphere · à l’instant</div></span><span class="bo">Ouvrir</span><span class="grab"></span></div>
+      <div class="composer"><span>Écris un message…</span><span class="send"><svg><use href="#i-up"/></svg></span></div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 7 · Les bandeaux -->
+<section class="slide" aria-label="Les bandeaux">
+  <p class="kicker">5 · Proposition A · détail</p>
+  <h2>Quatre bandeaux, avec les icônes et couleurs déjà connues</h2>
+  <p class="txt">Chaque bandeau reprend l’icône et la couleur que tu vois déjà dans la liste. Aucun nouveau code visuel à apprendre.</p>
+  <div class="grid2">
+    <div>
+      <p class="vlabel">Approbation ou question</p>
+      <div class="stagebg">
+        <div class="bn lg" style="--k:var(--k-amber)"><span class="bi"><svg><use href="#i-shield"/></svg></span><span><div class="b1">Approbation requise</div><div class="b2">Migration Supabase des comptes</div><div class="b3">lendosphere · à l’instant</div></span><span class="bo">Ouvrir</span><span class="grab"></span></div>
+        <div class="bn lg" style="--k:var(--k-indigo)"><span class="bi"><svg><use href="#i-ask"/></svg></span><span><div class="b1">Réponse requise</div><div class="b2">Brief vidéo Calmaria</div><div class="b3">imagine-app · à l’instant</div></span><span class="bo">Ouvrir</span><span class="grab"></span></div>
+      </div>
+    </div>
+    <div>
+      <p class="vlabel">Fin de tour ou erreur</p>
+      <div class="stagebg">
+        <div class="bn lg" style="--k:var(--k-green)"><span class="bi"><svg><use href="#i-done"/></svg></span><span><div class="b1">Fil terminé</div><div class="b2">Relecture du contrat client</div><div class="b3">emax · à l’instant</div></span><span class="bo">Ouvrir</span><span class="grab"></span></div>
+        <div class="bn lg" style="--k:var(--k-red)"><span class="bi"><svg><use href="#i-fail"/></svg></span><span><div class="b1">Échec du fil</div><div class="b2">Build TestFlight 29</div><div class="b3 err">Profil de signature introuvable</div></span><span class="bo">Ouvrir</span><span class="grab"></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div>
+      <p class="vlabel">Plusieurs d’un coup : regroupés</p>
+      <div class="stagebg">
+        <div class="bn lg" style="--k:var(--k-green)"><span class="bi"><svg><use href="#i-done"/></svg></span><span><div class="b1">3 fils terminés</div><div class="b2">Relecture du contrat client, Nettoyage du disque…</div><div class="b3">Toucher pour voir la liste</div></span><span class="bo">Voir</span><span class="grab"></span></div>
+      </div>
+    </div>
+    <div class="box" style="align-self:end">
+      <p class="txt"><b>Ordre de priorité :</b> une approbation ou une question passe devant une fin. Un bandeau en attente ne recouvre jamais celui que tu es en train de lire.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 8 · B · Toast en bas -->
+<section class="slide" aria-label="Proposition B">
+  <div class="split">
+    <div class="col">
+      <p class="kicker">6 · Proposition B</p>
+      <h2>Variante : un avis en bas, comme « Fil archivé · Annuler »</h2>
+      <span class="tag no">Déconseillé</span>
+      <p class="txt">Il réutilise le composant d’avis flottant que T4 affiche déjà après un archivage.</p>
+      <ul class="clean ok">
+        <li>Aucun nouveau composant, style déjà connu.</li>
+      </ul>
+      <ul class="clean ko">
+        <li>Dans un fil, il se pose sur la zone de saisie, là où tu écris.</li>
+        <li>En bas de l’écran, il passe plus facilement inaperçu.</li>
+        <li>Il se confond avec les avis qui confirment une de tes actions.</li>
+      </ul>
+      <p class="small">Le gain de temps est faible : le bandeau A reprend déjà le geste de fermeture et l’animation de cet avis.</p>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+      <div class="th"><span class="gbtn"><svg><use href="#i-back"/></svg></span><span class="ti"><b>Étude alertes T4</b><span>t4mobile</span></span><span class="gbtn"><svg><use href="#i-more"/></svg></span></div>
+      <div class="msgs">
+        <div class="ub">Challenge l’étude et fais-moi des maquettes.</div>
+        <div class="at">J’ai relu l’accueil de T4 : il trie déjà les fils qui t’attendent en tête de liste. Le manque est ailleurs…</div>
+        <div class="ln" style="width:92%"></div><div class="ln" style="width:78%"></div><div class="ln" style="width:85%"></div><div class="ln" style="width:55%"></div>
+      </div>
+      <div class="bn bottom" style="--k:var(--k-green)"><span class="bi"><svg><use href="#i-done"/></svg></span><span><div class="b1">Fil terminé</div><div class="b2">Relecture du contrat client</div></span><span class="bo">Ouvrir</span></div>
+      <div class="composer"><span>Écris un message…</span><span class="send"><svg><use href="#i-up"/></svg></span></div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 9 · C · Pastille -->
+<section class="slide" aria-label="Proposition C">
+  <div class="split">
+    <div class="col">
+      <p class="kicker">7 · Proposition C · en complément de A</p>
+      <h2>Une pastille sur l’onglet Discussions</h2>
+      <span class="tag reco">Recommandé</span>
+      <p class="txt">Visible depuis Agents, Tickets ou Utilisation. C’est la pastille native d’iOS : la barre d’onglets de T4 la prend déjà en charge.</p>
+      <div class="illus">
+        <div class="minibar"><span class="tab on" style="color:#a1a1aa"><svg><use href="#i-chat"/></svg>Discussions<span class="badge">3</span></span><span class="tab"><svg><use href="#i-robot"/></svg>Agents</span><span class="tab"><svg><use href="#i-issue"/></svg>Tickets</span></div>
+        <span class="cap"><b>Un chiffre</b> : nombre de fils qui t’attendent (approbation, question, erreur).</span>
+        <div class="minibar"><span class="tab" style="color:#a1a1aa"><svg><use href="#i-chat"/></svg>Discussions<span class="badge dotonly"></span></span><span class="tab"><svg><use href="#i-robot"/></svg>Agents</span><span class="tab"><svg><use href="#i-issue"/></svg>Tickets</span></div>
+        <span class="cap"><b>Un point seul</b> : seulement des fins de tour à lire.</span>
+      </div>
+      <div class="box" style="padding:12px 14px">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div class="minihead" style="width:auto"><span class="backpill"><svg><use href="#i-back"/></svg>3</span><span style="font-size:12px;font-weight:700">Étude alertes T4</span></div>
+          <span class="tag opt">Option, à vérifier</span>
+        </div>
+        <p class="small" style="margin-top:8px">Le même chiffre sur le bouton retour d’un fil, comme dans Messages. Faisabilité à confirmer avec l’en-tête de T4.</p>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+      <div class="lt"><span class="t">Agents</span><span class="acts"><span class="gbtn"><svg><use href="#i-filter"/></svg></span></span></div>
+      <div class="row"><span class="fav" style="--c:#334155"><svg width="11" height="11"><use href="#i-robot"/></svg></span><div><div class="rt">Directeur T4 Mobile</div><div class="rm"><span class="st" style="--k:var(--k-sky)"><svg><use href="#i-work"/></svg>12:40</span></div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#334155"><svg width="11" height="11"><use href="#i-robot"/></svg></span><div><div class="rt">Veille des dépendances</div><div class="rm"><span class="st" style="--k:var(--k-sky)"><svg><use href="#i-work"/></svg>4:05</span></div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#334155"><svg width="11" height="11"><use href="#i-robot"/></svg></span><div><div class="rt">Revue de code nocturne</div><div class="rm">Clos · hier</div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#334155"><svg width="11" height="11"><use href="#i-robot"/></svg></span><div><div class="rt">Sauvegarde des vaults</div><div class="rm">Clos · hier</div></div><span></span></div>
+      <div class="tabs"><span class="tab"><svg><use href="#i-chat"/></svg>Discussions<span class="badge">3</span></span><span class="tab on"><svg><use href="#i-robot"/></svg>Agents</span><span class="tab"><svg><use href="#i-issue"/></svg>Tickets</span><span class="tab"><svg><use href="#i-chart"/></svg>Utilisation</span></div>
+      <div class="searchc"><svg><use href="#i-search"/></svg></div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 10 · Retour dans l'app -->
+<section class="slide" aria-label="Retour dans l'app">
+  <div class="split">
+    <div class="col">
+      <p class="kicker">8 · Quand tu rouvres T4</p>
+      <h2>Pas de rafale de bandeaux au retour</h2>
+      <p class="txt">Au retour, T4 se resynchronise avec le Mac. Le coordinateur traite cet état comme un premier aperçu : il n’affiche aucun bandeau pour ce qui s’est passé pendant ton absence.</p>
+      <ul class="clean">
+        <li><b>La liste</b>, déjà triée, montre en tête ce qui t’attend.</li>
+        <li><b>La pastille</b> dit combien de fils t’attendent.</li>
+      </ul>
+      <div class="box">
+        <span class="tag opt">Option, pas en première version</span>
+        <p class="txt" style="margin-top:8px">Une ligne de résumé en haut de Discussions, qui disparaît d’un geste. Elle ne fait que résumer les premières lignes de la liste. Je propose de l’ajouter seulement si le besoin se confirme à l’usage.</p>
+      </div>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+      <div class="lt"><span class="t">Discussions</span><span class="acts"><span class="gbtn"><svg><use href="#i-filter"/></svg></span><span class="gbtn"><svg><use href="#i-compose"/></svg></span></span></div>
+      <div class="since"><div><div class="s1">Depuis 18 h 40</div><div class="s2"><span class="st" style="--k:var(--k-amber)">1 approbation</span><span class="st" style="--k:var(--k-indigo)">1 question</span><span class="st" style="--k:var(--k-red)">1 échec</span><span class="st" style="--k:var(--k-green)">2 terminés</span></div></div><svg class="x"><use href="#i-x"/></svg></div>
+      <div class="row"><span class="fav" style="--c:#0f766e">L</span><div><div class="rt">Migration Supabase des comptes</div><div class="rm"><span class="st" style="--k:var(--k-amber)"><svg><use href="#i-shield"/></svg>Approbation</span>2 h</div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#7c3aed">I</span><div><div class="rt">Brief vidéo Calmaria</div><div class="rm"><span class="st" style="--k:var(--k-indigo)"><svg><use href="#i-ask"/></svg>Réponse</span>1 h</div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#2563eb">T</span><div><div class="rt">Build TestFlight 29</div><div class="rm"><span class="st" style="--k:var(--k-red)"><svg><use href="#i-fail"/></svg>Échec</span>1 h</div><div class="rerr">Profil de signature introuvable</div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#b45309">E</span><div><div class="rt">Relecture du contrat client</div><div class="rm"><span class="st" style="--k:var(--k-green)"><svg><use href="#i-done"/></svg>Terminé</span>45 min</div></div><span></span></div>
+      <div class="row"><span class="fav" style="--c:#475569">A</span><div><div class="rt">Nettoyage du disque</div><div class="rm"><span class="st" style="--k:var(--k-green)"><svg><use href="#i-done"/></svg>Terminé</span>20 min</div></div><span></span></div>
+      <div class="tabs"><span class="tab on"><svg><use href="#i-chat"/></svg>Discussions<span class="badge">3</span></span><span class="tab"><svg><use href="#i-robot"/></svg>Agents</span><span class="tab"><svg><use href="#i-issue"/></svg>Tickets</span><span class="tab"><svg><use href="#i-chart"/></svg>Utilisation</span></div>
+      <div class="searchc"><svg><use href="#i-search"/></svg></div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 11 · Réglages -->
+<section class="slide" aria-label="Réglages">
+  <div class="split">
+    <div class="col">
+      <p class="kicker">9 · Réglages</p>
+      <h2>Une section « Notifications dans l’app » dans Paramètres</h2>
+      <p class="txt">Même nom que le réglage de T3 sur le Mac. Activée par défaut dans T4, puisque c’est ton besoin. Sur le Mac, T3 la livre désactivée.</p>
+      <ul class="clean">
+        <li>Un interrupteur général.</li>
+        <li>Un interrupteur par famille : approbations et questions, fins de tour, erreurs.</li>
+        <li>La vibration légère.</li>
+      </ul>
+      <p class="small">Les fils reportés restent silencieux, comme sur le Mac : le report sert déjà à couper un fil précis.</p>
+    </div>
+    <div class="phone"><div class="screen">
+      <div class="island"></div>
+      <div class="sb"><span>9:41</span><span class="ic"><span class="bars"><i style="height:4px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:10px"></i></span><span class="bat"></span></span></div>
+      <div class="th"><span class="gbtn"><svg><use href="#i-back"/></svg></span><span class="ti"><b>Paramètres</b></span><span></span></div>
+      <div class="lt" style="padding-top:0"><span class="t" style="font-size:18px;line-height:22px">Notifications dans l’app</span></div>
+      <div class="grp" style="margin-top:6px">
+        <div class="sr"><span>Notifications dans l’app</span><span class="tg"></span></div>
+      </div>
+      <p class="sf">Un bandeau apparaît quand un autre fil t’attend, se termine ou échoue, pendant que T4 est ouvert. Rien quand l’app est fermée.</p>
+      <p class="sh">Alerter pour</p>
+      <div class="grp">
+        <div class="sr"><span class="l" style="--k:var(--k-amber)"><svg><use href="#i-shield"/></svg>Approbations et questions</span><span class="tg"></span></div>
+        <div class="sr"><span class="l" style="--k:var(--k-green)"><svg><use href="#i-done"/></svg>Fins de tour</span><span class="tg"></span></div>
+        <div class="sr"><span class="l" style="--k:var(--k-red)"><svg><use href="#i-fail"/></svg>Erreurs</span><span class="tg"></span></div>
+      </div>
+      <p class="sh">Retour</p>
+      <div class="grp">
+        <div class="sr"><span class="l" style="--k:#a1a1aa"><svg><use href="#i-wave"/></svg>Vibration légère</span><span class="tg"></span></div>
+        <div class="sr"><span class="l" style="--k:#a1a1aa"><svg><use href="#i-chat"/></svg>Pastille sur Discussions</span><span class="tg"></span></div>
+      </div>
+      <div class="home-ind"></div>
+    </div></div>
+  </div>
+</section>
+
+<!-- 12 · Impact design -->
+<section class="slide" aria-label="Impact design">
+  <p class="kicker">10 · Impact design</p>
+  <h2>Peu de surface nouvelle, rien à réapprendre</h2>
+  <div class="impact">
+    <div class="box"><h3><span class="dotc" style="--c:var(--okc)"></span>Nouveau</h3><ul>
+      <li>Le bandeau en haut, un seul composant.</li>
+      <li>Le coordinateur, repris de T3 sur le Mac.</li>
+      <li>La section de réglages.</li>
+      <li>Une douzaine de libellés, traduits dans les 10 langues de l’app.</li>
+    </ul></div>
+    <div class="box"><h3><span class="dotc" style="--c:var(--warnc)"></span>Modifié</h3><ul>
+      <li>La barre d’onglets, qui reçoit la pastille.</li>
+      <li>La racine de l’app, qui accueille le bandeau au-dessus de tous les écrans.</li>
+    </ul></div>
+    <div class="box"><h3><span class="dotc" style="--c:var(--mfg)"></span>Inchangé</h3><ul>
+      <li>La liste Discussions et son tri.</li>
+      <li>L’écran d’un fil.</li>
+      <li>Les couleurs, icônes et libellés de statut.</li>
+      <li>Le Mac et le serveur T3.</li>
+    </ul></div>
+    <div class="box"><h3><span class="dotc" style="--c:var(--errc)"></span>Retiré de l’étude</h3><ul>
+      <li>La liste « Activité ».</li>
+      <li>Le service Mac et sa route Tailscale.</li>
+      <li>L’historique local des alertes.</li>
+    </ul></div>
+  </div>
+  <div class="grid2">
+    <div class="box"><h3>Performance et batterie</h3><p class="txt">Aucune connexion en plus. Un calcul léger à chaque mise à jour des fils, que T4 reçoit déjà pour sa liste.</p></div>
+    <div class="box"><h3>Mises à jour de T3</h3><p class="txt">Le code vit dans des fichiers propres à T4, qui copient la logique de T3 au lieu de déplacer son code. Les intégrations des Nightly restent simples.</p></div>
+  </div>
+</section>
+
+<!-- 13 · Limites -->
+<section class="slide" aria-label="Limites">
+  <p class="kicker">11 · Limites à accepter</p>
+  <h2>Le prix du « pas de push »</h2>
+  <div class="box ko">
+    <h3>App fermée, en arrière-plan ou écran verrouillé</h3>
+    <p class="txt">Rien ne sonne, rien ne vibre. iOS suspend T4 et coupe sa connexion. Tu découvres tout en rouvrant l’app, avec la liste triée et la pastille.</p>
+  </div>
+  <div class="box">
+    <h3>iPhone hors Tailscale, ou Mac en veille</h3>
+    <p class="txt">Rien n’arrive. T4 garde son dernier état connu et son indicateur de connexion habituel. Tout se rattrape quand le Mac redevient joignable.</p>
+  </div>
+  <div class="box">
+    <h3>Pour être prévenu téléphone en poche</h3>
+    <p class="txt">Il faudrait de vrais push pour T4 : une identité Apple dédiée et un relais pour les envoyer. C’est un autre projet, que tu as écarté. Le bandeau n’empêche pas de le lancer plus tard.</p>
+  </div>
+</section>
+
+<!-- 14 · Effort -->
+<section class="slide" aria-label="Effort">
+  <p class="kicker">12 · Effort et déroulé</p>
+  <h2>Environ 1,5 jour, puis TestFlight</h2>
+  <div class="grid2">
+    <div class="box"><h3>Développement · ≈ 1 jour</h3><p class="txt">Coordinateur, bandeau, pastille, réglages, traductions et tests automatiques.</p></div>
+    <div class="box"><h3>Recette sur ton iPhone · ≈ ½ jour</h3><p class="txt">Approbation, question, fin, échec. Fil ouvert (pas de bandeau). Sous-agent. Cinq fins d’un coup. Retour après dix minutes. Tailscale coupé.</p></div>
+  </div>
+  <div class="box"><h3>Livraison</h3><p class="txt">Build 29 sur TestFlight pour le groupe T4 Interne, selon ta règle permanente, puis nettoyage des fichiers de compilation.</p></div>
+  <div class="box ko"><h3>Point de vigilance</h3><p class="txt">Les builds 27 et 28 sont livrés, mais leur code n’est pas commité : sections « Directeurs, Agents, Divers » et statut Amphetamine. Le nouveau travail toucherait aussi les Paramètres et les traductions. Je propose de commiter d’abord cet état, avec ton accord, pour que chaque livraison reste lisible séparément.</p></div>
+</section>
+
+<!-- 15 · Décisions -->
+<section class="slide" aria-label="Tes choix">
+  <p class="kicker">13 · À toi de choisir</p>
+  <h2>Quatre choix avant de lancer le développement</h2>
+  <div class="choices">
+    <div class="choice"><span class="num">1</span><div><div class="q">Où apparaît l’alerte ?</div><div class="opts"><span class="o r">Bandeau en haut (A)</span><span class="o">Avis en bas (B)</span></div></div></div>
+    <div class="choice"><span class="num">2</span><div><div class="q">Que compte la pastille ?</div><div class="opts"><span class="o r">Les fils qui t’attendent, point seul pour les fins</span><span class="o">Aussi les fins non lues dans le chiffre</span><span class="o">Pas de pastille</span></div></div></div>
+    <div class="choice"><span class="num">3</span><div><div class="q">Vibration légère avec le bandeau ?</div><div class="opts"><span class="o r">Oui, désactivable</span><span class="o">Non</span></div></div></div>
+    <div class="choice"><span class="num">4</span><div><div class="q">Ligne « Depuis 18 h 40 » au retour ?</div><div class="opts"><span class="o r">Plus tard, si le besoin se confirme</span><span class="o">Dès la première version</span></div></div></div>
+  </div>
+  <p class="txt">Réponds dans le fil. Je lance ensuite le développement et la livraison TestFlight.</p>
+</section>
+
+</div>
+<nav class="nav" aria-label="Navigation du diaporama">
+  <button class="step" id="prev" type="button">← Précédent</button>
+  <div class="dots step" id="dots"></div>
+  <span class="count step" id="count"></span>
+  <button class="step" id="next" type="button">Suivant →</button>
+  <button id="all" type="button">Tout afficher</button>
+</nav>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  if (!getComputedStyle(root).getPropertyValue("--background").trim()) root.classList.add("standalone");
+  var deck = document.getElementById("deck");
+  var stage = document.getElementById("stage");
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var dots = document.getElementById("dots");
+  var prev = document.getElementById("prev");
+  var next = document.getElementById("next");
+  var count = document.getElementById("count");
+  var all = document.getElementById("all");
+  var i = 0;
+  slides.forEach(function (s, k) {
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "dot";
+    b.setAttribute("aria-label", "Diapositive " + (k + 1));
+    b.addEventListener("click", function () { go(k); });
+    dots.appendChild(b);
+  });
+  function go(k) {
+    i = Math.max(0, Math.min(slides.length - 1, k));
+    slides.forEach(function (s, n) { s.classList.toggle("on", n === i); });
+    Array.prototype.forEach.call(dots.children, function (d, n) { d.classList.toggle("on", n === i); });
+    count.textContent = (i + 1) + " / " + slides.length;
+    prev.disabled = i === 0;
+    next.disabled = i === slides.length - 1;
+    stage.scrollTop = 0;
+    slides[i].scrollTop = 0;
+  }
+  prev.addEventListener("click", function () { go(i - 1); });
+  next.addEventListener("click", function () { go(i + 1); });
+  all.addEventListener("click", function () {
+    var on = deck.classList.toggle("all");
+    all.textContent = on ? "Mode diaporama" : "Tout afficher";
+    if (!on) go(i);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (deck.classList.contains("all")) return;
+    if (e.key === "ArrowRight" || e.key === "PageDown") { go(i + 1); e.preventDefault(); }
+    if (e.key === "ArrowLeft" || e.key === "PageUp") { go(i - 1); e.preventDefault(); }
+  });
+  var x0 = null;
+  stage.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener("touchend", function (e) {
+    if (x0 === null || deck.classList.contains("all")) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if (Math.abs(dx) > 60) go(i + (dx < 0 ? 1 : -1));
+    x0 = null;
+  });
+  var start = parseInt(location.hash.slice(1), 10);
+  go(isNaN(start) ? 0 : start - 1);
+  if (/[?&]all\b/.test(location.search) || root.hasAttribute("data-all")) {
+    deck.classList.add("all");
+    all.textContent = "Mode diaporama";
+  }
+})();
+</script>
+</body>
+</html>
