@@ -22,6 +22,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FullWindowOverlay } from "react-native-screens";
+import { useResolveClassNames } from "uniwind";
 
 import { type AppSymbolName, SymbolView } from "../../components/ui/AppSymbol";
 import { AppText } from "../../components/ui/AppText";
@@ -42,9 +43,9 @@ type Translate = ReturnType<typeof useGT>;
 
 /** What waits on the user stays longer than a finished turn. */
 const DURATION_MS: Record<InAppAlertFamily, number> = {
-  attention: 8_000,
-  failure: 8_000,
-  completion: 5_000,
+  attention: 16_000,
+  failure: 16_000,
+  completion: 10_000,
 };
 const MAX_WIDTH = 520;
 const SWIPE_TIMING = { duration: 160, reduceMotion: ReduceMotion.System };
@@ -55,23 +56,25 @@ const ENTER_TIMING = {
 };
 const EXITING = FadeOut.duration(MOBILE_MOTION.exit).reduceMotion(ReduceMotion.System);
 
-const KIND_STYLE: Record<InAppAlertKind, { readonly icon: AppSymbolName; readonly tint: string }> =
-  {
-    approval: { icon: "exclamationmark.shield", tint: "accent-warning-foreground" },
-    input: { icon: "questionmark.bubble", tint: "accent-adaptive-indigo-600-300" },
-    request: { icon: "person.crop.circle", tint: "accent-adaptive-fuchsia-600-300" },
-    failed: { icon: "exclamationmark.circle", tint: "accent-danger-foreground" },
-    limited: { icon: "exclamationmark.circle", tint: "accent-warning-foreground" },
-    completion: { icon: "checkmark.circle", tint: "accent-adaptive-emerald-700-300" },
-  };
+const KIND_STYLE: Record<
+  InAppAlertKind,
+  { readonly icon: AppSymbolName; readonly colorClassName: string }
+> = {
+  approval: { icon: "exclamationmark.shield", colorClassName: "text-warning-foreground" },
+  input: { icon: "questionmark.bubble", colorClassName: "text-adaptive-indigo-600-300" },
+  request: { icon: "person.crop.circle", colorClassName: "text-adaptive-fuchsia-600-300" },
+  failed: { icon: "exclamationmark.circle", colorClassName: "text-danger-foreground" },
+  limited: { icon: "exclamationmark.circle", colorClassName: "text-warning-foreground" },
+  completion: { icon: "checkmark.circle", colorClassName: "text-adaptive-emerald-700-300" },
+};
 
 const FAMILY_STYLE: Record<
   InAppAlertFamily,
-  { readonly icon: AppSymbolName; readonly tint: string }
+  { readonly icon: AppSymbolName; readonly colorClassName: string }
 > = {
-  attention: { icon: "bell.badge", tint: "accent-warning-foreground" },
-  failure: { icon: "exclamationmark.circle", tint: "accent-danger-foreground" },
-  completion: { icon: "checkmark.circle", tint: "accent-adaptive-emerald-700-300" },
+  attention: { icon: "bell.badge", colorClassName: "text-warning-foreground" },
+  failure: { icon: "exclamationmark.circle", colorClassName: "text-danger-foreground" },
+  completion: { icon: "checkmark.circle", colorClassName: "text-adaptive-emerald-700-300" },
 };
 
 function kindTitle(kind: InAppAlertKind, gt: Translate): string {
@@ -109,7 +112,7 @@ function groupTitle(family: InAppAlertFamily, count: number, gt: Translate): str
 
 interface BannerText {
   readonly icon: AppSymbolName;
-  readonly tint: string;
+  readonly colorClassName: string;
   readonly title: string;
   readonly body: string;
   readonly detail: string | null;
@@ -161,6 +164,7 @@ function InAppAlertBannerView(props: { readonly banner: Banner }) {
     ? resolveInAppAlertSettings(preferences.value.inAppAlerts).haptics
     : true;
   const text = bannerText(banner, gt);
+  const { color: accentColor } = useResolveClassNames(text.colorClassName);
   const family = bannerFamily(banner);
   const translation = useSharedValue(0);
 
@@ -247,11 +251,11 @@ function InAppAlertBannerView(props: { readonly banner: Banner }) {
               <GlassSurface
                 key={glassReady ? "settled" : "entering"}
                 className="px-3.5 py-3"
-                style={{ borderRadius: 24 }}
+                style={{ borderRadius: 24, borderWidth: 2, borderColor: accentColor }}
               >
                 <View className="flex-row items-center gap-3">
                   <View className="size-9 items-center justify-center rounded-full bg-subtle">
-                    <SymbolView name={text.icon} size={20} tintColorClassName={text.tint} />
+                    <SymbolView name={text.icon} size={20} tintColor={accentColor} />
                   </View>
                   <View className="min-w-0 flex-1">
                     <AppText
