@@ -238,6 +238,20 @@ function observeThreads(
       snoozed: isSnoozedForNotification(state.thread, state.completedAt, now),
     });
   }
+  dropResolvedBanner(registry, environmentId);
+}
+
+/** A request answered elsewhere, on the Mac for one, takes its banner with it. */
+function dropResolvedBanner(registry: AtomRegistry.AtomRegistry, environmentId: EnvironmentId) {
+  const { banner, queue } = registry.get(inAppAlertsAtom);
+  if (
+    banner?.type === "single" &&
+    banner.alert.environmentId === environmentId &&
+    banner.alert.kind !== "completion" &&
+    !stillRelevant(banner.alert)
+  ) {
+    showNext(registry, queue);
+  }
 }
 
 function alertFromState(

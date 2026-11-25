@@ -1,6 +1,7 @@
 import {
   EnvironmentId,
   RunId,
+  RuntimeRequestId,
   ThreadId,
   type OrchestrationV2ThreadShell,
 } from "@t3tools/contracts";
@@ -158,6 +159,24 @@ describe("installInAppAlerts", () => {
     publish(registry, [rawThread("completed", "2026-11-25T10:05:00.000Z")]);
     expect(registry.get(inAppAlertsAtom).banner).toBeNull();
     setAppState("active");
+    expect(registry.get(inAppAlertsAtom).banner).toBeNull();
+  });
+
+  it("announces an approval, then drops the banner once it is answered elsewhere", () => {
+    const waiting: OrchestrationV2ThreadShell = {
+      ...rawThread("running"),
+      updatedAt: DateTime.makeUnsafe("2026-11-25T10:01:00.000Z"),
+      pendingRuntimeRequest: {
+        id: RuntimeRequestId.make("request-1"),
+        kind: "command",
+        createdAt: DateTime.makeUnsafe("2026-11-25T10:01:00.000Z"),
+      },
+    };
+    publish(registry, [waiting]);
+    const banner = registry.get(inAppAlertsAtom).banner;
+    expect(banner?.type === "single" ? banner.alert.kind : null).toBe("approval");
+
+    publish(registry, [{ ...waiting, pendingRuntimeRequest: null }]);
     expect(registry.get(inAppAlertsAtom).banner).toBeNull();
   });
 
